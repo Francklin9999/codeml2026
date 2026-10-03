@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED *(set to IN PROGRESS / DONE / ABANDONED with your name and the date)* |
+| **Status** | IN PROGRESS — Codex subagent + parent audit, 2026-10-03; schema/evaluator tested, reviewed ground truth and zones unfinished |
 | **Priority** | P1 (foundation: every extraction strategy is scored with it) |
 | **Effort** | 4–5 h |
 | **Depends on** | nothing |
@@ -163,4 +163,4 @@ Every extraction strategy (2, 3, 4, 5, 6, 7) uses this schema and ground truth; 
 
 | Date | Who | Pages done | Spot-check errors | Unassigned words | Verdict |
 |---|---|---|---|---|---|
-| | | | | | |
+| 2026-10-03 | Codex subagent + parent audit | No GT pages annotated; provisional schema and evaluator implemented | NOT RUN | NOT RUN | Ten focused tests pass; schema/privacy, duplicate inputs, missing fields, hallucination, units, dates, calibration and breakdown checks; see work/shared/report.md |
