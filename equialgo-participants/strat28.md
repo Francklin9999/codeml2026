@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED · **Priority** P2 · **Effort** 4 h · **Depends on** feature pipeline and V1 baseline |
+| **Status** | IN PROGRESS (Student-t fits; official evaluation pending) · **Priority** P2 · **Effort** 4 h · **Depends on** feature pipeline and V1 baseline |
 | **Rubric** | Hidden-reference accuracy; valid quota |
 | **Work folder** | work/strat28/ |
 
@@ -36,4 +36,4 @@ Compare against 23 monotone GAM; no stacking until standalone evaluation.
 
 ## 8. Results log
 
-NOT RUN. No robust-link fit or hidden-reference score exists.
+The two fixed-degree Student-t link fits have been run; committee diagnostics, optimizer status and candidate hashes are in [`work/strat28/report.md`](work/strat28/report.md). No authorized upload or hidden-reference score exists; the official >94% criterion remains NOT RUN.
