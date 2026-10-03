@@ -2,7 +2,7 @@
 
 Claude left `data.py`. Codex added format/budget validation, shared model fitting, reference simulations and the scorer, then shifted priority to OptiFrame at the user's request.
 
-Implemented: H1, H1n5, H1n10, H2, three H3 weights, H4 and H5; metrics accuracy/F1/balanced accuracy; 2-group and 5-region EO gap; fixed published denominator 0.270 and measured simulated baseline denominator. H6, strategy registry, robustness heatmap, notebook-test-split calibration and strategy reports remain unfinished. The five V1–V5 model specifications are available in `models.py`, but no selected production model or official submission is produced.
+Implemented: H1, H1n5, H1n10, H2, three H3 weights, H4 and H5; metrics accuracy/F1/balanced accuracy; 2-group and 5-region EO gap; fixed published denominator 0.270 and measured simulated baseline denominator. Strategy 1's V1–V5 runner and measured report are now available under `work/strat1/`. H6, strategy registry, robustness heatmap and notebook-test-split calibration remain unfinished. No selected production model or official submission is produced.
 
 Run from the repository root:
 
