@@ -1,0 +1,13 @@
+{
+  "dictionary": "DICT_5X5_100",
+  "squares": [13, 11],
+  "square_mm": 12.0,
+  "marker_mm": 9.0,
+  "window_mm": [36.0, 36.0, 120.0, 96.0],
+  "print_check_span_mm": 72.0,
+  "print_check_tolerance_mm": 0.2,
+  "pixels_per_mm": 20,
+  "minimum_charuco_corners": 20,
+  "maximum_reprojection_mm": 0.1,
+  "nominal_dimensions_verified_physically": false
+}

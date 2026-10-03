@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED *(set to IN PROGRESS / DONE / ABANDONED with your name and the date)* |
+| **Status** | IN PROGRESS — Codex, 2026-10-03; software foundation tested, physical rig NOT RUN |
 | **Priority** | P1 (everything else depends on good photos) |
 | **Effort** | 3–4 h (design + build + validation) |
 | **Depends on** | nothing |
@@ -102,4 +102,4 @@ Strategy 2 (metrology on top of this rig), 3 and 4 (segmentation exploits backli
 
 | Date | Who | Board print scale | Contrast | Scale MAE | Reassembly time | Notes |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| 2026-10-03 | Codex | NOT RUN (nominal A4 PDF generated and visually checked) | Synthetic only | Synthetic A/B MAE 0.0802 mm across 12 zero-height cases | NOT RUN | Enlarged to 13×11 squares with an 84×60 mm window; see work/README.md and work/strat2/report.md |

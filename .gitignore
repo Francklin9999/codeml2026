@@ -12,3 +12,4 @@ venv/
 
 # Generated, regenerable artefacts from the strategy work (extracted corpora, degraded images, datasets)
 _local/
+.worktrees/

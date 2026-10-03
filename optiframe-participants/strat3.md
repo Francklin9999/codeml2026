@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | IN PROGRESS — Codex, 2026-10-03; classical segmenter tested in simulation, real lens and browser tests NOT RUN |
 | **Priority** | P1 (reliable baseline; the brief: "une mesure fiable sans IA vaut mieux qu'une IA sans mesure") |
 | **Effort** | 3–4 h |
 | **Depends on** | strategy 1 (rig), 2 (rectified metric image) |
@@ -96,4 +96,4 @@ Strategy 2 (refinement and measurement), 4 (alternative signal), 5 / 6 (AI fallb
 
 | Date | Who | Experiment | MAE A / B | Boundary p95 | Failures | Notes |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| 2026-10-03 | Codex | Backlit synthetic suite with tint, blur, low contrast and tilt | 0.0802 mm on 12 zero-height cases | NOT RUN | 0 unexpected rejections / 0 unexpected acceptances in 15 cases | Flat-field + black-hat + ring closing + geometric gates + outer half-contrast refinement; Python only. |

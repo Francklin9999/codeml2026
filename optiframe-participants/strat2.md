@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | IN PROGRESS — Codex, 2026-10-03; CLI and synthetic checks pass, physical metrology NOT RUN |
 | **Priority** | P1 (the 30 accuracy points live here) |
 | **Effort** | 4–6 h |
 | **Depends on** | strategy 1 (rig and board spec) |
@@ -111,4 +111,4 @@ Strategy 1 (rig), 3 / 4 / 5 / 6 (coarse masks), 7 (multi-shot), 8 (axis choice a
 
 | Date | Who | Experiment | MAE A | MAE B | Max err | Notes |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| 2026-10-03 | Codex | Seeded pinhole-camera suite, 12 zero-height lenses + raised lens + 2 rejection cases | Combined A/B MAE 0.0802 mm | Combined A/B MAE 0.0802 mm | 0.3128 mm | 13/13 simulated lenses measured; empty window and missing board rejected. Separate A/B values in work/_local/evaluation/results.csv; real-lens validation NOT RUN. |

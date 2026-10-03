@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | IN PROGRESS — Codex, 2026-10-03; shared scorer and nine hypotheses tested; registry, H6 and calibration report unfinished |
 | **Priority** | P1 (foundation: every other strategy is compared with it) |
 | **Effort** | 3–4 h |
 | **Depends on** | nothing |
@@ -121,4 +121,4 @@ Every strategy (1, 3, 6, 7, 8, 9 are scored here); strategy 7 draws Pareto curve
 
 | Date | Who | Hypotheses implemented | Sanity tests | Notes |
 |---|---|---|---|---|
-| | | | | |
+| 2026-10-03 | Codex | H1, H1n5, H1n10, H2, H3w0.25, H3w0.5, H3w1, H4, H5 | 6 unittest cases pass; smoke test yields 1,600 grants for each hypothesis and 35/35 for a perfect simulated predictor | Paused when user prioritized OptiFrame. H6, registry, heatmap and notebook-split calibration remain unimplemented. See work/shared/README.md. |
