@@ -47,6 +47,10 @@ Audit fixes include off-centre measured contours, a bridge obstructing lens seat
 
 ## Next concrete work
 
+The new planning campaign adds **strategies 21–40 for each challenge**, indexed in [STRATEGIES_21_40.md](STRATEGIES_21_40.md). These are one hundred new proposals, not implementations or measured experiments. [RESULTS_OVERVIEW.md](RESULTS_OVERVIEW.md) separates actual results from missing evidence. Lower-cost agents drafted isolated batches; parent review corrected duplicated mechanisms, unsupported parallax detection, retrospective holdout claims and metric confusion before integration on `codex/strategies-21-40`.
+
+IVADO's user-confirmed target is **strictly above 94% leaderboard accuracy against the hidden reference**. The validated V1 candidate is ready at `equialgo-participants/work/_local/strat1/candidate_predictions_V1.csv` (4,000 candidates, 1,600 grants). The user can manually upload it and return accuracy/F1; its official result is pending. Neither the committee AUC nor the post-hoc committee holdout in the results overview proves this target has been reached.
+
 1. OptiFrame: collect independent real-lens and printed-shape measurements using `work/strat1/rig_instructions.md`; finish canonical orientation (strategy 8), validate frame printing/fit and implement browser integration (9–10).
 2. DayOne: connect `pdfparse.py` to the provisional schema, per-page zone templates, reviewed ground truth and the implemented evaluator (strategy 1). Do not treat PDF text-layer extraction as a working phone OCR system.
 3. NOVA: run/review the extractor, add screenshot transcriptions, then curate the evidence ledger and build/check the static site (strategy 1).
