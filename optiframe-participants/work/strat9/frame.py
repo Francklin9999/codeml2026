@@ -70,6 +70,7 @@ def build_frame(left_points, right_points, params=None):
     right = contour_polygon(right_points, "right")
     bridge_width = settings["bridge_width"]
     outer_offset = settings["clearance"] + settings["rim_width"]
+    overlap = 0.2 * settings["rim_width"] / DEFAULTS["rim_width"]
     left_bounds = left.bounds
     right_bounds = right.bounds
     left = translate(left, xoff=-bridge_width / 2 - left_bounds[2],
@@ -98,7 +99,7 @@ def build_frame(left_points, right_points, params=None):
             elif region.geom_type == "MultiPolygon":
                 meshes.extend(_extrude(part, layer_height, z_offset) for part in region.geoms if part.area > 1e-6)
 
-    reach = outer_offset + 0.2
+    reach = outer_offset + overlap
     bridge_bounds = (-bridge_width / 2 - reach, -settings["bridge_height"] / 2,
                      bridge_width / 2 + reach, settings["bridge_height"] / 2)
     bridge = box(*bridge_bounds).difference(left.buffer(settings["clearance"])).difference(
@@ -112,12 +113,12 @@ def build_frame(left_points, right_points, params=None):
     for contour, side in ((left, -1), (right, 1)):
         contour_bounds = contour.bounds
         temporal_x = contour_bounds[0] if side < 0 else contour_bounds[2]
-        tenon_center_x = temporal_x + side * (outer_offset + settings["tenon_length"] / 2 - 0.2)
+        tenon_center_x = temporal_x + side * (outer_offset + settings["tenon_length"] / 2 - overlap)
         tenon_center_y = (contour_bounds[1] + contour_bounds[3]) / 2
         tenon = trimesh.creation.box(extents=(settings["tenon_length"], settings["tenon_height"], settings["thickness"]))
         tenon.apply_translation((tenon_center_x, tenon_center_y, settings["thickness"] / 2))
         bore = trimesh.creation.cylinder(radius=settings["pin_diameter"] / 2,
-                                         height=settings["tenon_length"] + 0.4, sections=32)
+                                         height=settings["tenon_length"] + 2 * overlap, sections=32)
         rotation = trimesh.geometry.align_vectors([0, 0, 1], [1, 0, 0])
         bore.apply_transform(rotation)
         bore.apply_translation((tenon_center_x, tenon_center_y, settings["thickness"] / 2))
