@@ -16,7 +16,9 @@ All 28 implemented automated tests passed. The OptiFrame synthetic experiment an
 
 ## IVADO: distinguish four different measurements
 
-**Required target from the user: beat the current reported 94%.** The metric, evaluator, evaluation population and submission rules have not yet been confirmed. Treat 94% as a user-reported benchmark, not an independently checked leaderboard entry. Final adoption must exceed 94% on that same confirmed metric while respecting the 36–44% grant constraint. A committee AUC, hypothetical-reference score or changed test split cannot establish this.
+**Required target from the user: beat the current reported 94% leaderboard accuracy against the hidden reference.** The user confirmed the metric; the leaderboard entry and detailed evaluation protocol have not been independently checked. Final adoption must exceed 94% on that official accuracy metric while respecting the 36–44% grant constraint. A committee AUC, hypothetical-reference score or changed test split cannot establish this. The user can upload candidate files and return authorized aggregate feedback; no hidden labels are available.
+
+First upload candidate: `equialgo-participants/work/_local/strat1/candidate_predictions_V1.csv`. The parent revalidated its 4,000 ordered candidate IDs, binary decisions and 1,600 grants (40%). It is a neutralized logistic baseline, not a verified >94% submission. Its official accuracy and F1 are pending. Generated candidate files remain git-ignored; reproduce them with `work/strat1/neutralise.py`.
 
 1. **Committee prediction:** the label is what the historical committee decided. Five-fold AUC is approximately 0.957 for the logistic variants. This is AUC, not 95.7% accuracy. Selected regularization reused the tuning folds, so it is not independent model selection evidence.
 2. **Fairness-corrected allocation:** all five candidate files give exactly 1,600 grants among 4,000 candidates. That satisfies the known budget constraint; it does not validate merit or equity against the hidden reference.
