@@ -9,3 +9,6 @@ __pycache__/
 .venv/
 venv/
 .ipynb_checkpoints/
+
+# Generated, regenerable artefacts from the strategy work (extracted corpora, degraded images, datasets)
+_local/
