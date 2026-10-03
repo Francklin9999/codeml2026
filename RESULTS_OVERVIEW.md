@@ -6,13 +6,13 @@
 
 | Challenge | Implemented/tested components | Evidence | Missing evidence |
 |---|---|---|---|
-| NOVA | Claude's extraction starter was recovered; analysis contains draft answers | [Analysis](ANALYSE_CHALLENGES.md), [continuation](CONTINUATION.md) | No completed ledger/site, extractor validation, blind answer grading or live event trial |
+| NOVA | Extractor ran; parent verified source/index/attachment hashes and unique locator IDs; four audit tests | [Extraction audit](loto-quebec-nova-participants/work/strat1/report.md), [analysis](ANALYSE_CHALLENGES.md) | Eight untranscribed screenshots; no semantic locator/quote validation, completed ledger/site, blind answer grading or live event trial |
 | IVADO / EquiAlgo | V1–V5 counterfactual candidates, nine reference simulations, budget validator, scorer | [Model results](equialgo-participants/work/strat1/report_01.md), [simulation assumptions](equialgo-participants/work/shared/README.md) | Hidden reference labels, official accuracy/score, 25-refit stability study, completed registry and H6 |
 | DayOne | Provisional clinical schema and field/status evaluator; ten tests | [Audit report](dayone-participants/work/shared/report.md), [limits](dayone-participants/work/shared/README.md) | Reviewed page zones, specimen/phone-photo ground truth, OCR accuracy, multilingual review and offline workflow |
 | OptiFrame | Board generation, homography, classical rim measurement, synthetic suite and connected frame STL; twelve tests | [Metrology](optiframe-participants/work/strat2/report.md), [frame audit](optiframe-participants/work/strat9/report.md) | Physical print scale/lens accuracy, camera distortion, anatomical orientation, phone UI, slicer/printing/fit |
 | Propolys | Concept documents only | Existing `propolys-participants/strat1.md`–`strat20.md` | No completed interview, market comparison, demo evaluation, rehearsal or buyer validation |
 
-All 28 implemented automated tests passed. The OptiFrame synthetic experiment and EquiAlgo candidate generation are additional checks; passing those does not establish success for unimplemented strategies.
+The original 28 implemented automated tests passed; four new NOVA extraction-audit tests also pass. New subagent experiment batches are being audited separately before integration. The OptiFrame synthetic experiment and EquiAlgo candidate generation are additional checks; passing those does not establish success for unimplemented strategies.
 
 ## IVADO: distinguish four different measurements
 
