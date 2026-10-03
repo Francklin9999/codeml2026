@@ -2,3 +2,6 @@ numpy>=1.24
 opencv-contrib-python>=4.8
 reportlab>=4.0
 PyMuPDF>=1.24
+shapely>=2.1
+trimesh>=5.0
+manifold3d>=3.0

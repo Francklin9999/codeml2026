@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | IN PROGRESS — Codex subagent + parent audit, 2026-10-03; Python STL prototype tested, browser/slicer/physical tests NOT RUN |
 | **Priority** | P1 (Palier 3 is mandatory) |
 | **Effort** | 5–7 h |
 | **Depends on** | strategy 8 (canonical contours in mm); can start with two test ellipses 50 × 36 mm |
@@ -99,4 +99,4 @@ Strategy 8 (canonical contours), 2 (SVG), 10 (UI: sliders, preview, download), p
 
 | Date | Who | Shapes | Watertight | Slicer OK | Print fit | Notes |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| 2026-10-03 | Codex subagent + parent audit | Asymmetric fixtures and two real pipeline outputs from simulated photos | Yes; single body, positive volume, consistent winding, no degenerate faces | NOT RUN | NOT RUN | Six tests plus measured-contour-to-STL smoke run; see work/strat9/report.md. |
