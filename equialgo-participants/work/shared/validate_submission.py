@@ -38,8 +38,12 @@ def validate(path, candidates=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("prediction", type=Path)
+    parser.add_argument("--data-root", type=Path,
+                        help="explicit directory containing the supplied history and candidate CSV files")
     args = parser.parse_args()
     try:
+        if args.data_root is not None:
+            data.set_data_root(args.data_root)
         _, summary = validate(args.prediction)
     except (ValueError, OSError, pd.errors.ParserError) as error:
         parser.exit(1, f"INVALID: {error}\n")

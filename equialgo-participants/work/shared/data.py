@@ -28,6 +28,21 @@ DATA_DIR = ROOT / "data"
 HIST_CSV = DATA_DIR / "donnees_demandes.csv"
 CAND_CSV = DATA_DIR / "candidats_evaluation.csv"
 
+
+def set_data_root(data_root) -> None:
+    """Use an explicit directory containing the two supplied IVADO CSV files."""
+    global DATA_DIR, HIST_CSV, CAND_CSV
+    root = Path(data_root).resolve()
+    history_path = root / "donnees_demandes.csv"
+    candidates_path = root / "candidats_evaluation.csv"
+    missing = [str(path) for path in (history_path, candidates_path) if not path.is_file()]
+    if missing:
+        raise FileNotFoundError("data root is missing: " + ", ".join(missing))
+    DATA_DIR, HIST_CSV, CAND_CSV = root, history_path, candidates_path
+    _load_history.cache_clear()
+    _load_candidates.cache_clear()
+    _categories.cache_clear()
+
 # --------------------------------------------------------------------------- constants
 REMOTE = ["Bas-Saint-Laurent", "Cote-Nord", "Gaspesie-Iles-de-la-Madeleine"]
 CENTRAL = ["Montreal", "Capitale-Nationale"]

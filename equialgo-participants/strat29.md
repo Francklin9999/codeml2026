@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED · **Priority** P1 · **Effort** 4–6 h · **Depends on** committee history, region labels, V1 baseline |
+| **Status** | IN PROGRESS (pairwise fit; official evaluation pending) · **Priority** P1 · **Effort** 4–6 h · **Depends on** committee history, region labels, V1 baseline |
 | **Rubric** | Hidden-reference accuracy; global 1,600-grant budget |
 | **Work folder** | work/strat29/ |
 
@@ -36,4 +36,4 @@ Compare 23, 34 and V1 independently; no post-hoc blend without a separate test.
 
 ## 8. Results log
 
-NOT RUN. No pairwise model or leaderboard score exists.
+The preregistered pairwise implementation has been run; committee-label diagnostics, candidate hash/quota validation and limitations are in [`work/strat29/report.md`](work/strat29/report.md). No authorized upload or hidden-reference score exists, so the official >94% criterion remains NOT RUN.

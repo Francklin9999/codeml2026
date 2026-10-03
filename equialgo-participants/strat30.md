@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED · **Priority** P2 · **Effort** 3–4 h · **Depends on** fixed candidate table |
+| **Status** | IN PROGRESS (three forms fitted; official evaluation pending) · **Priority** P2 · **Effort** 3–4 h · **Depends on** fixed candidate table |
 | **Rubric** | Hidden-reference accuracy; exact top-k budget |
 | **Work folder** | work/strat30/ |
 
@@ -36,4 +36,4 @@ Compare within 22 and 23; avoid multiplying feature-search degrees of freedom.
 
 ## 8. Results log
 
-NOT RUN. No functional-form comparison or official score exists.
+The three preregistered income forms have been run; committee-label diagnostics, candidate hashes/quota validation and limitations are in [`work/strat30/report.md`](work/strat30/report.md). No authorized upload or hidden-reference score exists, so the official >94% criterion remains NOT RUN.

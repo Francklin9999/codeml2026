@@ -71,6 +71,11 @@ class ScoreTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "only 0 or 1"):
                 validate(path, candidates)
 
+    def test_explicit_data_root_rejects_missing_inputs(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaisesRegex(FileNotFoundError, "missing"):
+                data.set_data_root(folder)
+
 
 if __name__ == "__main__":
     unittest.main()

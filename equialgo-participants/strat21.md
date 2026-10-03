@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED · **Priority** P1 · **Effort** 6 h · **Depends on** candidate data, V1 baseline CSV |
+| **Status** | IN PROGRESS (sensitivity fits; EM and official evaluation pending) · **Priority** P1 · **Effort** 6 h · **Depends on** candidate data, V1 baseline CSV |
 | **Rubric** | Hidden-reference accuracy under authorized leaderboard scoring |
 | **Work folder** | work/strat21/ |
 
@@ -36,4 +36,4 @@ Compare strategies 26 and 27; keep a dated parameter registry.
 
 ## 8. Results log
 
-NOT RUN. No corrected fit or hidden-reference score is available.
+Fixed-rate likelihood sensitivity was run for three preregistered cases; this is not the proposed EM procedure and estimates no flip rates. Committee diagnostics, candidate hashes and the identifiability limitation are in [`work/strat21/report.md`](work/strat21/report.md). No authorized upload or hidden-reference score exists; the official >94% criterion remains NOT RUN.
