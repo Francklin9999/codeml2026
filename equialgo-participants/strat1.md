@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED *(set to IN PROGRESS / DONE / ABANDONED with your name and the date)* |
+| **Status** | IN PROGRESS — Codex, 2026-10-03 |
 | **Priority** | P1 (main bet for the automatic 35 points) |
 | **Effort** | 2–3 h |
 | **Depends on** | `work/shared/` from strategy 2 for evaluation (can start without it) |
@@ -141,4 +141,4 @@ Strategy 2 and 3 (evaluation and choice), 7 (partial neutralisation sweep = Pare
 
 | Date | Who | Variant | Simulator total /35 (per H) | Conditional gap | Stability | Verdict |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| 2026-10-03 | Codex subagent + parent audit | V1–V5 | See work/strat1/report_01.md; simulated only | Mean absolute decile gaps 0.048 / 0.039 / 0.048 / 0.018 / 0.047 | Pairwise Jaccard means 0.982 / 0.979 / 0.982 / 0.917 / 0.982 (5 refits) | All five candidate CSVs validated at exactly 1,600 grants; V4 misses 0.95 stability target; no production selection |
