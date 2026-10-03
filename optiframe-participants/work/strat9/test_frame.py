@@ -9,7 +9,7 @@ import numpy as np
 import trimesh
 from shapely.geometry import Point, Polygon
 
-from frame import build_frame, validate_mesh
+from frame import build_frame, generate, validate_mesh
 
 
 def oval(width, height, samples=96):
@@ -33,6 +33,27 @@ class FrameTests(unittest.TestCase):
         mesh = build_frame(rounded_rect(48, 32), oval(51, 37),
                            {"bridge_width": 22, "clearance": 0.3, "rim_width": 4.5})
         self.assertTrue(validate_mesh(mesh)["single_body"])
+
+    def test_default_frame_dimensions_and_stl_metadata_remain_stable(self):
+        left_points = oval(50, 36)
+        right_points = rounded_rect(52, 34)
+        mesh = build_frame(left_points, right_points)
+        self.assertAlmostEqual(float(mesh.extents[0]), 135.0, places=5)
+        self.assertAlmostEqual(float(mesh.extents[1]), 43.397945404052734, places=5)
+        self.assertAlmostEqual(float(mesh.extents[2]), 4.0, places=5)
+        self.assertAlmostEqual(float(mesh.volume), 4990.323357647437, places=4)
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            left = directory / "left.json"
+            right = directory / "right.json"
+            output = directory / "frame.stl"
+            left.write_text(json.dumps({"contour_mm": left_points.tolist()}), encoding="utf-8")
+            right.write_text(json.dumps({"contour_mm": right_points.tolist()}), encoding="utf-8")
+            metadata = generate(left, right, output)
+            reloaded = trimesh.load(output, force="mesh")
+        self.assertFalse(metadata["physical_fit_validated"])
+        self.assertAlmostEqual(float(reloaded.volume), 4990.323357647437, places=4)
+        self.assertTrue(all(validate_mesh(reloaded).values()))
 
     def test_rejects_self_intersecting_contour(self):
         bowtie = [[0, 0], [10, 10], [0, 10], [10, 0]]
