@@ -1,0 +1,11 @@
+# Confidential challenge data: the partners' rules forbid publishing it. Never commit.
+jadco-participants/
+l2c-participants/
+corroborai-participants/
+
+# Python / Jupyter
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
