@@ -60,3 +60,9 @@ The parent checked all 100 new proposal files for eight numbered sections and ex
 5. Propolys and other strategies: still unimplemented unless individually logged otherwise. The original hundred-strategy campaign is **not complete**.
 
 Keep source datasets untouched, report simulations as simulations, and update each strategy's status/results log only after its stated tests run. The original confidentiality exclusions in `.gitignore` remain in force.
+
+## Published experiment checkpoint
+
+The parent audited, corrected and integrated the three Luna test branches into `codex/strategies-21-40`: `codex/test-ivado-21-40`, `codex/test-evidence-21-40` and `codex/test-vision-21-40`. The integration now has 78 passing focused tests and a 20-row experiment matrix for every challenge. This is not a claim that all 100 new strategies passed their full experiments. Read `RESULTS_OVERVIEW.md` for measured scope and per-challenge reproduction commands.
+
+Nine new IVADO CSVs can be regenerated with the published runners; local copies are under `work/_local/strat21`, `strat28`, `strat29` and `strat30`. The user confirmed V1 has not been uploaded yet, so official hidden-reference accuracy remains unknown. NOVA's extractor and source integrity audit ran successfully; all eight supplied screenshots now have manually verified transcriptions. OptiFrame's scale-invariance failure was fixed without changing the default geometry. DayOne's incomplete automatic identity evidence now blocks an unverified split rather than asserting patient separation.

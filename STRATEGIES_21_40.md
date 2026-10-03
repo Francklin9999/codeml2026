@@ -4,11 +4,11 @@ Twenty new proposals for each of the five challenge series extend Claude's origi
 
 | Challenge | New proposals | Current evidence |
 |---|---|---|
-| NOVA | [Strategies 21–40](loto-quebec-nova-participants/STRATEGIES_21_40.md) | Extraction starter; no validated ledger/site or answer benchmark |
-| IVADO / EquiAlgo | [Strategies 21–40](equialgo-participants/STRATEGIES_21_40.md) | Five validated candidate files; official hidden-reference accuracy pending |
-| DayOne | [Strategies 21–40](dayone-participants/STRATEGIES_21_40.md) | Schema/evaluator tests; no reviewed OCR ground truth |
-| OptiFrame | [Strategies 21–40](optiframe-participants/STRATEGIES_21_40.md) | Synthetic metrology and valid frame mesh; physical accuracy/fit untested |
-| Propolys | [Strategies 21–40](propolys-participants/STRATEGIES_21_40.md) | Concepts only; no buyer interviews, validated demos or pilots |
+| NOVA | [Strategies 21–40](loto-quebec-nova-participants/STRATEGIES_21_40.md) | Audited extraction/transcriptions and bounded prototypes; no validated ledger/site or answer benchmark |
+| IVADO / EquiAlgo | [Strategies 21–40](equialgo-participants/STRATEGIES_21_40.md) | Five initial plus nine new validated candidate files; official hidden-reference accuracy pending |
+| DayOne | [Strategies 21–40](dayone-participants/STRATEGIES_21_40.md) | Schema/evaluator and grouping-audit tests; no reviewed OCR ground truth or verified split |
+| OptiFrame | [Strategies 21–40](optiframe-participants/STRATEGIES_21_40.md) | Synthetic metrology, mesh and geometry checks; physical accuracy/fit untested |
+| Propolys | [Strategies 21–40](propolys-participants/STRATEGIES_21_40.md) | Bounded synthetic evidence checks; no buyer interviews, validated AI demos or pilots |
 
 ## Immediate decision loop
 
@@ -18,4 +18,4 @@ Twenty new proposals for each of the five challenge series extend Claude's origi
 4. NOVA: validate evidence and answers before adding presentation complexity.
 5. Propolys: test problem ownership and workflow demand using synthetic demonstrations; security guidance is context, not proof of market demand.
 
-Three lower-cost subagents drafted isolated challenge batches. Parent review requested changes for overlapping mechanisms, mislabeled metrics, reused holdouts, unsupported evidence and unclear predecessor distinctions. All new strategy results remain **NOT RUN**. The original hundred-strategy implementation campaign is still incomplete.
+Three lower-cost subagents drafted isolated challenge batches. Parent review requested changes for overlapping mechanisms, mislabeled metrics, reused holdouts, unsupported evidence and unclear predecessor distinctions. Subsequent Luna experiment batches now have per-challenge 20-row test matrices and durable tests, indexed in [RESULTS_OVERVIEW.md](RESULTS_OVERVIEW.md). Partial prototypes and candidate generation have run; full adoption experiments remain unverified. The original hundred-strategy implementation campaign is still incomplete.

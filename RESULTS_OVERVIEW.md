@@ -12,7 +12,19 @@
 | OptiFrame | Board generation, homography, classical rim measurement, synthetic suite and connected frame STL; twelve tests | [Metrology](optiframe-participants/work/strat2/report.md), [frame audit](optiframe-participants/work/strat9/report.md) | Physical print scale/lens accuracy, camera distortion, anatomical orientation, phone UI, slicer/printing/fit |
 | Propolys | Concept documents only | Existing `propolys-participants/strat1.md`–`strat20.md` | No completed interview, market comparison, demo evaluation, rehearsal or buyer validation |
 
-The original 28 implemented automated tests passed; four new NOVA extraction-audit tests also pass. New subagent experiment batches are being audited separately before integration. The OptiFrame synthetic experiment and EquiAlgo candidate generation are additional checks; passing those does not establish success for unimplemented strategies.
+The integrated focused suites now contain **78 passing tests**: 19 IVADO, 31 DayOne/OptiFrame, 24 bounded evidence-prototype tests and four NOVA extraction-audit tests. This does not mean all strategies have been implemented or their full adoption experiments passed. The OptiFrame synthetic experiment and EquiAlgo candidate generation are additional checks; passing those does not establish success for unimplemented strategies.
+
+## New bounded experiments and parent audit
+
+| Challenge | New measured result | Reproduction and limits |
+|---|---|---|
+| IVADO | Nine additional validated candidates from fixed-noise sensitivity, Student-t links, within-region pairwise ranking and income functional forms; all 4,000 rows / 1,600 grants | [Commands and audit](equialgo-participants/work/EXPERIMENTS.md), [20-row matrix](equialgo-participants/work/STRATEGY_TEST_MATRIX_21_40.md). Historical committee diagnostics only; no official upload. The df=10 t-link duplicates V1's decisions. |
+| OptiFrame | Development-selected simplification: four radial-contour holdouts have max Hausdorff 0.04824 mm and 83.85–84.38% vertex reduction. Fixed scaling inconsistency: max normalized bounds drift 3.82e-6 mm across three scales | [Commands and audit](optiframe-participants/work/EXPERIMENTS.md), [matrix](optiframe-participants/work/STRATEGY_TEST_MATRIX_21_40.md). Simplification-only; total offset/STL error, full eye orientation, physical accuracy and fit unvalidated. |
+| DayOne | Confirmed 124 PNGs, 80 unique hashes and 44 copies. Automatic group fingerprints link only 38/80 pages; no verified split is emitted | [Matrix](dayone-participants/work/STRATEGY_TEST_MATRIX_21_40.md). No reviewed identity mapping, perceptual duplicate review, ground truth or OCR accuracy. |
+| NOVA | 64 sources match ZIP/index hashes; 1,045 unique locators; eight manually viewed/transcribed screenshots. Bundle, timestamp and alias prototypes have synthetic tests | [Extraction report](loto-quebec-nova-participants/work/strat1/report.md), [prototype scope](loto-quebec-nova-participants/work/EXPERIMENTS.md), [matrix](loto-quebec-nova-participants/work/STRATEGY_TEST_MATRIX_21_40.md). No validated factual ledger, final memory or event trial. |
+| Propolys | Synthetic restore-record and custody-manifest checks, including path/type/chronology/hash controls | [Matrix](propolys-participants/work/STRATEGY_TEST_MATRIX_21_40.md). Hashes establish consistency, not authenticity; no AI workflow, buyer validation, restoration or legal/security certification. |
+
+All three experimental branches were reviewed and integrated into `codex/strategies-21-40`. Parent fixes include fractional-label truncation, double income scaling, the wrong pair-count report, unsupported patient grouping, fixed-size frame overlap margins, unsafe HTML reads and unresolved alias collisions. Regenerable candidate CSVs are available locally under `equialgo-participants/work/_local/strat21`, `strat28`, `strat29` and `strat30`; collaborators reproduce them using the published runners rather than downloading committed generated data.
 
 ## IVADO: distinguish four different measurements
 
