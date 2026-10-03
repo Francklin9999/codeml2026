@@ -2,7 +2,7 @@
 
 This implements the local foundations of strategies 1, 2 and 3: printable ChArUco board, seeded synthetic photos, metric rectification, classical rim segmentation, sub-pixel outer-edge refinement, A/B/perimeter measurement, explicit optional height correction and a 1:1 SVG export.
 
-It is a Python command-line prototype. The mobile application, frame/STL generation and real-lens validation remain unfinished.
+It is a Python command-line prototype. Strategy 9 now generates a connected grooved frame STL from two measured contours, with bridge, tenons and geometry validation. The mobile application, canonical anatomical orientation and real-lens/printed-frame validation remain unfinished.
 
 ## Run from the repository root
 
@@ -12,6 +12,8 @@ Python 3.10+ with the packages in `optiframe-participants/work/requirements.txt`
 .\.venv\Scripts\python.exe optiframe-participants\work\strat1\make_board.py
 .\.venv\Scripts\python.exe optiframe-participants\work\strat2\eval_measure.py --generate
 .\.venv\Scripts\python.exe -m unittest discover -s optiframe-participants\work -p test_pipeline.py -v
+.\.venv\Scripts\python.exe optiframe-participants\work\strat9\frame.py optiframe-participants\work\_local\evaluation\oval_1\measurement.json optiframe-participants\work\_local\evaluation\rounded_rectangle_1\measurement.json optiframe-participants\work\_local\frame_demo.stl
+.\.venv\Scripts\python.exe -m unittest discover -s optiframe-participants\work\strat9 -p test_frame.py -v
 ```
 
 Generated outputs are ignored by Git under `work/_local/`:
@@ -41,4 +43,4 @@ The software estimates the outer half-contrast boundary, then smooths it. It rep
 
 Height correction requires a supplied camera distance, effective rim height and camera nadir in the board plane. The simple similarity correction is intended for a fronto-parallel camera; it is not a calibrated pose-based correction for oblique captures. Do not guess these inputs for real lenses.
 
-Next implementation: validate the rig with physical lenses, add canonical left/right contour orientation, implement strategy 9's connected grooved frame and STL validation, then integrate the pipeline into strategy 10's phone UI. See `strat1/rig_instructions.md` for the unrun physical protocol.
+Next implementation: validate the rig with physical lenses, add canonical left/right contour orientation, validate the generated frame in a slicer and print, then integrate the pipeline into strategy 10's phone UI. See `strat1/rig_instructions.md` for the unrun physical protocol and `strat9/report.md` for the audited mesh checks.
