@@ -83,7 +83,7 @@ Generate the brief from the ledger (strategy 1) with a Jinja2 template; print CS
 | T2 | Theme checklist (`check_brief.py`) | the 5 themes present, each with ≥ 1 source |
 | T3 | Condition linkage | each of conditions 1–3 has ≥ 1 action with owner and due (or "à confirmer") |
 | T4 | Origin audit | every `origin: commitment` has evidence where someone commits; all others are `recommendation` |
-| T5 | Cold read | a newcomer reads the brief for 2 min and answers "what blocks go-live?" and "how much remains authorised but not invoiced?" (18,000 $) correctly |
+| T5 | Cold read | a newcomer reads the brief for 2 min and answers "what blocks go-live?" and "how much remains authorised but not invoiced?" correctly: 18,000 $ if every invoiced line counts (204k − 186k), **36,000 $ once the unapproved 18,000 $ CR-04 line is excluded** (204k − 168k), which is the correct treatment; the brief must make this distinction visible |
 | T6 | Post-event regeneration | after a strategy 5 event, the brief regenerates and still fits one page |
 
 ## 6. Risks
