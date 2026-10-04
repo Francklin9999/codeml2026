@@ -1,0 +1,144 @@
+{
+  "Q01": {
+    "question": "Quelle est la date de mise en production actuellement approuvée, et avec quelle réserve?",
+    "answer": "La date actuellement approuvée est le 22 octobre 2026. Il s'agit d'une cible officielle, mais pas d'un go automatique: la mise en production demeure conditionnelle à la validation sécurité de SEC-210, à la fermeture d'ACC-303 et à l'approbation du runbook incluant le rollback.",
+    "nuance": [
+      "Le 15 octobre est l'ancienne cible et apparaît encore dans des plans périmés.",
+      "Le 22 octobre ne doit pas être communiqué comme garanti tant que les trois conditions ne sont pas remplies."
+    ],
+    "fact_ids": ["F-GOLIVE-APPROVED-22", "F-GOLIVE-CONDITIONAL", "F-GOLIVE-THREE-CONDITIONS", "F-PLAN-V3-STALE"],
+    "sources": [
+      {"file": "02_Reunions/M04_Transcript_Comite_direction_10sept.txt", "locator": "15:22-15:27", "label": "Décision du comité et réserve"},
+      {"file": "02_Reunions/M06_Transcript_Comite_26sept.txt", "locator": "10:09-10:15", "label": "Trois conditions explicites"},
+      {"file": "01_Courriels/E09_Rappel_mise_en_production.eml", "locator": "corps, paragraphes 2-4", "label": "Rappel formel de Nicolas"}
+    ]
+  },
+  "Q02": {
+    "question": "Pourquoi la date a-t-elle changé, et quel est l'état actuel de la cause initiale?",
+    "answer": "La date a été déplacée parce que le connecteur interne avait coûté plus de temps que prévu et était devenu le chemin critique; la semaine additionnelle devait permettre la stabilisation, la reprise des tests intégrés et la correction des anomalies bloquantes. Cette cause initiale est maintenant résolue: après le correctif, 120 recherches sur 120 ont réussi, Marc Gervais a validé l'intégration et fermé INT-101 le 17 septembre.",
+    "nuance": [
+      "La résolution du connecteur ne rend pas le go-live inconditionnel: les trois conditions décidées ensuite restent ouvertes.",
+      "Le registre des risques daté du 29 septembre affiche encore R-01 ouvert, mais son information est explicitement un suivi au 9 septembre et est donc périmée."
+    ],
+    "fact_ids": ["F-GOLIVE-PROPOSAL-22", "F-INT-CAUSE", "F-INT-CLOSED", "F-RISK-R01-STALE", "F-RISK-R01-INFO-DATE"],
+    "sources": [
+      {"file": "01_Courriels/E05_Retard_integration.eml", "locator": "corps, paragraphes 2-4", "label": "Cause et proposition fournisseur"},
+      {"file": "03_Tickets/INT-101.txt", "locator": "commentaires du 17 sept 14:23 et 16:10", "label": "Livraison, validation et fermeture"},
+      {"file": "04_Documents_projet/Registre_Risques_29sept.xlsx", "locator": "Risques!F2 et H2", "label": "Risque affiché ouvert, suivi au 9 septembre"}
+    ]
+  },
+  "Q03": {
+    "question": "Qui a approuvé le changement et quand? Distinguez proposition et approbation.",
+    "answer": "Boréal, par Julien Moreau, a seulement proposé le 22 octobre le 8 septembre. Le comité de direction a approuvé le changement le 10 septembre 2026: Élodie Caron a formulé la décision, a demandé les oppositions, puis a déclaré le 22 approuvé et officiel en présence des responsables du projet.",
+    "nuance": [
+      "Le courriel de Boréal dit expressément qu'il s'agit d'une proposition et renvoie la décision à la gouvernance.",
+      "L'absence d'opposition puis la déclaration « approuvé » à 15:25 constituent la décision; ce n'est pas l'avis préalable du fournisseur."
+    ],
+    "fact_ids": ["F-GOLIVE-PROPOSAL-22", "F-GOLIVE-APPROVED-22"],
+    "sources": [
+      {"file": "01_Courriels/E05_Retard_integration.eml", "locator": "corps, paragraphes 3-4", "label": "Proposition du 8 septembre"},
+      {"file": "02_Reunions/M04_Transcript_Comite_direction_10sept.txt", "locator": "15:22-15:25", "label": "Approbation du 10 septembre"}
+    ]
+  },
+  "Q04": {
+    "question": "Qui est responsable du projet et depuis quand?",
+    "answer": "Nicolas Perron est chargé de projet NOVA depuis le 16 septembre 2026. Élodie Caron occupait ce rôle depuis le démarrage du 7 juillet et est restée disponible quelques jours pour la transition.",
+    "nuance": [
+      "Les anciens documents qui nomment Élodie demeurent historiquement exacts pour leur période, mais ne reflètent plus la responsabilité courante.",
+      "Nicolas reprend aussi le comité du vendredi et les décisions et suivis futurs doivent lui être adressés."
+    ],
+    "fact_ids": ["F-PM-INITIAL", "F-PM-NICOLAS"],
+    "sources": [
+      {"file": "01_Courriels/E06_Transition_charge_projet.eml", "locator": "corps, paragraphes 2-3", "label": "Transition officielle"},
+      {"file": "07_Conversations_Teams/Teams_16sept_Transition.txt", "locator": "08:45-08:47", "label": "Confirmation opérationnelle"},
+      {"file": "04_Documents_projet/Note_transition_Elodie_16sept.txt", "locator": "premier paragraphe", "label": "Note de transition"}
+    ]
+  },
+  "Q05": {
+    "question": "Quel est le montant contractuel autorisé et comment se calcule-t-il?",
+    "answer": "Le montant autorisé pour NOVA est de 204 000 $ CAD hors taxes: 180 000 $ au contrat initial plus 24 000 $ pour CR-01, approuvée le 14 août. Le brouillon CR-04 de 18 000 $ n'est pas autorisé et ne s'ajoute donc pas à ce total.",
+    "nuance": [
+      "Autorisé ne veut pas dire facturé ni payé: 186 000 $ ont été facturés au total, mais seulement 168 000 $ sont adossés à une autorisation, et 132 000 $ sont payés.",
+      "INV-778 de 41 000 $ concerne ORION, pas NOVA, et doit être exclue."
+    ],
+    "fact_ids": ["F-CONTRACT-BASE", "F-CR01-APPROVED", "F-BUDGET-AUTHORIZED-TOTAL", "F-CR04-DRAFT", "F-FINANCE-TOTALS", "F-ORION-EXCLUDED"],
+    "sources": [
+      {"file": "05_Contrats_et_finances/CONTRAT_Boreal_NOVA.pdf", "locator": "page 1, Valeur contractuelle", "label": "Contrat initial 180 000 $"},
+      {"file": "05_Contrats_et_finances/CR-01_Rapports_avances_APPROUVE.pdf", "locator": "page 1, Impact financier et Décision", "label": "CR-01 approuvée 24 000 $"},
+      {"file": "05_Contrats_et_finances/CR-04_Optimisation_mobile_BROUILLON.pdf", "locator": "page 1, Estimation et Statut", "label": "CR-04 non autorisée"}
+    ]
+  },
+  "Q06": {
+    "question": "Quel problème présente INV-003? Précisez le montant concerné et le traitement à prévoir.",
+    "answer": "INV-003 totalise 54 000 $ et est en validation. Elle contient 36 000 $ pour le jalon 3 de la phase 1 et une ligne problématique de 18 000 $ pour CR-04, alors que cette demande est un brouillon non approuvé et a été reportée en phase 2. Il faut retenir les 18 000 $, demander une facture corrigée ou une note de crédit, et traiter séparément les 36 000 $ selon la validation normale du jalon.",
+    "nuance": [
+      "Le corpus ne documente pas encore si Finance choisira une facture corrigée ou une note de crédit; ce mécanisme reste à confirmer.",
+      "Une éventuelle approbation future de CR-04 ne régulariserait pas automatiquement des travaux exécutés ou facturés auparavant, puisque le contrat exige une approbation avant exécution et facturation."
+    ],
+    "fact_ids": ["F-INV003-TOTAL", "F-INV003-BASE-LINE", "F-INV003-UNAUTHORIZED-LINE", "F-INV003-HOLD-CR04", "F-CR04-DEFERRED"],
+    "sources": [
+      {"file": "05_Contrats_et_finances/INV-003.pdf", "locator": "page 1, Facturation", "label": "Deux lignes et total"},
+      {"file": "01_Courriels/E07_Facture_003_question.eml", "locator": "corps, paragraphes 2-3", "label": "Question de Finance sur l'approbation absente"},
+      {"file": "06_Architecture_et_decisions/Decision_Portee_Phase2.md", "locator": "paragraphe final", "label": "CR-04 reportée et non autorisée"}
+    ]
+  },
+  "Q07": {
+    "question": "Où les données de production doivent-elles être hébergées? Quelle preuve confirme la mise en œuvre?",
+    "answer": "Les données de production doivent être hébergées dans Canada Central. ADR-007 formalise la décision du 23 juillet; Boréal a ensuite déclaré la migration terminée le 26 août et le comité du 27 août consigne qu'elle a été vérifiée par l'équipe architecture. Le schéma v2 montre également Canada Central.",
+    "nuance": [
+      "Le schéma v1 indiquant East US est explicitement remplacé sur ce point.",
+      "Le courriel de Boréal et son PDF joint ne sont pas deux confirmations indépendantes; la vérification du comité par l'équipe architecture apporte la preuve distincte."
+    ],
+    "fact_ids": ["F-HOSTING-DECISION", "F-HOSTING-DELIVERED", "F-HOSTING-VERIFIED"],
+    "sources": [
+      {"file": "06_Architecture_et_decisions/ADR-007_Localisation_donnees.md", "locator": "section Décision", "label": "Décision Canada Central"},
+      {"file": "01_Courriels/E03_Confirmation_Canada_Central.eml", "locator": "corps et pièce jointe Architecture_NOVA_v2.pdf", "label": "Livraison du fournisseur"},
+      {"file": "02_Reunions/M03_CR_Comite_27aout.txt", "locator": "Résumé de gestion, puce 1", "label": "Vérification indépendante de l'équipe architecture"}
+    ]
+  },
+  "Q08": {
+    "question": "La sécurité est-elle acceptée? Distinguez livraison et validation.",
+    "answer": "Non. Boréal a livré le correctif SEC-210 dans l'environnement de validation le 19 septembre et dit que ses tests passent, mais Sophie Lambert n'a pas encore donné l'acceptation sécurité. Elle exige le re-test de son équipe et maintient le ticket EN VALIDATION au 26 septembre.",
+    "nuance": [
+      "Le défaut initial n'était pas une absence totale de ligne d'export: l'événement EXPORT_CSV existait, mais sans objet ni résultat.",
+      "Le rapport de statut du 21 septembre affiche la sécurité en vert, mais il reconnaît avoir précédé la vérification détaillée; il ne prévaut pas sur le ticket et la responsable sécurité.",
+      "La date exacte du re-test n'est pas documentée."
+    ],
+    "fact_ids": ["F-SEC210-DEFECT", "F-SEC210-DELIVERED", "F-SEC210-NOT-ACCEPTED", "F-STATUS-REPORT-STALE"],
+    "sources": [
+      {"file": "03_Tickets/SEC-210.txt", "locator": "description, Observé, commentaires du 19 sept 10:22/14:05 et 26 sept 15:40", "label": "Défaut, livraison et absence de validation"},
+      {"file": "07_Conversations_Teams/Teams_19sept_Securite.txt", "locator": "10:24-10:34", "label": "« déployé » n'est pas « accepté »"},
+      {"file": "04_Documents_projet/Rapport_Statut_21sept.pdf", "locator": "page 1, Sécurité et Commentaire de gestion", "label": "Rapport dérivé périmé"}
+    ]
+  },
+  "Q09": {
+    "question": "L'accessibilité est-elle complétée? Identifiez ce qui reste à corriger.",
+    "answer": "Non. ACC-301 (libellés) et ACC-302 (contraste) sont corrigés, validés par Mélissa et fermés. ACC-303 reste ouvert et bloquant: dans la modale, la liste des éléments focusables est incomplète, le focus clavier reste entre Nom et Commentaire et n'atteint jamais le bouton Enregistrer. Boréal a seulement annoncé un correctif pour la prochaine build, sans date ni validation.",
+    "nuance": [
+      "La capture du 17 septembre montre le défaut, tandis que le commentaire de Mélissa du 26 septembre établit son statut courant.",
+      "Le rapport de statut vert et le brouillon de communication d'Alex sont contredits par le ticket propriétaire."
+    ],
+    "fact_ids": ["F-ACC301-CLOSED", "F-ACC302-CLOSED", "F-ACC303-OPEN", "F-ACC303-SCREENSHOT", "F-STATUS-REPORT-STALE"],
+    "sources": [
+      {"file": "03_Tickets/ACC-301.txt", "locator": "commentaire du 15 août", "label": "ACC-301 validé et fermé"},
+      {"file": "03_Tickets/ACC-302.txt", "locator": "commentaire du 20 août", "label": "ACC-302 re-testé et fermé"},
+      {"file": "03_Tickets/ACC-303.txt", "locator": "commentaires du 17 sept 13:14, 18 sept 09:50 et 26 sept 11:03", "label": "Défaut restant et statut ouvert"},
+      {"file": "03_Tickets/ACC-303_focus.png", "locator": "capture, annotation rouge sous Enregistrer", "label": "Preuve visuelle du focus inaccessible"}
+    ]
+  },
+  "Q10": {
+    "question": "Quelles sont les trois conditions de go-live? Précisez les travaux manquants du runbook à partir de sa capture.",
+    "answer": "Les trois conditions sont: 1) validation sécurité de SEC-210 par Sophie; 2) fermeture d'ACC-303 après livraison et re-test du correctif; 3) approbation par Olivier du runbook incluant le rollback. Dans la capture du 25 septembre, l'étape 4 « Procédure de retour arrière » est TODO et l'étape 5 « Validation fonctionnelle post-déploiement » est « À compléter ». La version finale n'était toujours pas reçue le 29 septembre.",
+    "nuance": [
+      "La livraison fournisseur ne suffit pas: chaque condition nécessite la validation du responsable compétent.",
+      "Le runbook doit être exécutable par une autre personne sans appeler l'équipe projet.",
+      "Aucune échéance exacte de livraison du runbook final n'est documentée; Olivier demandait seulement de l'avoir quelques jours avant le go-live."
+    ],
+    "fact_ids": ["F-GOLIVE-THREE-CONDITIONS", "F-SEC210-NOT-ACCEPTED", "F-ACC303-OPEN", "F-OPS601-OPEN", "F-RUNBOOK-MISSING", "F-RUNBOOK-STEP5", "F-RUNBOOK-OWNER-GO"],
+    "sources": [
+      {"file": "02_Reunions/M06_Transcript_Comite_26sept.txt", "locator": "10:02-10:15", "label": "Trois conditions et responsables"},
+      {"file": "03_Tickets/OPS-601_runbook.png", "locator": "capture, étapes 4 et 5", "label": "Travaux manquants du runbook"},
+      {"file": "03_Tickets/OPS-601.txt", "locator": "commentaires du 25, 26 et 29 sept", "label": "Exigence d'exécutabilité et version finale absente"}
+    ]
+  }
+}

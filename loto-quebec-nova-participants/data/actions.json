@@ -1,0 +1,160 @@
+[
+  {
+    "id": "A-SEC-RETEST",
+    "action": "Exécuter le re-test de SEC-210 et consigner la décision d'acceptation sécurité.",
+    "linked_condition": 1,
+    "owner": "Sophie Lambert",
+    "owner_status": "confirmed",
+    "due": "à confirmer",
+    "due_status": "unknown",
+    "origin": "commitment",
+    "status": "open",
+    "evidence": [{"file": "03_Tickets/SEC-210.txt", "locator": "commentaire du 26 sept 15:40"}],
+    "fact_ids": ["F-SEC210-NOT-ACCEPTED", "F-GOLIVE-THREE-CONDITIONS"]
+  },
+  {
+    "id": "A-ACC303-FIX",
+    "action": "Livrer le correctif d'ACC-303 dans une prochaine build.",
+    "linked_condition": 2,
+    "owner": "Boréal Numérique, suivi Julien Moreau",
+    "owner_status": "confirmed",
+    "due": "prochaine build; date à confirmer",
+    "due_status": "unknown",
+    "origin": "commitment",
+    "status": "open",
+    "evidence": [{"file": "02_Reunions/M06_Transcript_Comite_26sept.txt", "locator": "10:12"}],
+    "fact_ids": ["F-ACC303-OPEN", "F-GOLIVE-THREE-CONDITIONS"]
+  },
+  {
+    "id": "A-ACC303-RETEST",
+    "action": "Re-tester ACC-303 au clavier sur Chrome et Edge et fermer le ticket seulement si Enregistrer est atteignable.",
+    "linked_condition": 2,
+    "owner": "Mélissa Gagnon",
+    "owner_status": "proposed",
+    "due": "à confirmer après livraison de la build",
+    "due_status": "unknown",
+    "origin": "recommendation",
+    "status": "blocked_by_delivery",
+    "evidence": [{"file": "03_Tickets/ACC-303.txt", "locator": "commentaires du 17 sept 13:14 et 26 sept 11:03"}],
+    "fact_ids": ["F-ACC303-OPEN", "F-ACC303-SCREENSHOT"]
+  },
+  {
+    "id": "A-RUNBOOK-FINAL",
+    "action": "Fournir un runbook final avec une procédure de retour arrière exécutable et l'étape de validation fonctionnelle post-déploiement complétée.",
+    "linked_condition": 3,
+    "owner": "Boréal Numérique, équipe opérations relancée par Julien Moreau",
+    "owner_status": "confirmed",
+    "due": "à confirmer; quelques jours avant le 22 octobre souhaités par Olivier",
+    "due_status": "unknown",
+    "origin": "commitment",
+    "status": "open",
+    "evidence": [
+      {"file": "02_Reunions/M06_Transcript_Comite_26sept.txt", "locator": "10:07-10:12"},
+      {"file": "03_Tickets/OPS-601_runbook.png", "locator": "étapes 4 et 5"}
+    ],
+    "fact_ids": ["F-OPS601-OPEN", "F-RUNBOOK-MISSING", "F-RUNBOOK-STEP5"]
+  },
+  {
+    "id": "A-RUNBOOK-APPROVE",
+    "action": "Vérifier le runbook final et donner ou refuser le go exploitation.",
+    "linked_condition": 3,
+    "owner": "Olivier Côté",
+    "owner_status": "confirmed",
+    "due": "avant la mise en production du 22 octobre",
+    "due_status": "known_relative",
+    "origin": "commitment",
+    "status": "blocked_by_delivery",
+    "evidence": [{"file": "02_Reunions/M06_Transcript_Comite_26sept.txt", "locator": "10:07-10:10"}],
+    "fact_ids": ["F-RUNBOOK-OWNER-GO", "F-GOLIVE-THREE-CONDITIONS"]
+  },
+  {
+    "id": "A-INV003-CORRECT",
+    "action": "Retenir la ligne CR-04 de 18 000 $ et demander une facture corrigée ou une note de crédit.",
+    "linked_condition": null,
+    "owner": "Amélie Fortin et Nicolas Perron",
+    "owner_status": "proposed",
+    "due": "à confirmer",
+    "due_status": "unknown",
+    "origin": "recommendation",
+    "status": "open",
+    "evidence": [
+      {"file": "01_Courriels/E07_Facture_003_question.eml", "locator": "corps, paragraphes 2-3"},
+      {"file": "02_Reunions/M06_Transcript_Comite_26sept.txt", "locator": "10:24-10:25"}
+    ],
+    "fact_ids": ["F-INV003-UNAUTHORIZED-LINE", "F-INV003-HOLD-CR04"]
+  },
+  {
+    "id": "A-INV003-BASE-VALIDATE",
+    "action": "Traiter séparément la ligne autorisée de 36 000 $ du jalon 3 selon les contrôles normaux de réception et de paiement.",
+    "linked_condition": null,
+    "owner": "Amélie Fortin",
+    "owner_status": "proposed",
+    "due": "à confirmer",
+    "due_status": "unknown",
+    "origin": "recommendation",
+    "status": "open",
+    "evidence": [{"file": "05_Contrats_et_finances/INV-003.pdf", "locator": "page 1, ligne Développement phase 1 - jalon 3"}],
+    "fact_ids": ["F-INV003-TOTAL", "F-INV003-BASE-LINE"]
+  },
+  {
+    "id": "A-PLAN-CORRECT",
+    "action": "Mettre à jour le plan projet pour remplacer le 15 octobre par la cible approuvée du 22 octobre.",
+    "linked_condition": null,
+    "owner": "Nicolas Perron",
+    "owner_status": "proposed",
+    "due": "à confirmer",
+    "due_status": "unknown",
+    "origin": "recommendation",
+    "status": "open",
+    "evidence": [
+      {"file": "02_Reunions/M04_Transcript_Comite_direction_10sept.txt", "locator": "15:25"},
+      {"file": "04_Documents_projet/Note_transition_Elodie_16sept.txt", "locator": "À surveiller, puce 1"}
+    ],
+    "fact_ids": ["F-GOLIVE-APPROVED-22", "F-PLAN-V3-STALE"]
+  },
+  {
+    "id": "A-RISK-R01-CLOSE",
+    "action": "Corriger le registre des risques et fermer R-01 avec la preuve de validation d'INT-101 du 17 septembre.",
+    "linked_condition": null,
+    "owner": "Nicolas Perron avec Marc Gervais",
+    "owner_status": "proposed",
+    "due": "à confirmer",
+    "due_status": "unknown",
+    "origin": "recommendation",
+    "status": "open",
+    "evidence": [
+      {"file": "04_Documents_projet/Registre_Risques_29sept.xlsx", "locator": "Risques!F2 et H2"},
+      {"file": "03_Tickets/INT-101.txt", "locator": "commentaire du 17 sept 16:10"}
+    ],
+    "fact_ids": ["F-RISK-R01-STALE", "F-RISK-R01-INFO-DATE", "F-INT-CLOSED"]
+  },
+  {
+    "id": "A-STATUS-CORRECT",
+    "action": "Corriger le rapport et la communication de statut afin de ne pas présenter sécurité et accessibilité comme complétées.",
+    "linked_condition": null,
+    "owner": "Nicolas Perron et Alex Deschamps",
+    "owner_status": "proposed",
+    "due": "avant toute communication externe; date à confirmer",
+    "due_status": "unknown",
+    "origin": "recommendation",
+    "status": "open",
+    "evidence": [
+      {"file": "01_Courriels/E11_Communication_statut.eml", "locator": "corps, brouillon cité"},
+      {"file": "01_Courriels/E09_Rappel_mise_en_production.eml", "locator": "dernier paragraphe"}
+    ],
+    "fact_ids": ["F-STATUS-REPORT-STALE", "F-GOLIVE-CONDITIONAL"]
+  },
+  {
+    "id": "A-GONOGO-COMMITTEE",
+    "action": "Tenir une revue go/no-go qui vérifie explicitement les trois conditions avant d'autoriser la production.",
+    "linked_condition": "1-3",
+    "owner": "Nicolas Perron / comité de direction",
+    "owner_status": "proposed",
+    "due": "avant le 22 octobre; date de réunion à confirmer",
+    "due_status": "known_relative",
+    "origin": "recommendation",
+    "status": "open",
+    "evidence": [{"file": "01_Courriels/E09_Rappel_mise_en_production.eml", "locator": "corps, paragraphes 2-4"}],
+    "fact_ids": ["F-GOLIVE-CONDITIONAL", "F-GOLIVE-THREE-CONDITIONS"]
+  }
+]

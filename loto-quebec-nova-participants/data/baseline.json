@@ -1,0 +1,254 @@
+{
+  "as_of": "2026-09-30T09:00:00-04:00",
+  "content_sha256": "690322d49a267b814e80156aca37254ff264da732f684d8dc50571703cac0362",
+  "current": {
+    "ACC-301": {
+      "authority": "accountable_owner_validation",
+      "date": "2026-08-15",
+      "fact_id": "F-ACC301-CLOSED",
+      "locator": "M03_CR_Comite_27aout#L0011",
+      "source_file": "02_Reunions/M03_CR_Comite_27aout.txt",
+      "statement": "Le défaut de libellé ACC-301 a été validé avec NVDA et VoiceOver puis fermé le 15 août.",
+      "status": "CLOSED"
+    },
+    "ACC-302": {
+      "authority": "accountable_owner_validation",
+      "date": "2026-08-20",
+      "fact_id": "F-ACC302-CLOSED",
+      "locator": "M03_CR_Comite_27aout#L0011",
+      "source_file": "02_Reunions/M03_CR_Comite_27aout.txt",
+      "statement": "Le défaut de contraste ACC-302 a été re-testé à 5,3:1 puis fermé le 20 août.",
+      "status": "CLOSED"
+    },
+    "ACC-303": {
+      "authority": "accountable_owner_ticket",
+      "date": "2026-09-26",
+      "fact_id": "F-ACC303-OPEN",
+      "locator": "ACC-303#2026-09-26T11:03",
+      "source_file": "03_Tickets/ACC-303.txt",
+      "statement": "ACC-303 est toujours ouvert: au clavier, le bouton Enregistrer de la modale n'est pas atteignable; Mélissa le considère bloquant avant production.",
+      "status": "OPEN"
+    },
+    "CR-04": {
+      "authority": "project_scope_decision",
+      "date": "2026-09-24",
+      "fact_id": "F-CR04-DEFERRED",
+      "locator": "Decision_Portee_Phase2#L0006",
+      "source_file": "06_Architecture_et_decisions/Decision_Portee_Phase2.md",
+      "statement": "Les optimisations mobiles avancées de CR-04 sont reportées à la phase 2 et aucune dépense ne peut être engagée sans nouvelle approbation.",
+      "status": "APPROVED"
+    },
+    "DATA-401": {
+      "authority": "accountable_owner_validation",
+      "date": "2026-09-09",
+      "fact_id": "F-DATA401-CLOSED",
+      "locator": "M04@15:15",
+      "source_file": "02_Reunions/M04_Transcript_Comite_direction_10sept.txt",
+      "statement": "DATA-401 est fermé après le rejeu validé de 15 000 événements sans doublon le 9 septembre.",
+      "status": "CLOSED"
+    },
+    "INT-101": {
+      "authority": "accountable_owner_validation",
+      "date": "2026-09-17",
+      "fact_id": "F-INT-CLOSED",
+      "locator": "INT-101#2026-09-17T16:10",
+      "source_file": "03_Tickets/INT-101.txt",
+      "statement": "INT-101 a été validé par Marc Gervais et fermé le 17 septembre après 120 recherches réussies sur 120.",
+      "status": "CLOSED"
+    },
+    "INV-003": {
+      "authority": "finance_review",
+      "date": "2026-09-23",
+      "fact_id": "F-INV003-UNAUTHORIZED-LINE",
+      "locator": "E07#p3",
+      "source_file": "01_Courriels/E07_Facture_003_question.eml",
+      "statement": "INV-003 contient une ligne de 18 000 $ pour CR-04 alors que CR-04 n'est pas approuvé.",
+      "status": "CURRENT"
+    },
+    "OPS-601": {
+      "authority": "accountable_owner_ticket",
+      "date": "2026-09-29",
+      "fact_id": "F-OPS601-OPEN",
+      "locator": "OPS-601#header",
+      "source_file": "03_Tickets/OPS-601.txt",
+      "statement": "OPS-601, le ticket du runbook, demeure ouvert.",
+      "status": "OPEN"
+    },
+    "PERF-501": {
+      "authority": "test_validation",
+      "date": "2026-09-07",
+      "fact_id": "F-PERF501-CLOSED",
+      "locator": "PERF-501#2026-09-07T09:12",
+      "source_file": "03_Tickets/PERF-501.txt",
+      "statement": "PERF-501 est fermé après une moyenne de 620 ms sur 50 essais et aucun nouveau signalement.",
+      "status": "CLOSED"
+    },
+    "SEC-210": {
+      "authority": "accountable_owner_validation",
+      "date": "2026-09-26",
+      "fact_id": "F-SEC210-NOT-ACCEPTED",
+      "locator": "SEC-210#2026-09-26T15:40",
+      "source_file": "03_Tickets/SEC-210.txt",
+      "statement": "La sécurité n'est pas acceptée: Sophie maintient SEC-210 en validation jusqu'au re-test de son équipe.",
+      "status": "IN_VALIDATION"
+    },
+    "budget-authorized": {
+      "authority": "derived_from_contract_and_approved_change",
+      "date": "2026-08-14",
+      "fact_id": "F-BUDGET-AUTHORIZED-TOTAL",
+      "locator": "CR-01_Rapports_avances_APPROUVE.pdf#p1",
+      "source_file": "05_Contrats_et_finances/CR-01_Rapports_avances_APPROUVE.pdf",
+      "statement": "Le total autorisé est de 204 000 $ CAD hors taxes: 180 000 $ au contrat initial plus CR-01 de 24 000 $.",
+      "status": "CURRENT"
+    },
+    "data-residency": {
+      "authority": "accountable_team_validation",
+      "date": "2026-08-27",
+      "fact_id": "F-HOSTING-VERIFIED",
+      "locator": "M03_CR_Comite_27aout#L0005",
+      "source_file": "02_Reunions/M03_CR_Comite_27aout.txt",
+      "statement": "L'équipe architecture a vérifié la migration vers Canada Central le 27 août.",
+      "status": "CLOSED"
+    },
+    "go-live": {
+      "authority": "steering_committee",
+      "date": "2026-09-10",
+      "fact_id": "F-GOLIVE-APPROVED-22",
+      "locator": "M04@15:25",
+      "source_file": "02_Reunions/M04_Transcript_Comite_direction_10sept.txt",
+      "statement": "Le comité de direction a approuvé le 10 septembre la cible officielle du 22 octobre 2026.",
+      "status": "APPROVED"
+    },
+    "go-live-conditions": {
+      "authority": "steering_committee_and_accountable_owners",
+      "date": "2026-09-26",
+      "fact_id": "F-GOLIVE-THREE-CONDITIONS",
+      "locator": "M06@10:09",
+      "source_file": "02_Reunions/M06_Transcript_Comite_26sept.txt",
+      "statement": "Les trois conditions sont la validation de SEC-210, la fermeture d'ACC-303 et l'approbation du runbook incluant le rollback.",
+      "status": "APPROVED"
+    },
+    "invoices": {
+      "authority": "derived_from_invoices",
+      "date": "2026-09-23",
+      "fact_id": "F-FINANCE-TOTALS",
+      "locator": "INV-003.pdf#p1",
+      "source_file": "05_Contrats_et_finances/INV-003.pdf",
+      "statement": "Les factures NOVA totalisent 186 000 $, dont 168 000 $ sont adossés à une autorisation et 132 000 $ sont payés; INV-003 de 54 000 $ est en validation.",
+      "status": "CURRENT"
+    },
+    "project-manager": {
+      "authority": "formal_role_transition",
+      "date": "2026-09-16",
+      "fact_id": "F-PM-NICOLAS",
+      "locator": "E06#p2",
+      "source_file": "01_Courriels/E06_Transition_charge_projet.eml",
+      "statement": "Nicolas Perron est chargé de projet depuis le 16 septembre 2026.",
+      "status": "APPROVED"
+    },
+    "scope-phase-1": {
+      "authority": "project_charter",
+      "date": "2026-07-07",
+      "fact_id": "F-SCOPE-PHASE1",
+      "locator": "M01_CR_Demarrage_07juillet#L0012",
+      "source_file": "02_Reunions/M01_CR_Demarrage_07juillet.txt",
+      "statement": "La phase 1 couvre SSO, création et suivi de demandes, pièces jointes, workflow, tableau de suivi et rapports standards.",
+      "status": "APPROVED"
+    }
+  },
+  "event_log": [],
+  "history": {
+    "ACC-301": [
+      "F-ACC301-CLOSED"
+    ],
+    "ACC-302": [
+      "F-ACC302-CLOSED"
+    ],
+    "ACC-303": [
+      "F-ACC303-OPEN",
+      "F-ACC303-SCREENSHOT"
+    ],
+    "CR-04": [
+      "F-CR04-DEFERRED",
+      "F-CR04-DRAFT",
+      "F-SCOPE-MOBILE-STALE-CLAIM"
+    ],
+    "DATA-401": [
+      "F-DATA401-CLOSED"
+    ],
+    "INT-101": [
+      "F-INT-CAUSE",
+      "F-INT-CLOSED"
+    ],
+    "INV-003": [
+      "F-INV003-BASE-LINE",
+      "F-INV003-HOLD-CR04",
+      "F-INV003-TOTAL",
+      "F-INV003-UNAUTHORIZED-LINE"
+    ],
+    "OPS-601": [
+      "F-OPS601-OPEN",
+      "F-RUNBOOK-MISSING",
+      "F-RUNBOOK-OWNER-GO",
+      "F-RUNBOOK-STEP5"
+    ],
+    "PERF-501": [
+      "F-PERF501-CLOSED"
+    ],
+    "R-01": [
+      "F-RISK-R01-INFO-DATE",
+      "F-RISK-R01-STALE"
+    ],
+    "SEC-210": [
+      "F-SEC210-DEFECT",
+      "F-SEC210-DELIVERED",
+      "F-SEC210-NOT-ACCEPTED"
+    ],
+    "budget-authorized": [
+      "F-BUDGET-AUTHORIZED-TOTAL",
+      "F-CONTRACT-BASE",
+      "F-CR01-APPROVED"
+    ],
+    "data-residency": [
+      "F-HOSTING-DECISION",
+      "F-HOSTING-DELIVERED",
+      "F-HOSTING-VERIFIED"
+    ],
+    "go-live": [
+      "F-GOLIVE-APPROVED-22",
+      "F-GOLIVE-CONDITIONAL",
+      "F-GOLIVE-INITIAL",
+      "F-GOLIVE-PROPOSAL-22",
+      "F-PLAN-V3-STALE"
+    ],
+    "go-live-conditions": [
+      "F-GOLIVE-THREE-CONDITIONS"
+    ],
+    "invoices": [
+      "F-FINANCE-TOTALS",
+      "F-INV001-PAID",
+      "F-INVOICE-PAID",
+      "F-ORION-EXCLUDED"
+    ],
+    "project-manager": [
+      "F-PM-INITIAL",
+      "F-PM-NICOLAS"
+    ],
+    "scope-phase-1": [
+      "F-SCOPE-PHASE1"
+    ],
+    "status-report": [
+      "F-STATUS-REPORT-STALE"
+    ]
+  },
+  "project": "NOVA",
+  "proposals": {
+    "CR-04": [
+      "F-CR04-DRAFT"
+    ],
+    "go-live": [
+      "F-GOLIVE-PROPOSAL-22"
+    ]
+  },
+  "schema_version": 1
+}

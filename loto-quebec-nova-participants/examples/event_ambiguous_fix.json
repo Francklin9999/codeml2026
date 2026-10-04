@@ -1,0 +1,14 @@
+{
+  "event_id": "LIVE-AMBIGUOUS-FIX",
+  "record_time": "2026-10-04T10:00:00-04:00",
+  "valid_time": "2026-10-04T09:50:00-04:00",
+  "subject": "ACC-303",
+  "kind": "unconfirmed",
+  "statement": "Le correctif ACC-303 devrait maintenant être bon.",
+  "actor": "Équipe projet",
+  "authority": "unknown",
+  "source": "Événement live de la présentation",
+  "ambiguous": true,
+  "affects_answers": ["Q01", "Q09", "Q10"],
+  "affects_actions": ["A-ACC303-FIX", "A-ACC303-RETEST"]
+}

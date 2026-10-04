@@ -1,0 +1,9 @@
+# Local extraction and generated scratch files
+work/_local/
+tmp/
+__pycache__/
+.pytest_cache/
+*.pyc
+dist/
+dist.next/
+dist.previous/

@@ -1,0 +1,15 @@
+{
+  "event_id": "LIVE-SEC-VALIDATED",
+  "record_time": "2026-10-04T10:00:00-04:00",
+  "valid_time": "2026-10-04T09:30:00-04:00",
+  "subject": "SEC-210",
+  "kind": "validation",
+  "statement": "Sophie Lambert confirme que le re-test de SEC-210 est accepté.",
+  "actor": "Sophie Lambert",
+  "authority": "accountable_owner_validation",
+  "source": "Événement live de la présentation",
+  "new_status": "VALIDATED",
+  "affects_answers": ["Q01", "Q08", "Q10"],
+  "affects_actions": ["A-SEC-RETEST"],
+  "action_updates": {"A-SEC-RETEST": "closed"}
+}
