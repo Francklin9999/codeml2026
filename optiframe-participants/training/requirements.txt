@@ -1,0 +1,5 @@
+# Offline dataset tools (training/data). Versions tested: numpy 2.5.3, opencv-contrib-python 5.0.0.93 (Apache-2.0), pytest 9.1.1.
+# cv2.aruco needs the contrib build: do not install opencv-python next to it.
+numpy>=2.0
+opencv-contrib-python>=4.8
+pytest>=8

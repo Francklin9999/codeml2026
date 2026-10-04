@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE (Claude Code, 2026-10-03) |
 | **Priority** | P2 |
 | **Effort** | 5–6 h |
 | **Depends on** | strategy 8 (server-side lifecycle and sync API) |
@@ -76,4 +76,6 @@ Strategy 8 (server lifecycle), 4 (quality gate model, ported to JS), 9 (review U
 
 | Date | Who | Device | T1–T6 | Notes |
 |---|---|---|---|---|
-| | | | | |
+| 2026-10-03 | Claude Code | desktop browser (in-app browser pane) served by the strategy 20 edge box | blurry photo rejected with message; 2 pages captured offline -> EN_ATTENTE_IA; survive reload; ciphertext at rest; wrong PIN rejected; on reconnection both synced -> TRAITÉ_IA (page type 3) with no identifier values | not tested on a phone camera |
+
+**Implementation notes (2026-10-03).** `work/strat15/app/`: PBKDF2 (200k) + AES-GCM (WebCrypto), IndexedDB records/events, service worker app shell, exponential back-off, idempotency key record:version. Blur threshold set from strategy 4's measured gate.

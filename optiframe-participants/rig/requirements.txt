@@ -1,0 +1,6 @@
+# Offline tools for the reference sheet. Python 3.11+. Tested with the versions in the comments.
+opencv-contrib-python>=4.8,<6   # cv2.aruco (ArucoDetector API); tested 5.0.0.93, Apache 2.0
+numpy>=1.26                     # tested 2.5.3, BSD
+reportlab>=4.0                  # PDF output; tested 5.0.1, BSD
+pytest>=8                       # tests; tested 9.1.1, MIT
+pypdf>=4                        # tests read the PDF back; tested 6.19.0, BSD

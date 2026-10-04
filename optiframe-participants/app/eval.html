@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>OptiFrame evaluation</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; background: #fff; color: #111; }
+    main { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1rem; }
+    label { display: block; margin: .75rem 0 .25rem; font-weight: 600; }
+    button { padding: .5rem 1rem; margin: .75rem .5rem .75rem 0; }
+    table { border-collapse: collapse; width: 100%; font-size: .85rem; margin-top: 1rem; }
+    th, td { border: 1px solid #ccc; padding: .25rem .5rem; text-align: left; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tr.fail td { background: #fde8e8; }
+    .wrap { overflow-x: auto; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #111; color: #eee; }
+      th, td { border-color: #555; }
+      tr.fail td { background: #4a1f1f; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>OptiFrame evaluation</h1>
+    <p>Runs the same pipeline as the app on a batch of photos named <code>&lt;lensId&gt;_&lt;phone&gt;_&lt;rep&gt;.jpg</code>.
+       Run it with the identity <code>bias.json</code> (no correction), then feed <code>results.csv</code> to <code>tools/accuracy_report.py</code>.</p>
+    <label for="photos">Photos</label>
+    <input id="photos" type="file" accept="image/*" multiple>
+    <label for="ref">Calliper CSV (own_lenses.csv, optional: adds reference and error columns to the table)</label>
+    <input id="ref" type="file" accept=".csv,text/csv">
+    <label for="eye">Eye passed to the pipeline (A and B do not depend on it)</label>
+    <select id="eye"><option value="R">R</option><option value="L">L</option></select>
+    <div><button id="run" type="button">Run</button><button id="save" type="button" disabled>Download results.csv</button>
+      <span id="status" role="status"></span></div>
+    <div class="wrap"><table id="table"></table></div>
+  </main>
+  <script type="module" src="./src/eval/main.ts"></script>
+</body>
+</html>

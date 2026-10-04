@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE (Claude Code, 2026-10-03) |
 | **Priority** | P2 |
 | **Effort** | 3–4 h |
 | **Depends on** | strategy 1 (ground truth) |
@@ -95,4 +95,6 @@ Strategy 2 and 3 (robustness numbers), 6 (degradation features as confidence sig
 
 | Date | Who | Extractor | Family | Accuracy at sev. 0/2/4 | Gate recall / FRR | Notes |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| 2026-10-03 | Claude Code | final pipeline (strat 2+11+18+7+6) | all families mixed, seeded | 0.980 / 0.907 / 0.800 field acc; filled text 0.934 / 0.707 / 0.438 | recall 0.90 / FRR 0.12 (depth-2 tree, in-sample) | gate rule: Laplacian variance at 600 px <= 344 -> retake |
+
+**Implementation notes (2026-10-03).** `degrade.py` returns the exact page->photo homography (registration error measured exactly). Severity 4 is a deliberate stress test (very dark, hard shadows, motion blur, JPEG 35-65) beyond what a usable photo looks like. `quality_gate.py` replays the exact photos of the final evaluation; the PWA (strategy 15) uses the measured threshold.

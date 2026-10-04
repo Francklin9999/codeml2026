@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE (Claude Code, 2026-10-03) |
 | **Priority** | P3 (bonus) |
 | **Effort** | 3 h |
 | **Depends on** | validated records (strategies 8–10) or the synthetic CSV for the demo |
@@ -70,4 +70,6 @@ Strategy 8 (validated store), 10 (role `analyste`), 6 (status model).
 
 | Date | Who | Indicators | Suppressed cells | Notes |
 |---|---|---|---|---|
-| | | | | |
+| 2026-10-03 | Claude Code | 9 (HIV, syphilis, hep C, BP >= 140/90, anaemia, LBW, preterm, caesarean, breastfeeding) + age bands | 3 (counts < 5) | static HTML; missing counts shown; optional Laplace noise; `pytest work/strat19` 3/3 |
+
+**Implementation notes (2026-10-03).** Descriptive only, no prediction.

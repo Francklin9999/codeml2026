@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE (simulation) (Claude Code, 2026-10-03) |
 | **Priority** | P3 (strong story; measurable in simulation) |
 | **Effort** | 3–4 h |
 | **Depends on** | strategy 1 (GT), 6 (confidence), 9 (review flow records corrections); 11 helps (a trainable recogniser) |
@@ -73,4 +73,6 @@ Strategy 6 (calibrator), 9 (feedback source), 11 (fine-tuning), 10 (masked image
 
 | Date | Who | Pages streamed | Questions / page (start → end) | Auto-accept accuracy | Notes |
 |---|---|---|---|---|---|
-| | | | | | |
+| 2026-10-03 | Claude Code | 46 synthetic pages (~2,800 fields) streamed in batches of 10 | 60 (cold start, ask all) -> 23 -> 17 | 0.988-1.000 after the first batch | online recalibration only; periodic fine-tuning not simulated |
+
+**Implementation notes (2026-10-03).** `hitl.py` refits the calibrator on accumulated feedback and re-selects tau so auto-accepted fields stay >= 99% correct.

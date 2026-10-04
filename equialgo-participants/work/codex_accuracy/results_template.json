@@ -1,0 +1,37 @@
+[
+  {
+    "file": "01_consensus.csv",
+    "accuracy_percent": null,
+    "f1_macro_percent": null
+  },
+  {
+    "file": "02_no_eo_assumption.csv",
+    "accuracy_percent": null,
+    "f1_macro_percent": null
+  },
+  {
+    "file": "03_small_extra_effects.csv",
+    "accuracy_percent": null,
+    "f1_macro_percent": null
+  },
+  {
+    "file": "04_remove_firstgen.csv",
+    "accuracy_percent": null,
+    "f1_macro_percent": null
+  },
+  {
+    "file": "05_hours_only.csv",
+    "accuracy_percent": null,
+    "f1_macro_percent": null
+  },
+  {
+    "file": "06_more_hours.csv",
+    "accuracy_percent": null,
+    "f1_macro_percent": null
+  },
+  {
+    "file": "07_less_hours.csv",
+    "accuracy_percent": null,
+    "f1_macro_percent": null
+  }
+]

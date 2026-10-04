@@ -1,0 +1,3 @@
+lensId,description,A_mm_1,A_mm_2,A_mm_3,B_mm_1,B_mm_2,B_mm_3,edge_thickness_mm,tint,notes
+EXAMPLE_L01,"EXAMPLE ROW (not a real lens): plus lens, oval, clear",50.1,50.2,50.1,40.3,40.2,40.3,3.0,clear,example: replace with your own calliper readings
+EXAMPLE_L02,"EXAMPLE ROW (not a real lens): minus lens, rectangular, tinted",54.0,54.1,54.0,36.5,36.4,36.5,5.5,grey,example: delete both example rows before use

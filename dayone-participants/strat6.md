@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE (Claude Code, 2026-10-03) |
 | **Priority** | P1 |
 | **Effort** | 3–4 h |
 | **Depends on** | strategy 1 (GT), one extractor (2 or 3); better with 4, 5, 7 |
@@ -93,4 +93,6 @@ Strategy 2 / 3 (signals), 7 (conflicts), 9 (question selection and wording, e.g.
 
 | Date | Who | Extractor | ECE | Acc. @ auto-accept | Questions / page | Notes |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| 2026-10-03 | Claude Code | final pipeline, specimen pages clean / sev 2 / sev 4 | 0.009 / 0.017 / 0.039 (raw CTC conf: ~0.25) | 0.9989 on 91% of fields / 0.9942 on 75% / 0.9705 on 62% (tau 0.9) | 4.3 / 12.4 / 17.2 | status acc 0.995 / 0.977 / 0.935 |
+
+**Implementation notes (2026-10-03).** Signals: CTC path confidence, min char prob, length, snapped-to-vocabulary, candidate margin, new-ink fraction, registration score, reading-vs-blank gap, agreement across stretched views, field kind. Logistic + isotonic, fitted only on synthetic pages (never the specimen). Status: NON_FOURNI (blank/dash), INCONNU ('?', 'inconnu'), ILLISIBLE (p<0.35), À_RÉVISER (p<0.9 or rule flag), else CONNU.

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED *(set to IN PROGRESS / DONE / ABANDONED with your name and the date)* |
+| **Status** | DONE - adopted (Claude Code, 2026-10-03) |
 | **Priority** | P2 |
 | **Effort** | 6–8 h (data generation 2 h, training 3 h, evaluation 1–2 h) |
 | **Depends on** | strategy 1 (schema, ground truth, cell zones), strategy 2 (cell crops), strategy 5 helps (fonts, vocabularies) |
@@ -86,4 +86,6 @@ Strategy 2 (crops, registration), 5 (fonts, AR vocab), 6 (confidence signal), 12
 
 | Date | Who | Model | Train data | CER held-out | Exact match (photos) | Notes |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| 2026-10-03 | Claude Code | CRNN-CTC 6.7M params (ResNet-ish + BiLSTM) | 200k crops without the 5 specimen fonts (held-out model), then 374k crops all fonts (final) | synthetic val CER 0.063 (held-out) / 0.052 (final); specimen filled-field acc clean 0.85 with fonts held out, 0.934 final | photos not labelled (different layout) | trains in ~1 h on an RTX 4060 laptop |
+
+**Implementation notes (2026-10-03).** Crops come from synthetic pages pushed through degradation + registration, so train and test crops match. Packed shards (Windows opens of 200k small files took 27 min). Weakness found: thin doubled glyphs ('11', 'll') collapse under CTC at T=W/4; fixed at inference with a string-level ensemble over 1.0/1.2/1.4 horizontal stretches (+4 pts on the hardest fonts). A T=W/2 fine-tune did not fit in 8 GB at batch 64 (see results.md for the batch-32 retry).
