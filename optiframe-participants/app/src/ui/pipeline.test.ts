@@ -13,7 +13,7 @@ vi.mock('../vision/segmentClassic', () => ({ segmentClassic }));
 vi.mock('../vision/segmentModel', () => ({ isModelAvailable, segmentModel }));
 vi.mock('../measure', () => ({ measureLens, setBias, rotationWarningDeg: () => null }));
 
-import { finishLens, loadAssets, measureOne, measureOneDebug, setAssets, setProgressListener, setRunner } from '../pipeline';
+import { engineState, finishLens, loadAssets, measureOne, measureOneDebug, setAssets, setEngineListener, setProgressListener, setRunner, warmUp } from '../pipeline';
 import { messageFor } from '../quality';
 
 const ALL_CODES: ErrorCode[] = ['NO_REFERENCE', 'REFERENCE_TILTED', 'BLURRY', 'NO_LENS', 'LENS_OUT_OF_WINDOW', 'GLARE', 'INCONSISTENT_SHOTS', 'LENS_ROTATED', 'CAMERA_DENIED', 'LOAD_FAILED'];
@@ -120,7 +120,7 @@ describe('measureOne', () => {
 
   it('runs two photos one after the other', async () => {
     const order: string[] = [];
-    setRunner(async (req) => { order.push('start'); await new Promise((r) => setTimeout(r, 5)); order.push('end'); return { ok: true, result: lens as never }; });
+    setRunner(async (req) => { order.push('start'); await new Promise((r) => setTimeout(r, 5)); order.push('end'); return { ok: true, result: lens as never, timings: {} }; });
     await Promise.all([measureOne(photo, 'R'), measureOne(photo, 'R')]);
     expect(order).toEqual(['start', 'end', 'start', 'end']);
   });
@@ -134,6 +134,23 @@ describe('measureOneDebug and finishLens', () => {
     expect(result).toBe(lens);
     expect(steps.rectified.width).toBe(2);
     expect(steps.mask.width).toBe(2);
+  });
+
+  it('returns the duration of every stage beside the measurement', async () => {
+    segmentClassic.mockReturnValue({ score: 1, method: 'classic', data: new Uint8Array(4), width: 2, height: 2 });
+    measureLens.mockReturnValue(lens);
+    const { timings } = await measureOneDebug(photo, 'R');
+    for (const k of ['rectify', 'segment', 'measure', 'worker', 'round-trip']) expect(timings[k], k).toBeGreaterThanOrEqual(0);
+    expect(timings['round-trip']).toBeGreaterThanOrEqual(timings.worker);
+  });
+
+  it('without a Worker there is nothing to warm up: the engine is ready at once and OpenCV waits for the first photo', () => {
+    const seen: string[] = [];
+    setEngineListener((s) => seen.push(s));
+    warmUp();
+    expect(engineState()).toBe('ready');
+    expect(seen).toEqual(['idle', 'ready']);
+    setEngineListener(null);
   });
 
   it('finishLens throws an OptiError only', () => {

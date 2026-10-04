@@ -8,6 +8,7 @@ const isHeavy = (url) => /\/(vendor|models)\//.test(url.pathname);
 
 // Needed by every measurement or frame: fetched at install so the app works offline after the first visit.
 // (ort and the model are optional: they are cached on first use by the rule below.)
+// Never add vendor/ort/ here: its 14 MB WASM must only be downloaded when models/lens_seg.onnx exists (segmentModel.ts).
 const PRECACHE = ['./vendor/opencv/opencv.js', './vendor/manifold/manifold.wasm'];
 
 self.addEventListener('install', (event) => {
@@ -44,7 +45,18 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
-  if (req.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (url.origin !== self.location.origin) return;
+  // The model probe is a HEAD request. Network first, so a model deployed later is seen; offline, the cached file answers.
+  if (req.method === 'HEAD' && isHeavy(url)) {
+    event.respondWith(
+      fetch(req).catch(async () => {
+        const hit = await caches.match(url.href);
+        return hit ? new Response(null, { status: 200, headers: hit.headers }) : Response.error();
+      }),
+    );
+    return;
+  }
+  if (req.method !== 'GET') return;
 
   if (isHeavy(url)) {
     event.respondWith(

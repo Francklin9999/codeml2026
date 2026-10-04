@@ -229,6 +229,17 @@ describe('missing model', () => {
     await expect(segmentModel(rectified())).rejects.toMatchObject({ code: 'LOAD_FAILED' });
   });
 
+  it('asks once, with a HEAD request: a site without a model never downloads the model or the runtime again', async () => {
+    const f = vi.fn(async (_u: string, _init?: RequestInit) => new Response(null, { status: 404 }));
+    vi.stubGlobal('fetch', f);
+    setAssetBase('http://localhost/app/');
+    expect(await isModelAvailable()).toBe(false);
+    expect(await isModelAvailable()).toBe(false);
+    await expect(segmentModel(rectified())).rejects.toMatchObject({ code: 'LOAD_FAILED' });
+    expect(f).toHaveBeenCalledTimes(1);
+    expect(f.mock.calls[0][1]).toEqual({ method: 'HEAD' });
+  });
+
   it('dev server answering index.html with 200 counts as missing', async () => {
     stubFetch(async () => new Response('<html></html>', { status: 200, headers: { 'content-type': 'text/html' } }));
     setAssetBase('http://localhost/');
@@ -253,8 +264,8 @@ const vendorDir = resolve(import.meta.dirname, '../../public/vendor/ort');
 describe.skipIf(!existsSync(resolve(vendorDir, 'ort-wasm-simd-threaded.wasm')))('real onnxruntime-web WASM session', () => {
   it('loads a model by its fixed URL, runs it and returns a lens mask', async () => {
     const urls: string[] = [];
-    vi.stubGlobal('fetch', async (u: string) => {
-      urls.push(u);
+    vi.stubGlobal('fetch', async (u: string, init?: RequestInit) => {
+      if (init?.method !== 'HEAD') urls.push(u); // the HEAD probe comes first; only downloads are counted
       return new Response(Buffer.from(TINY_MODEL_B64, 'base64'), { status: 200, headers: { 'content-type': 'application/octet-stream' } });
     });
     setAssetBase(pathToFileURL(resolve(import.meta.dirname, '../../public') + '/').href);

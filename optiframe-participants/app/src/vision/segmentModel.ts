@@ -131,11 +131,14 @@ let sessionPromise: Promise<ModelSession> | null = null;
 let timings: Timings = { loadMs: 0, preMs: 0, runMs: 0, postMs: 0 };
 let loadMs = 0;
 let assetBase: string | null = null;
+/** Answer of the one HEAD request for the model file. Unset until a server has answered. */
+let modelExists: boolean | undefined;
 
 /** Override where `vendor/` and `models/` live (absolute URL ending in `/`). Default: the app root. */
 export function setAssetBase(url: string | null): void {
   assetBase = url;
   sessionPromise = null;
+  modelExists = undefined;
 }
 
 function appRoot(): string {
@@ -145,14 +148,29 @@ function appRoot(): string {
   return new URL('../', (globalThis as { location?: { href: string } }).location?.href ?? 'http://localhost/').href;
 }
 
+// A dev server answers a missing file with index.html and status 200: treat it as missing too.
+const isFile = (res: Response): boolean => res.ok && !/text\/html/i.test(res.headers.get('content-type') ?? '');
+
+/**
+ * Is models/lens_seg.onnx deployed? One HEAD request (no body), asked once: the answer is kept for the session, so a
+ * site without a model never downloads the model, onnxruntime-web or its 14 MB WASM. A network failure is not an
+ * answer: it rejects and the next call asks again.
+ */
+async function probeModel(root: string): Promise<boolean> {
+  if (modelExists === undefined) {
+    const answer = isFile(await fetch(new URL(MODEL_PATH, root).href, { method: 'HEAD' }));
+    modelExists = answer;
+  }
+  return modelExists;
+}
+
 async function loadOrt(): Promise<ModelSession> {
   const root = appRoot();
+  if (!(await probeModel(root))) throw new OptiError('LOAD_FAILED', 'model not found');
   const res = await fetch(new URL(MODEL_PATH, root).href);
-  // A dev server answers a missing file with index.html and status 200: treat it as missing too.
-  if (!res.ok || /text\/html/i.test(res.headers.get('content-type') ?? '')) {
-    throw new OptiError('LOAD_FAILED', `model not found (${res.status})`);
-  }
+  if (!isFile(res)) throw new OptiError('LOAD_FAILED', `model not found (${res.status})`);
   const bytes = new Uint8Array(await res.arrayBuffer());
+  // Only reached with the model in hand: the runtime is a separate chunk and its WASM is fetched by this import.
   const ort = await import('onnxruntime-web/wasm');
   ort.env.wasm.numThreads = 1; // static hosts cannot send the headers threads need
   ort.env.wasm.proxy = false;

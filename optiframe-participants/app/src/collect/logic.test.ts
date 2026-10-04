@@ -6,6 +6,7 @@ import {
   MANIFEST_COLUMNS, OWN_LENSES_COLUMNS, RESULTS_COLUMNS, csvEscape, inconsistent, manifestRow, median, ownLensesColumns, ownLensesRows, parseDecimal,
   refValue, resultsRow, signedError, spread, toCsv, type Meta,
 } from './manifest';
+import { CSV_COLUMNS } from '../eval/parse';
 
 /** independent CSV parser (RFC 4180) used to round-trip */
 function parseCsv(s: string): string[][] {
@@ -126,11 +127,15 @@ describe('CSV', () => {
   });
   it('own_lenses.csv uses the brief-14 columns and results.csv the eval columns', () => {
     expect([...OWN_LENSES_COLUMNS].join(',')).toBe('lensId,description,A_mm_1,A_mm_2,A_mm_3,B_mm_1,B_mm_2,B_mm_3,edge_thickness_mm,tint,notes');
-    expect([...RESULTS_COLUMNS].join(',')).toBe('file,lensId,phone,rep,A,B,perimeter,method,reprojErrMm,sharpness,errorCode');
+    expect([...RESULTS_COLUMNS].join(',')).toBe('file,lensId,phone,rep,A,B,perimeter,method,reprojErrMm,sharpness,error');
     const csv = toCsv(OWN_LENSES_COLUMNS, ownLensesRows([meta({ notes: 'a,b' })]));
     const [head, row] = parseCsv(csv);
     expect(head).toEqual([...OWN_LENSES_COLUMNS]);
     expect(row).toEqual(['L01', '', '60', '60.1', '59.9', '48', '48.1', '48', '2.1', 'clair', 'a,b']);
+  });
+  it('results.csv columns equal the eval page CSV_COLUMNS and carry the error code', () => {
+    expect([...RESULTS_COLUMNS]).toEqual([...CSV_COLUMNS]);
+    expect(resultsRow(meta({ ok: false, measured: undefined, errorCode: 'NO_LENS' })).error).toBe('NO_LENS');
   });
   it('takes the header of the template when given', () => {
     expect(ownLensesColumns('lensId,description,foo\nrow')).toEqual(['lensId', 'description', 'foo']);

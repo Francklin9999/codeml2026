@@ -154,5 +154,5 @@ describe('buildExportParts', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
-  });
+  }, 60_000); // spawns Python: slow under a loaded full-suite run
 });

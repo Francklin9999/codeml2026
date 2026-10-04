@@ -82,11 +82,26 @@ Feuille coupée, feuille très inclinée, photo floue, main dans le champ, refle
 | Jeu C et échecs | Relecture visuelle, mesure directe | Cas qui cassent, messages à ajuster, jeu de test final |
 
 ## 6. Faire passer les photos du téléphone à l'ordinateur
-
-1. Dans la page de collecte, bouton **Exporter** : un ou plusieurs ZIP (50 Mo maximum chacun) contenant les photos originales, `manifest.csv`, `own_lenses.csv`, `results.csv`.
+1. Dans la page de collecte, bouton **Exporter** : un ou plusieurs ZIP (50 Mo maximum chacun) contenant les photos originales, `manifest.csv`, `own_lenses.csv`, `results.csv`. `results.csv` a l'en-tête de la page eval : `file,lensId,phone,rep,A,B,perimeter,method,reprojErrMm,sharpness,error` (`error` = code d'erreur ; `manifest.csv` garde `errorCode`).
 2. Partage-les (AirDrop, Drive, câble) vers l'ordinateur.
 3. Décompresse dans `training/_local/raw/` (ce dossier n'est pas versionné).
 4. Le bouton « Vider les photos exportées » ne supprime que ce qui a été exporté, après confirmation.
+
+### Commandes sur l'ordinateur (depuis la racine du projet)
+
+```
+# 1. décompresser (le ZIP contient photos/, manifest.csv, own_lenses.csv, results.csv, LISEZMOI.txt)
+python -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1]).extractall('training/_local/raw/validation')" optiframe-collecte_AAAAMMJJ-HHMM.zip
+
+# 2. jeu A : rapport de précision (results.csv et own_lenses.csv sont dans le ZIP ; remplis A_mm_* et B_mm_* si besoin)
+tools/.venv/Scripts/python tools/accuracy_report.py training/_local/raw/validation/results.csv training/_local/raw/validation/own_lenses.csv
+#    ou, dans le navigateur : npm run dev dans app/, ouvrir eval.html, choisir photos/*.jpg puis own_lenses.csv
+
+# 3. jeu B : masques automatiques (les photos s'appellent <verre>_<pos>_<condition>.jpg)
+python training/data/autolabel.py training/_local/raw/entrainement/photos --spec app/public/board_spec.json --out training/_local/real --qc 20
+```
+
+Le nom exact des ZIP est affiché par la page au moment de l'export ; adapte les chemins. Remarque : `autolabel.py` attend `lamp1..3` et `color` alors que la page écrit `lampL`, `lampT`, `lampR`, `colour` : voir le rapport de la brique 17.
 
 ## 7. Pour que l'app serve depuis ton téléphone
 

@@ -14,7 +14,7 @@ vi.mock('./vision/segmentClassic', () => ({ segmentClassic }));
 vi.mock('./vision/segmentModel', () => ({ isModelAvailable, segmentModel }));
 vi.mock('./measure', () => ({ measureLens, setBias }));
 
-import { handleMessage, type WorkerRequest } from './worker';
+import { handleMessage, ownBuffers, type WorkerRequest } from './worker';
 
 const photo: Photo = { image: new ImageData(2, 2), source: 'file' };
 const spec = {} as BoardSpec;
@@ -55,7 +55,7 @@ describe('worker pipeline', () => {
     rectify.mockResolvedValue(rectified);
     segmentClassic.mockReturnValue(mask);
     measureLens.mockReturnValue(result);
-    expect(await handleMessage(request)).toEqual({ ok: true, result });
+    expect(await handleMessage(request)).toEqual({ ok: true, result, timings: expect.any(Object) });
     expect(rectify).toHaveBeenCalledWith(photo, spec);
     expect(segmentClassic).toHaveBeenCalledWith(rectified);
     expect(measureLens).toHaveBeenCalledWith(rectified, mask, 'R');
@@ -73,7 +73,7 @@ describe('worker pipeline', () => {
       expect(setBias).toHaveBeenCalledWith(bias);
       return { tag: 'r' };
     });
-    expect(await handleMessage({ ...request, bias })).toEqual({ ok: true, result: { tag: 'r' } });
+    expect(await handleMessage({ ...request, bias })).toEqual({ ok: true, result: { tag: 'r' }, timings: expect.any(Object) });
   });
 
   it('reports the steps in order', async () => {
@@ -92,7 +92,7 @@ describe('worker pipeline', () => {
     isModelAvailable.mockResolvedValue(true);
     segmentModel.mockResolvedValue(modelMask);
     measureLens.mockReturnValue({ tag: 'result' });
-    expect(await handleMessage(request)).toEqual({ ok: true, result: { tag: 'result' } });
+    expect(await handleMessage(request)).toEqual({ ok: true, result: { tag: 'result' }, timings: expect.any(Object) });
     expect(measureLens).toHaveBeenCalledWith({}, modelMask, 'R');
   });
 
@@ -127,6 +127,22 @@ describe('worker pipeline', () => {
     expect(measureLens).toHaveBeenLastCalledWith({}, strong, 'R');
   });
 
+  it('times every stage, beside the measurement', async () => {
+    rectify.mockResolvedValue({});
+    segmentClassic.mockReturnValue({ score: 1 });
+    measureLens.mockReturnValue({});
+    const res = await handleMessage(request);
+    if (!res.ok) throw new Error(res.code);
+    for (const k of ['rectify', 'segment', 'measure', 'worker']) expect(res.timings[k], k).toBeGreaterThanOrEqual(0);
+    expect(res.timings.worker).toBeGreaterThanOrEqual(res.timings.rectify);
+  });
+
+  it('transfers each pixel buffer once, and never a slice of a larger buffer', () => {
+    const a = new Uint8ClampedArray(16), b = new Uint8Array(8);
+    const heap = new Uint8Array(new ArrayBuffer(64), 8, 16); // like a view into WASM memory
+    expect(ownBuffers(a, b, a, heap, undefined, new Uint8Array(0))).toEqual([a.buffer, b.buffer]);
+  });
+
   it('debug returns the images and the projected markers', async () => {
     const rectified = { H: [1, 0, 5, 0, 1, 7, 0, 0, 1], image: { tag: 'img' } };
     const mask = { score: 1 };
@@ -135,6 +151,6 @@ describe('worker pipeline', () => {
     measureLens.mockReturnValue({ tag: 'result' });
     const spec = { printScale: 2, markers: [{ id: 0, corners: [[0, 0], [1, 0], [1, 1], [0, 1]] }] } as unknown as BoardSpec;
     const res = await handleMessage({ ...request, type: 'debug', spec });
-    expect(res).toEqual({ ok: true, result: { tag: 'result' }, debug: { markers: [[[5, 7], [7, 7], [7, 9], [5, 9]]], rectified: rectified.image, mask } });
+    expect(res).toEqual({ ok: true, result: { tag: 'result' }, timings: expect.any(Object), debug: { markers: [[[5, 7], [7, 7], [7, 9], [5, 9]]], rectified: rectified.image, mask } });
   });
 });

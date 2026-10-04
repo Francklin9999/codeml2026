@@ -1,5 +1,6 @@
 import { DEFAULT_FRAME, type ErrorCode, type Eye, type FrameResult, type LensMeasurement, type Photo } from '../contracts';
-import type { DebugSteps } from '../worker';
+import type { Timings } from '../timing';
+import type { DebugSteps, EngineState } from '../worker';
 
 export type Screen = 'home' | 'capture' | 'result' | 'frame' | 'steps';
 
@@ -22,12 +23,16 @@ export interface State {
   hint: ErrorCode | null;
   /** Name of the current step while the app works. */
   busy: string | null;
-  /** Images of the last photo, in memory only. */
-  last: { photo: Photo; steps: DebugSteps; result: LensMeasurement } | null;
+  /** Images of the last photo, in memory only. timings: duration of each stage of that photo, ms. */
+  last: { photo: Photo; steps: DebugSteps; result: LensMeasurement; timings?: Timings } | null;
+  /** Durations of the stages that run on the page (fuse, frame, stl), ms: last run of each. */
+  timings: Timings;
+  /** OpenCV.js in the worker: 'loading' shows a line on the capture screen. */
+  engine: EngineState;
 }
 
 export function initialState(): State {
-  return { screen: 'home', eye: null, shots: [], fused: null, lenses: {}, bridgeMm: DEFAULT_FRAME.bridgeMm, frame: null, error: null, hint: null, busy: null, last: null };
+  return { screen: 'home', eye: null, shots: [], fused: null, lenses: {}, bridgeMm: DEFAULT_FRAME.bridgeMm, frame: null, error: null, hint: null, busy: null, last: null, timings: {}, engine: 'idle' };
 }
 
 const KEY = 'optiframe.v1';

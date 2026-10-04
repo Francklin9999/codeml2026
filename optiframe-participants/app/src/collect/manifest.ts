@@ -6,7 +6,7 @@ export const CALLIPER_SPREAD_LIMIT_MM = 0.2;
 /** Columns of data/own_lenses.template.csv (brief 14). */
 export const OWN_LENSES_COLUMNS = ['lensId', 'description', 'A_mm_1', 'A_mm_2', 'A_mm_3', 'B_mm_1', 'B_mm_2', 'B_mm_3', 'edge_thickness_mm', 'tint', 'notes'] as const;
 /** Columns of the eval page results.csv (brief 14). */
-export const RESULTS_COLUMNS = ['file', 'lensId', 'phone', 'rep', 'A', 'B', 'perimeter', 'method', 'reprojErrMm', 'sharpness', 'errorCode'] as const;
+export const RESULTS_COLUMNS = ['file', 'lensId', 'phone', 'rep', 'A', 'B', 'perimeter', 'method', 'reprojErrMm', 'sharpness', 'error'] as const;
 export const MANIFEST_COLUMNS = [
   'file', 'mode', 'lensId', 'label', 'tags', 'eye', 'phone', 'rep', 'position', 'condition',
   'A_mm_1', 'A_mm_2', 'A_mm_3', 'B_mm_1', 'B_mm_2', 'B_mm_3', 'edge_thickness_mm', 'tint', 'notes',
@@ -133,7 +133,7 @@ export function resultsRow(m: Meta): Record<string, unknown> {
   return {
     file: m.name, lensId: m.lensId, phone: m.phone, rep: m.rep,
     A: r(m.measured?.A), B: r(m.measured?.B), perimeter: r(m.measured?.perimeter), method: m.measured?.method,
-    reprojErrMm: r(m.measured?.reprojErrMm, 4), sharpness: r(m.measured?.sharpness, 6), errorCode: m.errorCode,
+    reprojErrMm: r(m.measured?.reprojErrMm, 4), sharpness: r(m.measured?.sharpness, 6), error: m.errorCode,
   };
 }
 

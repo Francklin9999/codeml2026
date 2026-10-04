@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p .",
+    "size": "node scripts/size-report.mjs",
     "qr": "node scripts/qr.mjs"
   },
   "dependencies": {

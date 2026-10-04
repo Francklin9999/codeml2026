@@ -28,7 +28,7 @@ img, canvas, svg { max-width: 100%; }
 .banner { margin: 0 0 1rem; padding: .75rem 1rem; background: var(--warn-bg); border: 2px solid var(--warn-line); border-radius: .6rem; }
 .banner p { margin: 0 0 .6rem; }
 .hint { padding: .6rem .8rem; background: var(--hint-bg); border-left: 4px solid #e0a800; border-radius: .3rem; }
-.progress { display: flex; align-items: center; gap: .75rem; margin: 0 0 1rem; padding: .75rem 1rem; background: #eef3ff; border-radius: .6rem; font-weight: 600; }
+.progress, .engine { display: flex; align-items: center; gap: .75rem; margin: 0 0 1rem; padding: .75rem 1rem; background: #eef3ff; border-radius: .6rem; font-weight: 600; }
 .spinner { flex: none; width: 1.25rem; height: 1.25rem; border: 3px solid #b9cdfa; border-top-color: var(--brand); border-radius: 50%; animation: spin .9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
@@ -49,6 +49,8 @@ figcaption { font-size: .9rem; color: var(--muted); margin-top: .3rem; }
 .values { display: grid; grid-template-columns: 1fr auto; gap: .25rem 1rem; margin: 1rem 0; font-size: 1.1rem; }
 .values dt { color: var(--muted); }
 .values dd { margin: 0; font-weight: 700; text-align: right; }
+.timings .values { font-size: .95rem; }
+.timings dt.sub { padding-left: 1rem; }
 
 .slider { display: flex; justify-content: space-between; font-weight: 600; margin-top: .5rem; }
 input[type=range] { width: 100%; min-height: 48px; margin: 0; font-size: 1rem; accent-color: var(--brand); touch-action: pan-y; }

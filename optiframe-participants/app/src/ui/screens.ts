@@ -1,6 +1,7 @@
 import { DEFAULT_FRAME, type Eye, type FrameResult, type LensMeasurement, type Pt } from '../contracts';
 import { messageFor } from '../quality';
 import { rotationWarningDeg } from '../measure';
+import type { Timings } from '../timing';
 import { canvasOf, fmt1, h, maskImage, paintImage, strokePolygon } from './dom';
 import { BRIDGE_MAX_MM, BRIDGE_MIN_MM, SHOTS_PER_LENS, type State } from './state';
 
@@ -84,6 +85,10 @@ export function captureView(s: State, a: Actions): HTMLElement {
       h('p', null, 'Bougez légèrement le téléphone avant la photo suivante.'),
       spread ? h('p', { class: 'spread' }, `Écart entre les photos : A ${fmt1(spread.A)} mm, B ${fmt1(spread.B)} mm`) : null) : null,
     s.hint ? h('p', { class: 'hint', role: 'note' }, messageFor(s.hint)) : null,
+    // OpenCV.js is still downloading or compiling in the worker: a photo taken now waits for it.
+    s.engine === 'loading' && !busy ? h('p', { class: 'engine', role: 'status', 'data-engine': 'loading' },
+      h('span', { class: 'spinner', 'aria-hidden': 'true' }),
+      h('span', null, 'Je prépare l’outil de mesure. La première fois, cela peut prendre un moment…')) : null,
     h('div', { class: 'stack' },
       btn('Prendre la photo', a.takePhoto, 'primary', busy),
       btn('Importer une photo', a.importPhoto, 'secondary', busy),
@@ -119,6 +124,35 @@ export function resultView(s: State, a: Actions): HTMLElement {
       s.last ? btn('Pas à pas', a.showSteps, 'link') : null));
 }
 
+/** Stage names of the timings record, in the order they run. Stages nested in another one are indented. */
+const STAGES: [key: string, label: string, nested?: boolean][] = [
+  ['round-trip', 'Photo : attente totale (aller-retour avec le calcul en arrière-plan)'],
+  ['worker', 'Photo : calcul'],
+  ['rectify', 'Repérage de la feuille et redressement'],
+  ['opencv-load', 'chargement d’OpenCV', true],
+  ['detect', 'détection des marqueurs', true],
+  ['warp', 'redressement de la fenêtre', true],
+  ['sharpness', 'netteté', true],
+  ['segment', 'Isolement du verre'],
+  ['measure', 'Mesure du contour'],
+  ['fuse', 'Fusion des photos'],
+  ['frame', 'Génération de la monture'],
+  ['stl', 'Fichier STL'],
+];
+
+/** Durations in ms, measured on this device, so phone timings can be read without a debugger. */
+function timingsView(t: Timings): HTMLElement | null {
+  const rows = STAGES.filter(([k]) => Number.isFinite(t[k]));
+  const known = new Set(STAGES.map(([k]) => k));
+  for (const k of Object.keys(t)) if (!known.has(k) && Number.isFinite(t[k])) rows.push([k, k]);
+  if (!rows.length) return null;
+  return h('section', { class: 'timings' },
+    h('h2', null, 'Durées sur cet appareil'),
+    h('dl', { class: 'values' }, ...rows.flatMap(([k, label, nested]) => [
+      h('dt', { class: nested ? 'sub' : undefined }, label),
+      h('dd', { 'data-timing': k }, `${Math.round(t[k])} ms`)])));
+}
+
 export function stepsView(s: State, a: Actions): HTMLElement {
   const root = h('section', { class: 'screen', 'data-screen': 'steps' }, h('h1', null, 'Pas à pas'));
   const last = s.last;
@@ -143,6 +177,8 @@ export function stepsView(s: State, a: Actions): HTMLElement {
       fig('3', `Masque du verre (méthode ${steps.mask.method === 'model' ? 'modèle' : 'classique'})`, mask),
       fig('4', 'Contour mesuré', contour));
   }
+  const timings = timingsView({ ...last?.timings, ...s.timings });
+  if (timings) root.append(timings);
   root.append(btn('Retour', a.goHome, 'link'));
   return root;
 }

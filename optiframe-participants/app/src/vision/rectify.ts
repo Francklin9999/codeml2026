@@ -1,6 +1,7 @@
 import { OptiError, PX_PER_MM, type BoardSpec, type Photo, type Pt, type Rectified } from '../contracts';
 import { applyH, invert3, mul3, ransacHomography, type Mat3 } from './homography';
 import { loadOpenCv, type Cv } from './opencv';
+import { timed, timedAsync } from '../timing';
 
 // Frames. Board frame: mm, origin at the window's top-left corner, spec coordinates times spec.printScale
 // give physical mm. Photo pixels: centre of pixel (i, j) is at (i, j), as in OpenCV.
@@ -179,9 +180,10 @@ function planePose(H: Mat3, fPx: number, cx: number, cy: number, centre: Pt): { 
 
 /** Markers, homography, quality checks. Throws NO_REFERENCE or REFERENCE_TILTED. */
 export async function locateReference(photo: Photo, spec: BoardSpec): Promise<Reference> {
-  const cv = await loadOpenCv();
+  const cv = await timedAsync('opencv-load', loadOpenCv);
   const { width: w, height: h } = photo.image;
-  const found = detectMarkers(cv, toGrey(photo.image), w, h, spec);
+  // Detection runs on a copy shrunk to DETECT_WIDTH; only the corner refinement reads the full-resolution grey image.
+  const found = timed('detect', () => detectMarkers(cv, toGrey(photo.image), w, h, spec));
   const ps = spec.printScale;
   const img: Pt[] = [], board: Pt[] = [], owner: number[] = [];
   for (const m of spec.markers) {
@@ -308,8 +310,8 @@ export async function rectify(photo: Photo, spec: BoardSpec): Promise<Rectified>
   try {
     const ref = await locateReference(photo, spec);
     const cv = await loadOpenCv();
-    const image = warpWindow(cv, photo.image, spec, ref.H);
-    const sharpness = referenceSharpness(cv, photo.image, spec, ref.H, ref.markerIds);
+    const image = timed('warp', () => warpWindow(cv, photo.image, spec, ref.H)); // the only warp of the window, straight to PX_PER_MM
+    const sharpness = timed('sharpness', () => referenceSharpness(cv, photo.image, spec, ref.H, ref.markerIds));
     if (sharpness < MIN_SHARPNESS) throw new OptiError('BLURRY', `sharpness ${sharpness.toFixed(5)} < ${MIN_SHARPNESS}`);
     return { image, pxPerMm: PX_PER_MM, H: ref.H, reprojErrMm: ref.reprojErrMm, sharpness, cameraDistMm: ref.cameraDistMm };
   } catch (e) {

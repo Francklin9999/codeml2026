@@ -2,7 +2,8 @@ import { DEFAULT_FRAME, OptiError, type ErrorCode, type Eye, type FrameParams, t
 import { capturePhoto, pickFile } from '../capture';
 import { FILE_NAMES, contourToSvg, measurementToJson, meshToStl, saveBlob } from '../export';
 import { rotationWarningDeg } from '../measure';
-import { STEP_LABELS, finishLens, loadAssets, measureOneDebug, setProgressListener, toOptiError, type DebugSteps, type Step } from '../pipeline';
+import { STEP_LABELS, finishLens, loadAssets, measureOneDebug, setEngineListener, setProgressListener, toOptiError, warmUp, type DebugSteps, type EngineState, type Step, type Timings } from '../pipeline';
+import { now } from '../timing';
 import { version } from '../../package.json';
 import { demoError, demoMeasurement, demoPhoto, demoSteps, failWith } from './demo';
 import { h } from './dom';
@@ -15,7 +16,7 @@ import { SHOTS_PER_LENS, initialState, restoreState, saveState, type Screen, typ
 export interface Deps {
   capture(): Promise<Photo>;
   pick(): Promise<Photo>;
-  measure(photo: Photo, eye: Eye): Promise<{ result: LensMeasurement; steps: DebugSteps }>;
+  measure(photo: Photo, eye: Eye): Promise<{ result: LensMeasurement; steps: DebugSteps; timings?: Timings }>;
   finish(shots: LensMeasurement[]): LensMeasurement;
   generate(left: LensMeasurement, right: LensMeasurement, p: FrameParams): Promise<FrameResult>;
   save(data: BlobPart, filename: string, mime: string): void;
@@ -26,6 +27,8 @@ export interface Deps {
   now(): Date;
   /** Loads the sheet description and bias at start; rejects with an OptiError. */
   start(): Promise<unknown>;
+  /** Starts loading the measuring tool (OpenCV.js, in the worker) in the background; cb gets its state, at once and on every change. */
+  warm(cb: (s: EngineState) => void): void;
 }
 
 function browserStorage(): Storage | null {
@@ -45,6 +48,7 @@ function realDeps(): Deps {
     preview: createPreview,
     now: () => new Date(),
     start: loadAssets,
+    warm: (cb) => { setEngineListener(cb); warmUp(); },
   };
 }
 
@@ -63,6 +67,7 @@ function demoDeps(failure: ErrorCode | null): Deps {
     storage: null, // demo numbers must never reach a real session
     onStep: () => {},
     start: async () => {},
+    warm: (cb) => cb('ready'), // nothing to load: the demo never measures a photo
   };
 }
 
@@ -149,9 +154,9 @@ export function startApp(root: HTMLElement, search: string, override: Partial<De
       const photo = await get(); // may open the phone's camera: no progress yet
       state.busy = STEP_LABELS.locate;
       refresh();
-      const { result, steps } = await deps.measure(photo, eye);
+      const { result, steps, timings } = await deps.measure(photo, eye);
       state.shots.push(result);
-      state.last = { photo, steps, result };
+      state.last = { photo, steps, result, timings };
       state.hint = rotationWarningDeg(result) !== null ? 'LENS_ROTATED' : null;
       state.busy = null;
       if (state.shots.length >= SHOTS_PER_LENS) finishShots();
@@ -163,7 +168,9 @@ export function startApp(root: HTMLElement, search: string, override: Partial<De
 
   function finishShots(): void {
     try {
+      const t0 = now();
       state.fused = deps.finish(state.shots);
+      state.timings.fuse = now() - t0;
       state.busy = null;
       go('result');
     } catch (e) {
@@ -184,8 +191,10 @@ export function startApp(root: HTMLElement, search: string, override: Partial<De
     const ui = frameUi;
     ui.setBusy(true);
     try {
+      const t0 = now();
       const f = await deps.generate(L, R, { ...DEFAULT_FRAME, bridgeMm: state.bridgeMm });
       if (token !== frameToken) return; // a newer slider value won
+      state.timings.frame = now() - t0; // the first one includes loading the generator and its WASM
       state.frame = f;
       ui.showFrame(f);
       preview?.update(f);
@@ -214,7 +223,7 @@ export function startApp(root: HTMLElement, search: string, override: Partial<De
   };
 
   const actions: Actions = {
-    chooseEye(eye) { state.eye = eye; state.shots = []; state.fused = null; state.hint = null; state.error = null; go('capture'); },
+    chooseEye(eye) { state.eye = eye; state.shots = []; state.fused = null; state.hint = null; state.error = null; go('capture'); warm(); },
     takePhoto() { void shoot(deps.capture); },
     importPhoto() { void shoot(deps.pick); },
     finishShots,
@@ -239,7 +248,10 @@ export function startApp(root: HTMLElement, search: string, override: Partial<De
     setBridge(mm) { state.bridgeMm = mm; saveState(state, deps.storage); scheduleFrame(200); },
     downloadStl: download(() => {
       if (!state.frame) throw new OptiError('NO_LENS');
-      return [meshToStl(state.frame), FILE_NAMES.stl, 'model/stl'];
+      const t0 = now();
+      const stl = meshToStl(state.frame);
+      state.timings.stl = now() - t0;
+      return [stl, FILE_NAMES.stl, 'model/stl'];
     }),
     downloadJson: download(() => {
       const { L, R } = state.lenses;
@@ -248,8 +260,19 @@ export function startApp(root: HTMLElement, search: string, override: Partial<De
     }),
   };
 
+  // The measuring tool loads in the background from the home screen on; the capture screen says so while it is not ready.
+  function warm(): void {
+    if (state.engine === 'loading' || state.engine === 'ready') return;
+    deps.warm((e) => {
+      if (e === state.engine) return;
+      state.engine = e;
+      if (state.screen === 'capture') renderScreen();
+    });
+  }
+
   deps.onStep((step) => { state.busy = STEP_LABELS[step]; refresh(); });
   go('home');
+  warm();
   if (forced) fail(new OptiError(forced, 'demo')); // the same path as a real failure
   else if (!demo) void deps.start().catch(fail);
 

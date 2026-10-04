@@ -36,12 +36,13 @@ jobs:
           cache: npm
           cache-dependency-path: optiframe-participants/app/package-lock.json
       - run: npm ci
-      # Checks report problems but never block a deploy: a red test must not stop a demo hotfix.
+      # Typecheck and tests block the deployment: nothing red goes online.
+      # For a demo hotfix, redeploy a known-good tag or commit with the manual run above (input `ref`).
       - run: npm run typecheck
-        continue-on-error: true
       - run: npm test
-        continue-on-error: true
       - run: npm run build
+      # Fails when the JavaScript needed to show the first screen exceeds 250 kB gzip.
+      - run: npm run size
       - uses: actions/upload-pages-artifact@v3
         with:
           path: optiframe-participants/app/dist

@@ -28,8 +28,8 @@ const BRIEFS = {
   '10': { file: '10_ui-flow.md', effort: 'high', venv: 'none' },
   '14': { file: '14_eval-tools.md', effort: 'medium', venv: 'tools/.venv' },
   '17': { file: '17_data-collection.md', effort: 'medium', venv: 'none' },
-  '15': { file: '15_docs-jury.md', effort: 'medium', venv: 'none' },
-  '16': { file: '16_docs-internal.md', effort: 'medium', venv: 'none' },
+  '15': { file: '15_docs-jury.md', effort: 'high', venv: 'none', model: 'opus' },
+  '16': { file: '16_docs-internal.md', effort: 'high', venv: 'none', model: 'opus' },
 }
 
 const RULES = [
@@ -100,13 +100,13 @@ const fixPrompt = (id, blockers, who) => [
 async function buildAndVerify(ids) {
   return pipeline(
     ids,
-    (id) => agent(buildPrompt(id), { label: 'build:' + id, phase: 'Build', schema: BUILD, model: 'sonnet', effort: BRIEFS[id].effort }),
+    (id) => agent(buildPrompt(id), { label: 'build:' + id, phase: 'Build', schema: BUILD, model: BRIEFS[id].model || 'sonnet', effort: BRIEFS[id].effort }),
     async (report, id) => {
       if (!report) return { id, status: 'no build result', blockers: [] }
-      let v = await agent(verifyPrompt(id, report), { label: 'verify:' + id, phase: 'Verify', schema: VERIFY, model: 'sonnet', effort: 'medium' })
+      let v = await agent(verifyPrompt(id, report), { label: 'verify:' + id, phase: 'Verify', schema: VERIFY, model: BRIEFS[id].model || 'sonnet', effort: BRIEFS[id].model ? 'high' : 'medium' })
       if (v && !v.pass && v.blockers.length) {
-        await agent(fixPrompt(id, v.blockers, 'first fix'), { label: 'fix:' + id, phase: 'Verify', schema: FIX, model: 'sonnet', effort: 'medium' })
-        v = await agent(verifyPrompt(id, report), { label: 'reverify:' + id, phase: 'Verify', schema: VERIFY, model: 'sonnet', effort: 'medium' })
+        await agent(fixPrompt(id, v.blockers, 'first fix'), { label: 'fix:' + id, phase: 'Verify', schema: FIX, model: BRIEFS[id].model || 'sonnet', effort: BRIEFS[id].model ? 'high' : 'medium' })
+        v = await agent(verifyPrompt(id, report), { label: 'reverify:' + id, phase: 'Verify', schema: VERIFY, model: BRIEFS[id].model || 'sonnet', effort: BRIEFS[id].model ? 'high' : 'medium' })
         if (v && !v.pass && v.blockers.length) {
           log('brief ' + id + ': ' + v.blockers.length + ' blocker(s) survived a Sonnet fix, escalating to Opus')
           const f = await agent(fixPrompt(id, v.blockers, 'escalation: a first fix did not resolve these'), { label: 'fix-opus:' + id, phase: 'Verify', schema: FIX, model: 'opus', effort: 'high' })
@@ -119,22 +119,22 @@ async function buildAndVerify(ids) {
 }
 
 const integPrompt = (extra) => [
-  'Mechanical integration check of OptiFrame. Nothing else is running. Do not fix anything, do not analyse: run, read the output, report.',
+  'Integration check of OptiFrame. Nothing else is running. Do not fix anything: run, read the output, and for each failure find the real cause (a test that only times out under full-suite load is reported as such; app/src/vision/zz_probe.test.ts is a leftover probe of the unfinished sharpness fix of brief 04: attribute it to 04, whose fixer must either make extreme blur return BLURRY or delete the probe and document the limit).',
   'From ' + ROOT + '/app run, each with a 15-minute timeout: `npm run typecheck`, `npm run test`, `npm run build`. Then each Python suite that exists, from its own venv without creating one: rig/.venv, training/data/.venv, training/model/.venv, tools/.venv (`python -m pytest -q`).',
   extra,
   'For each failing test or error give the file, the first error line, and the owner brief number from the OWNERSHIP table in ' + OLD + ' (read only that table).',
 ].join('\n')
 
 async function integrate(tag, extra) {
-  let r = await agent(integPrompt(extra), { label: 'integrate:' + tag, phase: 'Integrate', schema: INTEG, model: 'haiku', effort: 'low' })
+  let r = await agent(integPrompt(extra), { label: 'integrate:' + tag, phase: 'Integrate', schema: INTEG, model: 'opus', effort: 'medium' })
   if (r && !r.pass && r.failures.length) {
     const by = {}
     for (const f of r.failures) { const o = String(f.owner).padStart(2, '0'); (by[o] = by[o] || []).push(f) }
     await parallel(Object.keys(by).map((o) => () => agent([
       'Integration fixer for OptiFrame brief ' + o + '. Nothing else is running. Edit only the files that brief owns (OWNERSHIP table in ' + OLD + '; brief text in ' + ROOT + '/agents/). Fix the root cause, do not weaken a test unless the test is wrong (say why), re-run the affected tests.',
       JSON.stringify(by[o]), RULES,
-    ].join('\n'), { label: 'integfix:' + o, phase: 'Integrate', schema: FIX, model: 'sonnet', effort: 'medium' })))
-    r = await agent(integPrompt(extra), { label: 'integrate:' + tag + '#2', phase: 'Integrate', schema: INTEG, model: 'haiku', effort: 'low' })
+    ].join('\n'), { label: 'integfix:' + o, phase: 'Integrate', schema: FIX, model: 'opus', effort: 'high' })))
+    r = await agent(integPrompt(extra), { label: 'integrate:' + tag + '#2', phase: 'Integrate', schema: INTEG, model: 'opus', effort: 'medium' })
   }
   return r
 }
@@ -165,7 +165,7 @@ if (run('perf')) {
     'Measure, do not change anything. OptiFrame web app at ' + ROOT + '/app. Run `npm run build` (15-minute timeout).',
     'Report: (1) size of the JS that index.html loads before any user action, raw and gzip, in kB (follow the script tags and static imports in dist/assets; dynamic imports do not count); (2) every file in dist larger than 0.3 MB with its size in MB and when it is fetched (at start, on first photo, on frame screen, only if a model exists, precached by sw.js: read app/public/sw.js and the loaders to answer); (3) per-stage time in ms of rectify, segmentClassic, measureLens, fuseShots (3 shots), generateFrame, meshToStl on one fixture of rig/out/fixtures, measured with a throwaway test app/tests/_perf_' + tag + '.test.ts that you delete afterwards (median of 3 runs after one warm-up; OpenCV load time reported separately as stage "opencv-load"). These are Node timings on this machine, label them so in notes.',
     RULES,
-  ].join('\n'), { label: 'perf-measure:' + tag, phase: 'Performance', schema: PERF, model: 'haiku', effort: 'low' })
+  ].join('\n'), { label: 'perf-measure:' + tag, phase: 'Performance', schema: PERF, model: 'opus', effort: 'medium' })
 
   const before = await measure('before')
   const applied = await agent([
@@ -181,7 +181,7 @@ if (run('perf')) {
     '8. deploy.yml: typecheck and tests must block the deployment (remove continue-on-error), and the size script runs after the build.',
     'Then run typecheck, the tests of every folder you touched, the new budget test, and the build. Phone timings stay TO MEASURE.',
     RULES.replace('Write only the files listed under "You own" in your brief. A needed change elsewhere goes in your report.', 'You may edit files under app/ and the deploy workflow for the eight items only.'),
-  ].join('\n'), { label: 'perf-apply', phase: 'Performance', schema: FIX, model: 'sonnet', effort: 'high' })
+  ].join('\n'), { label: 'perf-apply', phase: 'Performance', schema: FIX, model: 'opus', effort: 'high' })
   const after = await measure('after')
   out.perf = { before, applied, after }
   out.integrationPerf = await integrate('perf', 'Also run `npm run size` from app/.')
