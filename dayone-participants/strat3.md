@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE - not adopted (Claude Code, 2026-10-03) |
 | **Priority** | P1 (extractor B; fastest path to a working pipeline) |
 | **Effort** | 4–6 h |
 | **Depends on** | strategy 1 (schema, ground truth) |
@@ -111,4 +111,6 @@ Strategy 1 (scoring), 2 (hybrid), 5 (AR/EN tests), 6 (confidence), 7 (catches im
 
 | Date | Who | Model | Dataset | Field acc. | Halluc. on blanks | Leaks | Latency |
 |---|---|---|---|---|---|---|---|
-| | | | | | | | |
+| 2026-10-03 | Claude Code | Qwen2.5-VL-3B-Instruct, 4-bit, local | 200 filled crops, pages 9-24, clean / sev 2 | 0.650 / 0.245 (CRNN raw on same crops 0.840 / 0.590) | not measured on blanks | 0 (identifier zones masked before reading) | 110 ms/crop (~30 s/page) |
+
+**Implementation notes (2026-10-03).** Hybrid variant (VLM reads the registered zone crops with field label + vocabulary in the prompt). The VLM is right where the CRNN is wrong on only 8% (clean) / 6.5% (sev 2) of fields, mostly vocabulary words that constrained rescoring already repairs; too slow for full pages on an 8 GB laptop GPU. A 7B model or a hosted model was not tried (8 GB VRAM, and real data must stay local). Code kept (`work/strat3/`) for a cascade on low-confidence fields.

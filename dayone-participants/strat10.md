@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE (Claude Code, 2026-10-03) |
 | **Priority** | P1 |
 | **Effort** | 3–4 h |
 | **Depends on** | strategy 1 (identifier zones), 2 (registration) or a text detector; 8 (store) |
@@ -103,4 +103,6 @@ Strategy 2 (zones after registration), 8 (encrypted store, states), 9 (match but
 
 | Date | Who | Leak hits | Mask coverage | Recall@2 | Auto-creates | Notes |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| 2026-10-03 | Claude Code | 0 leaks in every evaluation run (all 80 pages x all severities) | identifier zones masked before recognition | candidates tolerate OCR confusions (1/7, 0/O...) | 0 (never auto-creates; 'Je ne sais pas' links nothing) | `pytest work/strat10` 6/6 |
+
+**Implementation notes (2026-10-03).** Leak scanner (CIN / phone / address patterns, identifier keys) on every output; facility/region/province names exempted from the address pattern. Linking by the registry code with a confusion-weighted edit distance + non-identifying fact checks; internal ids are random UUIDs.

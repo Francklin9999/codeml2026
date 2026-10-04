@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE (Claude Code, 2026-10-03) |
 | **Priority** | P1 (extractor A) |
 | **Effort** | 6–8 h |
 | **Depends on** | strategy 1 (schema, zones, ground truth) |
@@ -108,4 +108,6 @@ Strategy 3 (hybrid: VLM reads registered crops), 6 (confidence signals), 7 (vali
 
 | Date | Who | Dataset | Field acc. | Reg. error | Notes |
 |---|---|---|---|---|---|
-| | | | | | |
+| 2026-10-03 | Claude Code | 80 specimen pages, clean / sev 2 / sev 4 | 0.980 / 0.907 / 0.800 (field acc, full pipeline) | median 1.6 / 3.5 / 5.2 px (p90 1.7 / 6.6 / 16.7) | page type 1.000 / 0.963 / 0.875 |
+
+**Implementation notes (2026-10-03).** `register.py`: paper quad (Otsu on V) -> shift-tolerant NCC prior over the 8 blank templates -> top-2 types refined by ECC (affine at 0.15x, homography at 0.2/0.35/0.5x) on an illumination-invariant 'ink darkness' map (dividing by a local paper estimate made shadows harmless; plain-intensity ECC failed at sev 3-4). Pages 5/7 and 6/8 share the layout: decided on the region where their aligned blank forms differ, then corrected from content (newborn age in days, consultation-to-delivery gap). Zones: table cells from vector lines/headers, inline fields from label to underline end. Recognition is strategy 11's CRNN on the zone crops.

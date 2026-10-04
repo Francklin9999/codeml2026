@@ -1,0 +1,6 @@
+file,grants,lp_min_errors,lp_max_errors
+00_known_best_94_70.csv,1599,212.00000000000023,211.99999999999955
+01_conditioned_consensus.csv,1590,166.0,233.0
+02_conditioned_fixed_budget.csv,1599,166.0,232.0
+03_conservative_changes.csv,1589,186.0,228.0
+04_half_strength.csv,1587,182.0,225.99999999999955

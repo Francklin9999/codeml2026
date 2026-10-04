@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE - partly adopted (Claude Code, 2026-10-03) |
 | **Priority** | P2 |
 | **Effort** | 3 h |
 | **Depends on** | strategy 1 (ground truth, eval harness), at least two extractors among strategies 2, 3, 11 |
@@ -85,4 +85,6 @@ Strategy 2, 3, 11 (engines), 6 (confidence calibration on the arbitrated output)
 
 | Date | Who | Engines | Accuracy (single best / vote) | Blank halluc. | Review % | Notes |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| 2026-10-03 | Claude Code | CRNN x 3 stretched views (adopted); CRNN + VLM (rejected); checkpoint ensemble (code only) | 0.893 single view -> 0.933 multi-view (599 filled fields, patients 2/3/6, clean) | blank_acc 1.000 clean | see strategy 6 |
+
+**Implementation notes (2026-10-03).** `arbitrate.py` implements vote + CRNN-likelihood arbitration with a blank guard; `fieldlogic.decide_multi` scores every candidate (each view's reading, vocabulary, format repairs) by the mean CTC log-likelihood over views. VLM arbitration not adopted (strategy 3).

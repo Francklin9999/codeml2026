@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE - adopted (Claude Code, 2026-10-03) |
 | **Priority** | P2 (many fields on the form are checkboxes) |
 | **Effort** | 3–4 h |
 | **Depends on** | strategy 1 (box positions; GT from PDF drawings), strategy 2 (registration) |
@@ -82,4 +82,6 @@ Strategy 1 (box GT), 2 (registration), 6 (confidence), 9 (targeted questions), 1
 
 | Date | Who | Method | Specimen acc. | Photos acc. | Notes |
 |---|---|---|---|---|---|
-| | | | | | |
+| 2026-10-03 | Claude Code | small CNN on 40x40 box+context crops, 80k synthetic crops, 7 mark styles | 1.000 clean (v1 without hatching: 0.948, patient 4 at 0.74); 0.992 sev 2; 0.932 sev 4 | n/a | exclusive-group logic not added |
+
+**Implementation notes (2026-10-03).** The specimen's patient 4 ticks with hatching strokes, absent from the first synthetic marks: adding hatch / slash / scribble / circle styles fixed it.

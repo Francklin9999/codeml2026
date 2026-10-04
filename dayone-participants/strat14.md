@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | PARTIAL (Claude Code, 2026-10-03): adapter + webhook only |
 | **Priority** | P3 (bonus; only after the core flow works) |
 | **Effort** | 4–6 h |
 | **Depends on** | strategy 9 (dialogue manager), 8 (store / queue) |
@@ -77,4 +77,6 @@ Strategy 9 (dialogue), 8 (queue, store), 15 (offline device app for capture with
 
 | Date | Who | Option | T1–T5 | Image resolution received | Notes |
 |---|---|---|---|---|---|
-| | | | | | |
+| 2026-10-03 | Claude Code | Cloud API payloads (buttons <= 3, list for 4 options) + idempotent webhook, mocked | 2/2 offline tests | not tested (no Meta test number / token) | no message was sent to WhatsApp |
+
+**Implementation notes (2026-10-03).** A real sandbox needs an account and an access token, and the brief forbids sending real patient data to a third party; left for the team to connect with synthetic data.

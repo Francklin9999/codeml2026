@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE (Claude Code, 2026-10-03) |
 | **Priority** | P1 |
 | **Effort** | 5–6 h |
 | **Depends on** | schema from strategy 1 (a stub is fine to start) |
@@ -128,4 +128,6 @@ Strategy 9 (UI triggers transitions), 10 (linking state, role-based image access
 
 | Date | Who | Hypothesis steps | Chaos result | Encryption checks | Demo runs | Notes |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| 2026-10-03 | Claude Code | 150 examples x 60 steps (~9,000) with network flaps, 500s, duplicate acks, crash/restart | 50 records, 7 injected server errors: all SYNCHRONISÉ, 0 lost, 0 duplicated | DB + WAL grep: 0 plaintext values / image bytes; wrong PIN rejected | n/a (PWA demo in strategy 15) | `pytest work/strat8` 3/3 |
+
+**Implementation notes (2026-10-03).** SQLite store, AES-GCM per blob with scrypt-derived key, event log replay reproduces states, idempotent outbox keyed by record:version, role-restricted and logged access to the original photo.
