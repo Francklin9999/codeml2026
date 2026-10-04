@@ -32,6 +32,10 @@
 | 02:45 | Banc côté app avec un instantané du modèle (époque 4, IoU val 0,964), 300 images de test | voir constat 2 |
 | 03:05 | Seuil de confiance du modèle | voir constat 3 ; `MIN_MODEL_SCORE = 0.85` dans `segmentModel.ts`, 2 tests |
 | 03:18 | E2E sur l'URL publique en **émulation de téléphone lent** : processeur ralenti 4 fois, réseau 4G (9 Mbit/s, 60 ms), cache vide comme un téléphone neuf | Réussi. Accueil 3,4 s ; 1re photo 8,1 s (téléchargement d'OpenCV compris) ; 2e photo 3,8 s ; monture 13,9 s. Soit environ 26 s de calcul pour une paire, sous les 30 s des consignes mais avec peu de marge ; l'étape la plus lente sur processeur faible est la monture. Émulation sur PC (chargé par l'entraînement) : à confirmer sur un vrai téléphone de milieu de gamme. |
+| 03:28 | Modèle v1 terminé : IoU de validation 0,9755 ; export ONNX (écart 4,9 × 10⁻⁴) | `evaluate.py` sur 1 500 fenêtres de test : IoU 0,973 (Otsu 0,395), erreur A/B 0,38/0,39 mm à la résolution du modèle ; table mouchetée et verre monté autour de 1,3 mm |
+| 03:30 | **Chemin du modèle vérifié dans Chrome** sur l'app construite : les deux fixtures à bord très faible, refusées jusqu'ici, sont mesurées par le modèle | 50,0 × 38,0 mm (vérité 50 × 38) et 48,6 × 36,3 mm (vérité 48,6 × 36,2) ; « Pas à pas » : « méthode modèle », segmentation 3,0 s |
+| 03:33 | Seuil de confiance revérifié sur le modèle final | 14 verres inventés sur 91 fenêtres vides, confiance 0,60 à 0,75 ; 1 238 masques justes à 1 mm près, tous ≥ 0,94. À 0,85 : 0 faux verre, 0 bon masque perdu |
+| 03:37 | **Modèle livré** (`bd19f7c`, poussé sur `main`) : `app/public/models/lens_seg.onnx`, service worker v4, documents à jour | |
 
 Ces essais tournent sur un PC : ils ne remplacent pas un vrai iPhone (Safari) ni un vrai téléphone Android de milieu de gamme.
 
