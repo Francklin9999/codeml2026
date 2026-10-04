@@ -1,0 +1,13 @@
+{
+  "event_id": "LIVE-VENDOR-PROPOSAL",
+  "record_time": "2026-10-04T10:00:00-04:00",
+  "valid_time": "2026-10-04T09:45:00-04:00",
+  "subject": "go-live",
+  "kind": "proposal",
+  "statement": "Boréal propose de déplacer la mise en production au 29 octobre 2026.",
+  "actor": "Julien Moreau",
+  "authority": "vendor_statement",
+  "source": "Événement live de la présentation",
+  "affects_answers": ["Q01", "Q03"],
+  "affects_actions": []
+}
