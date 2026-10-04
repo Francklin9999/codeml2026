@@ -1,6 +1,4 @@
 file,accuracy,f1_macro
-work/strat1/predictions_01.csv,92,
-work/strat3/probe_cote_rem0.35.csv,92,
 work/strat3/batch/r2_11.csv,93.63,93.36
 work/strat3/batch/r3_11.csv,94.50,94.27
 work/strat3/batch/r4_16.csv,94.70,94.48

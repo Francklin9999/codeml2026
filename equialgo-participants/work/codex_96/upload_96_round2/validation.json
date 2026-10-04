@@ -1,0 +1,13 @@
+{
+  "round1_rows": 19,
+  "round1_unique_solution": true,
+  "round1_certified_corrections": 20,
+  "derived_accuracy": 95.5,
+  "platform_verified_combined_file": false,
+  "round2_files": 19,
+  "round2_selected_candidates": 48,
+  "overlap_selected_with_round1": 0,
+  "compatible_reference_positive_counts": [
+    1597
+  ]
+}
