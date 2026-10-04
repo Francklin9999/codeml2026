@@ -10,5 +10,6 @@
   "source": "Événement live de la présentation",
   "new_status": "VALIDATED",
   "affects_answers": ["Q01", "Q08", "Q10"],
-  "affects_actions": ["A-SEC-RETEST"]
+  "affects_actions": ["A-SEC-RETEST"],
+  "action_updates": {"A-SEC-RETEST": "closed"}
 }

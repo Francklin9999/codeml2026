@@ -8,6 +8,7 @@ that a source can never disappear silently from the evidence inventory.
 from __future__ import annotations
 
 import csv
+from collections import Counter
 import hashlib
 import html
 import io
@@ -257,7 +258,35 @@ def _text_units(text: str, relative: str) -> list[Unit]:
             units.append(Unit(f"{doc_id}@{hhmm}", relative, "meeting-line" if is_meeting else "teams-message", match.group("text"), metadata={"line": number, "timestamp": hhmm}))
         else:
             units.append(Unit(f"{stem}#L{number:04d}", relative, "text-line", stripped, metadata={"line": number}))
+    # Several speakers can intervene during the same displayed minute.  Preserve
+    # the short ID for unambiguous minutes and number only repeated minutes in
+    # their original line order.
+    timestamp_counts = Counter(
+        unit.id for unit in units if unit.kind in {"meeting-line", "teams-message"}
+    )
+    timestamp_seen: Counter[str] = Counter()
+    for unit in units:
+        if timestamp_counts[unit.id] > 1:
+            original = unit.id
+            timestamp_seen[original] += 1
+            unit.id = f"{original}-{timestamp_seen[original]}"
     return units
+
+
+def _require_unique_locators(locators: list[dict[str, Any]]) -> None:
+    duplicate_ids = sorted(
+        locator_id for locator_id, count in Counter(item["id"] for item in locators).items()
+        if count > 1
+    )
+    duplicate_anchors = sorted(
+        anchor for anchor, count in Counter(item["anchor"] for item in locators).items()
+        if count > 1
+    )
+    if duplicate_ids or duplicate_anchors:
+        raise ValueError(
+            "Duplicate final locator/anchor; "
+            f"ids={duplicate_ids}, anchors={duplicate_anchors}"
+        )
 
 
 IMAGE_TRANSCRIPTIONS: dict[str, str] = {
@@ -416,6 +445,7 @@ def extract_corpus(zip_path: Path, output_root: Path, sources_json: Path | None 
         if archive_body != email_bodies.get("E12#body"):
             raise ValueError("Expected archive email duplicate does not match E12")
 
+    _require_unique_locators(locators)
     locators.sort(key=lambda item: (item["file"], item["id"], item["anchor"]))
     sources.sort(key=lambda item: item["path"])
     locator_path = output_root / "locators.jsonl"

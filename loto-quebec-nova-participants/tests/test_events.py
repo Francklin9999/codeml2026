@@ -119,6 +119,31 @@ class EventTests(unittest.TestCase):
         self.assertEqual(state_a, state_b)
         self.assertEqual(diffs_a, diffs_b)
 
+    def test_explicit_baseline_summary_beats_higher_authority_component(self):
+        facts = [
+            {
+                "id": "F-CONTRACT",
+                "subject": "budget",
+                "type": "fact",
+                "statement": "Contrat initial 180 000 $",
+                "status": "current",
+                "authority_rank": 8,
+                "date": "2026-07-07",
+            },
+            {
+                "id": "F-TOTAL",
+                "subject": "budget",
+                "type": "fact",
+                "statement": "Total autorisé 204 000 $",
+                "status": "current",
+                "authority_rank": 3,
+                "baseline_preferred": True,
+                "date": "2026-08-14",
+            },
+        ]
+        baseline = build_baseline(facts)
+        self.assertEqual("F-TOTAL", baseline["current"]["budget"]["fact_id"])
+
 
 if __name__ == "__main__":
     unittest.main()

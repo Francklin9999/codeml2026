@@ -69,9 +69,12 @@ def build_baseline(facts: Iterable[dict[str, Any]]) -> dict[str, Any]:
             continue
         previous_date = previous.get("info_as_of") or previous.get("date") or ""
         candidate_date = fact.get("info_as_of") or fact.get("date") or ""
+        previous_preferred = bool(previous.get("baseline_preferred", False))
+        candidate_preferred = bool(fact.get("baseline_preferred", False))
         previous_rank = int(previous.get("authority_rank", 0))
         candidate_rank = int(fact.get("authority_rank", 0))
-        if (candidate_rank, candidate_date, fact_id) > (
+        if (candidate_preferred, candidate_rank, candidate_date, fact_id) > (
+            previous_preferred,
             previous_rank,
             previous_date,
             previous["id"],

@@ -6,7 +6,7 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from nova.extraction import extract_corpus
+from nova.extraction import _require_unique_locators, extract_corpus
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -61,6 +61,23 @@ class CorpusExtractionTests(unittest.TestCase):
         for locator in required:
             evidence = self.output / self.by_id[locator]["evidence_file"]
             self.assertIn(f'id="{self.by_id[locator]["anchor"]}"', evidence.read_text(encoding="utf-8"))
+
+    def test_repeated_meeting_minutes_get_deterministic_unique_suffixes(self) -> None:
+        ids = [item["id"] for item in self.locators]
+        anchors = [item["anchor"] for item in self.locators]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertEqual(len(anchors), len(set(anchors)))
+        self.assertNotIn("M04@15:23", ids)
+        self.assertTrue({"M04@15:23-1", "M04@15:23-2", "M04@15:23-3"} <= set(ids))
+        self.assertIn("M04@15:22", ids)
+
+    def test_duplicate_final_locator_fails_loudly(self) -> None:
+        records = [
+            {"id": "duplicate", "anchor": "loc-duplicate"},
+            {"id": "duplicate", "anchor": "loc-duplicate"},
+        ]
+        with self.assertRaisesRegex(ValueError, "Duplicate final locator/anchor"):
+            _require_unique_locators(records)
 
     def test_email_attachments_are_saved_and_matched(self) -> None:
         attachments = list((self.output / "attachments").iterdir())
