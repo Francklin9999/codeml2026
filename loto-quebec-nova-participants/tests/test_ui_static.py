@@ -56,6 +56,8 @@ def test_print_styles_target_a_compact_one_page_brief() -> None:
     assert "data-print" in read("assets/app.js")
     assert "Imprimer le brief" in read("assets/app.js")
     assert 'data-view="brief"' in html
+    assert ".brief-conditions table" in css
+    assert ".brief-status" in css
 
 
 def test_search_is_local_deterministic_and_abstains() -> None:
@@ -66,6 +68,10 @@ def test_search_is_local_deterministic_and_abstains() -> None:
     assert "Non documenté dans le corpus" in js
     assert "aucune donnée n’est envoyée" in read("index.html")
     assert 'var stop = ["a", "au", "aux"' in js
+    assert "function briefSearchItems()" in js
+    assert '["Inconnue", data.unknowns || data.limits]' in js
+    assert "var seen = new Set()" in js
+    assert "seen.has(dedupeKey)" in js
 
 
 def test_evidence_links_use_expected_contract_and_reject_network_urls() -> None:
@@ -91,6 +97,54 @@ def test_contradictions_render_both_claims_and_resolution() -> None:
     assert "Affirmation A" in js
     assert "Affirmation B" in js
     assert "Résolution" in js
+
+
+def test_brief_renders_status_and_go_live_conditions() -> None:
+    js = read("assets/app.js")
+    assert "État de reprise" in js
+    assert "go_live_conditions" in js
+    assert "Conditions de mise en production" in js
+    assert "current_state" in js
+    assert "action_ids" in js
+
+
+def test_decisions_render_type_and_status_badges() -> None:
+    js = read("assets/app.js")
+    assert "function renderDecisions()" in js
+    decision_function = js[js.index("function renderDecisions()") : js.index("function renderActions()")]
+    assert 'badge(text(item, ["type"]' in decision_function
+    assert 'badge(text(item, ["status"]' in decision_function
+
+
+def test_risks_render_complete_operational_fields() -> None:
+    js = read("assets/app.js")
+    assert "function renderRisks()" in js
+    risk_function = js[js.index("function renderRisks()") : js.index("function claimText")]
+    for field in ("probability", "impact", "mitigation", "origin", "owner_status"):
+        assert f'"{field}"' in risk_function
+
+
+def test_limits_render_unknown_owner_question_location_and_manual_steps() -> None:
+    js = read("assets/app.js")
+    limits_function = js[js.index("function renderLimits()") : js.index("function renderVersions()")]
+    for field in ("severity", "ask", "proposed_question", "expected_location", "manualSteps"):
+        assert field in limits_function
+    assert "Étapes manuelles" in limits_function
+
+
+def test_versions_render_event_provenance_and_impacts() -> None:
+    js = read("assets/app.js")
+    versions_function = js[js.index("function renderVersions()") : js.index("function briefSearchItems()")]
+    for field in ("actor", "authority", "source", "record_time", "valid_time", "affected_answers", "affected_actions"):
+        assert field in versions_function
+
+
+def test_questions_keep_baseline_and_separate_live_updates() -> None:
+    js = read("assets/app.js")
+    assert "function renderEventUpdates(updates)" in js
+    assert "Réponse de baseline" in js
+    assert "Mise à jour live" in js
+    assert "item.eventUpdates || item.event_updates" in js
 
 
 def test_empty_data_file_contains_no_project_claims() -> None:
