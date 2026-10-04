@@ -13,7 +13,7 @@
 | Qualité du contour | 5 | "Exporter le contour (SVG 1:1)" on the result screen; TEST_PLAN §6.6 (scale bar and lens laid on the print) | F | ☐ | Built; never printed: TO MEASURE |
 | Robustesse | 10 | TEST_PLAN §6.4 and §6.5: tilt, lighting, mounted glasses, wanted failures; spread of A and B between shots on the result screen | V | ☐ | Built; not tried on real photos: TO MEASURE |
 | Données et IA | 15 | [`DONNEES_ET_IA.md`](DONNEES_ET_IA.md), [`LICENCES_ET_OUTILS_IA.md`](LICENCES_ET_OUTILS_IA.md), `training/data/dataset_card.md`, TEST_PLAN §6.10 | D | ☐ | Tools built; no dataset shot, no model trained |
-| Web app mobile | 15 | Public URL and QR code in [`../README.md`](../README.md); TEST_PLAN §6.9 (Android Chrome, iOS Safari); TEST_PLAN §6.5 (sentences) | L | ☐ | Built; not online, not tried on a phone |
+| Web app mobile | 15 | Public URL and QR code in [`../README.md`](../README.md); TEST_PLAN §6.9 (Android Chrome, iOS Safari); TEST_PLAN §6.5 (sentences) | L | ☐ | Online (https://francklin9999.github.io/codeml2026/). End-to-end run on the live URL passes in desktop Chrome with a phone viewport (`app/bench/e2e_browser.mjs`: import, measure both lenses, SVG, STL); every page and the ten error sentences checked at 390 px wide (`app/bench/pages_smoke.mjs`). Real iPhone and Android: TO MEASURE |
 | Monture générée | 10 | Frame screen (3D preview, overlay with the gap in mm), `monture.stl`; TEST_PLAN §6.6 (`tools/validate_stl.py`, slicer, print) | F | ☐ | Built; never sliced or printed |
 | Qualité du code | 5 | [`../README.md`](../README.md) (local launch), [`ARCHITECTURE.md`](ARCHITECTURE.md), `npm test`, results reproducible with `tools/accuracy_report.py` | L | ☐ | Built; results tables empty |
 | Présentation | 10 | [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) §8 (three timed rehearsals), backup video, limits slide | L | ☐ | Script drafted; not rehearsed |
@@ -24,12 +24,12 @@ The points of the eight criteria add up to one hundred, as in the brief. Bonuses
 
 | # | Requirement | Evidence (file or screen) | Owner | Done | State today |
 |---|---|---|---|---|---|
-| F1 | Public HTTPS URL and a QR code of that URL shown during the demo | URL in [`../README.md`](../README.md); `app/public/qr.svg` from `npm run qr -- <url>`; printed QR | L | ☐ | Deploy workflow exists; Pages not enabled; no URL |
+| F1 | Public HTTPS URL and a QR code of that URL shown during the demo | URL in [`../README.md`](../README.md); `app/public/qr.svg` from `npm run qr -- <url>`; printed QR | L | ☐ | URL live; `app/public/qr.svg` generated and decoded back to the URL (jsQR); printed copies TO DO |
 | F2 | No installation, no account, no API key | Fresh phone opens the app by QR (TEST_PLAN §6.9) | L | ☐ | Static app, no key in the code; TO MEASURE on a fresh phone |
 | F3 | Mobile first: one hand, recent Chrome (Android) and Safari (iOS), readable on a 6-inch screen | TEST_PLAN §6.9; no overflow at 360 × 640 | L | ☐ | Built; never opened on a phone |
 | F4 | Camera built into the app, file import fallback if the camera is refused | Capture screen: "Prendre la photo", "Importer une photo" | L | ☐ | Built (`app/src/capture/`); TO MEASURE on both phones |
 | F5 | In-browser processing (recommended); a server only if its URL stays up | [`ARCHITECTURE.md`](ARCHITECTURE.md) §1: no server | L | ☐ | True by design |
-| F6 | Free hosting (GitHub Pages or similar); a temporary tunnel is tolerated | `.github/workflows/deploy.yml` at the Git root; `app/README.md` | L | ☐ | Workflow written; not run |
+| F6 | Free hosting (GitHub Pages or similar); a temporary tunnel is tolerated | `.github/workflows/deploy.yml` at the Git root; `app/README.md` | L | ☑ | GitHub Pages; deploys of `548901c` and `6f54bd9` green (typecheck and tests gate the deploy) |
 | F7 | No paid service and no closed API in the final version | [`LICENCES_ET_OUTILS_IA.md`](LICENCES_ET_OUTILS_IA.md); libraries self-hosted under `app/public/vendor/` | L | ☐ | No runtime network call besides the app's own files |
 | F8 | Result in under 30 seconds per pair of lenses on a mid-range phone | TEST_PLAN §6.8 ("Pas à pas" timings) | V | ☐ | TO MEASURE |
 | F9 | Button that exports the contour as SVG at 1:1 scale | Result screen: "Exporter le contour (SVG 1:1)"; TEST_PLAN §6.6 | F | ☐ | Built; print scale TO MEASURE |
@@ -46,8 +46,8 @@ The points of the eight criteria add up to one hundred, as in the brief. Bonuses
 
 | # | Deliverable | Expected content | Evidence (file or screen) | Owner | Done | State today |
 |---|---|---|---|---|---|---|
-| L1 | Web app online | Public HTTPS URL and QR code, testable on a smartphone without installation | URL and QR in [`../README.md`](../README.md) | L | ☐ | Not online |
-| L2 | Source code | Public Git repository (or shared with the jury) with local launch instructions | [`../README.md`](../README.md), `app/README.md` | L | ☐ | Repository exists; visibility to confirm |
+| L1 | Web app online | Public HTTPS URL and QR code, testable on a smartphone without installation | URL and QR in [`../README.md`](../README.md) | L | ☐ | Online with QR; a real phone still has to open it (S1) |
+| L2 | Source code | Public Git repository (or shared with the jury) with local launch instructions | [`../README.md`](../README.md), `app/README.md` | L | ☑ | https://github.com/Francklin9999/codeml2026 is public (GitHub API `visibility: public`) |
 | L3 | "Données et IA" file | Datasets and models (sources, licences), training method, performance measured on our own lenses | [`DONNEES_ET_IA.md`](DONNEES_ET_IA.md), TEST_PLAN §6.2 and §6.10 | D | ☐ | Numbers TO MEASURE |
 | L4 | Trained model | Weights loaded by the app, plus a download link if they exceed 100 MB | `app/public/models/lens_seg.onnx` | D | ☐ | Absent: no model trained |
 | L5 | "Pas à pas" page | One photo with its intermediate images (reference, rectification, contour) | [`PAS_A_PAS.md`](PAS_A_PAS.md); "Pas à pas" screen of the app | V | ☐ | Screen built; real-photo images to add |

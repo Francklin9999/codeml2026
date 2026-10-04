@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { OptiError, type Rectified } from '../contracts';
 import {
   MASK_THRESHOLD, MEAN, MODEL_H, MODEL_W, STD,
-  fillHoles, getLastTimings, isModelAvailable, largestComponent, postprocess, preprocess,
+  fillHoles, getLastTimings, isModelAvailable, largestComponent, MIN_MODEL_SCORE, postprocess, preprocess,
   resizeBilinear, segmentModel, setAssetBase, setSessionForTests, type ModelSession,
 } from './segmentModel';
 
@@ -169,8 +169,14 @@ describe('postprocess', () => {
   });
 
   it('score is the mean probability inside the mask', () => {
-    const mask = postprocess(logitsRect(96, 80, 288, 240, (x, y) => (x >= 96 && x < 288 && y >= 80 && y < 240 ? 0.4054651 : -8)), W, H, 10); // sigmoid = 0.6
-    expect(mask.score).toBeCloseTo(0.6, 3);
+    const mask = postprocess(logitsRect(96, 80, 288, 240, (x, y) => (x >= 96 && x < 288 && y >= 80 && y < 240 ? 2.1972246 : -8)), W, H, 10); // sigmoid = 0.9
+    expect(mask.score).toBeCloseTo(0.9, 2); // the bilinear border pixels pull it slightly down
+  });
+
+  it('a lens-sized mask the model is unsure of (mean probability under MIN_MODEL_SCORE) -> NO_LENS', () => {
+    expect(MIN_MODEL_SCORE).toBe(0.85);
+    const unsure = logitsRect(96, 80, 288, 240, (x, y) => (x >= 96 && x < 288 && y >= 80 && y < 240 ? 0.4054651 : -8)); // sigmoid = 0.6
+    expect(() => postprocess(unsure, W, H, 10)).toThrowError(expect.objectContaining({ code: 'NO_LENS' }));
   });
 
   it('empty or too small -> NO_LENS', () => {

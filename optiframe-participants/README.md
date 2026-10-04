@@ -8,8 +8,8 @@ Défi SN-SF (Santé Numérique Sans Frontières), CodeML 2026 : mesurer un verre
 
 | | |
 |---|---|
-| URL publique (HTTPS) | `À COMPLÉTER` |
-| QR code | `À COMPLÉTER` (généré par `npm run qr -- <url>`, fichier `app/public/qr.svg`) |
+| URL publique (HTTPS) | **https://francklin9999.github.io/codeml2026/** (GitHub Pages, déployé à chaque push sur `main` si le typecheck et les tests passent) |
+| QR code | [`app/public/qr.svg`](app/public/qr.svg), aussi servi par l'app : https://francklin9999.github.io/codeml2026/qr.svg (généré par `npm run qr -- <url>` ; décodé et vérifié) |
 | Vidéo de secours | `À COMPLÉTER` |
 
 ## 2. Ce que fait l'app

@@ -35,9 +35,29 @@ Les photos se prennent avec la page de collecte de l'app (`collect.html`, lien �
 | Masques relus à l'œil, et part jugée correcte | `À COMPLÉTER` |
 | Téléphone(s) | `À COMPLÉTER` |
 
-Point à régler avant la première séance : la page de collecte nomme les conditions `lampL`, `lampT`, `lampR`, `colour`, alors que le protocole d'origine écrit `lamp1`, `lamp2`, `lamp3`, `color`. Les noms retenus dans le jeu final : `À COMPLÉTER`.
+Noms des conditions : ceux de la page de collecte, `easy`, `room`, `lampL`, `lampT`, `lampR`, `flash`, `pattern`, `colour`. Le protocole et la fiche du jeu de données ont été alignés sur eux. `autolabel.py` accepte n'importe quel nom ; seul `easy` a un rôle.
 
 ## 3. Les images synthétiques
+
+Deux générateurs, tous deux sans aucune annotation : le masque et les dimensions A et B sont connus exactement, puisque c'est nous qui dessinons le verre.
+
+### 3.1 `synth_rig.py` : la fenêtre telle que le dispositif la montre
+
+Conçu pour les cas où la méthode sans IA abandonne, donc ceux où le modèle sert. Chaque image est la fenêtre redressée (800 × 650 pixels, 10 px/mm), avec :
+
+| Scène | Ce qui est simulé |
+|---|---|
+| `backlit` | Verre clair sur l'écran blanc vu à travers la fenêtre : niveau parfois saturé, vignettage, moiré entre la trame de l'écran et le capteur, grain du papier calque |
+| `paper` | Verre clair sur papier blanc, lumière de la pièce, sans rétro-éclairage : dégradé de la lampe, ombre du téléphone ou de la main, ombre portée et caustique du verre |
+| `table` | Verre clair sur un plan de travail moucheté (le cas montré par une équipe sur le Discord) |
+| `tinted` | Verre de soleil teinté (gris, brun, vert, bleu) sur l'un ou l'autre fond |
+| `mounted` | Verre encore dans sa monture (opaque, unie ou écaille), pont qui sort de la fenêtre, tenon |
+| `pattern` | Fonds calculés de `synth.py` (écran de couleur, rayures, grille, bruit) |
+| `empty` | Aucun verre : le masque cible est vide, pour que le modèle apprenne à dire « rien ici » |
+
+Sur toutes les scènes, le bord du verre est la difficulté principale : la bande sombre du biseau a une **largeur et une intensité qui varient le long du contour**, peut **disparaître sur des arcs entiers** (bord faible ou interrompu), et peut être recouverte par un **reflet**. S'y ajoutent : intérieur vu à travers une lentille mince (grossissement 0,9 à 1,12), transmission et teinte, reflet de traitement antireflet (vert, violet), traces de doigts, liseré clair dans le biseau, reflets de lampe ou de fenêtre sur la surface, poussières et fibres, bandes de papier et trait de coupe au bord de la fenêtre (fenêtre découpée un peu de travers), puis la chaîne du téléphone : perte de résolution (photo à moins de 10 px/mm), flou de mise au point, flou de bougé, exposition, gamma, bruit de photon et de lecture, compression JPEG. Formes : celles de `synth.py` (superellipse, rectangle arrondi, aviateur, œil de chat), 35 à 65 mm de large, tournées de ±10°.
+
+### 3.2 `synth.py` : fonds variés
 
 `training/data/synth.py` fabrique des images de la fenêtre (800 × 650 pixels) avec leur masque exact :
 
@@ -45,7 +65,7 @@ Point à régler avant la première séance : la page de collecte nomme les cond
 - rendu : grossissement du fond à l'intérieur de la forme (approximation d'une lentille mince), bord sombre, liseré plus clair, 0 à 3 reflets elliptiques, ombre douce, flou, bruit, compression JPEG ;
 - fonds : images fournies par l'équipe (option `--bg-dir`, uniquement nos propres images ou des images CC0), sinon fonds calculés (dégradé, bruit, rayures, grille, rétro-éclairage).
 
-Les images synthétiques ne vont **que dans l'entraînement**, jamais dans la validation ni le test.
+Dès qu'il y aura des photos réelles, les images synthétiques n'iront **que dans l'entraînement**, et la validation et le test seront faits sur des verres réels jamais vus. **En attendant, la validation et le test sont synthétiques**, tirés avec leurs propres graines (aucune image commune avec l'entraînement) : ils mesurent ce que le modèle a appris de la simulation, pas sa justesse sur un vrai verre.
 
 | Jeu synthétique | Valeur |
 |---|---|

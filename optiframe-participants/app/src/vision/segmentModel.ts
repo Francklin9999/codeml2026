@@ -9,6 +9,10 @@ export const MODEL_H = 320;
 export const MEAN = [0.485, 0.456, 0.406] as const;
 export const STD = [0.229, 0.224, 0.225] as const;
 export const MASK_THRESHOLD = 0.5;
+/** Below this mean probability inside the mask the model is guessing: NO_LENS, never a measurement. On the
+ *  synthetic test windows (training/data/synth_rig.py, 1500 images) every lens mask within 1 mm scored >= 0.94 and
+ *  every lens invented on an empty window scored 0.64 to 0.71. Real-photo value: TO MEASURE. */
+export const MIN_MODEL_SCORE = 0.85;
 // Same plausibility limits as the classical segmenter.
 export const MIN_LENS_AREA_MM2 = 600;
 export const MAX_LENS_AREA_MM2 = 4000;
@@ -121,8 +125,10 @@ export function postprocess(logits: ArrayLike<number>, w: number, h: number, pxP
   }
   const areaMm2 = count / (pxPerMm * pxPerMm);
   if (areaMm2 < MIN_LENS_AREA_MM2 || areaMm2 > MAX_LENS_AREA_MM2) throw new OptiError('NO_LENS', `model mask area ${areaMm2.toFixed(0)} mm2`);
+  const score = sum / count;
+  if (score < MIN_MODEL_SCORE) throw new OptiError('NO_LENS', `model not confident (${score.toFixed(2)})`);
   if (touchesBorder) throw new OptiError('LENS_OUT_OF_WINDOW', 'model mask touches the window border');
-  return { data, width: w, height: h, method: 'model', score: sum / count };
+  return { data, width: w, height: h, method: 'model', score };
 }
 
 // ---- session handling (lazy, once) ----

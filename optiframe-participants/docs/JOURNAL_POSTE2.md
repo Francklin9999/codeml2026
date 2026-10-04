@@ -28,6 +28,9 @@
 | 02:15 | Commit `548901c` du poste principal récupéré ; **l'app est en ligne** : https://francklin9999.github.io/codeml2026/ (déploiement GitHub Pages réussi) | |
 | 02:25 | Les deux essais navigateur relancés **sur l'URL publique** | E2E réussi (1re photo 4,5 s, 2e 3,5 s, monture 1,8 s, mêmes A et B). Pages : tout OK sauf `favicon.ico` demandé à la racine du domaine (`francklin9999.github.io/favicon.ico`) faute de `<link rel="icon">` → lien ajouté dans `index.html`, `eval.html`, `collect.html`, `lightbox.html`. |
 | 02:25 | Correctif de marge (constat 1) appliqué dans `app/src/vision/segmentClassic.ts` | 3 tests ajoutés dans `segmentClassic.test.ts`. Le test de marge échoue sur l'ancien code et passe sur le nouveau. Les deux tests « bande de papier » passent sur les deux : ils servent de garde-fous. `segmentClassic.test.ts` + chaîne des fixtures : 22/22. `npm run typecheck` OK. |
+| 02:20 → 03:35 | Entraînement du modèle v1 (RTX 2070 Super, précision mixte) | 15 959 images synthétiques d'entraînement (12 000 `synth_rig` + 2 000 table mouchetée et fonds variés + 1 959 `synth.py`), validation 600, test 1 500 + 300 table (graines distinctes). IoU de validation : 0,916 (époque 1) → 0,973 (époque 12). |
+| 02:45 | Banc côté app avec un instantané du modèle (époque 4, IoU val 0,964), 300 images de test | voir constat 2 |
+| 03:05 | Seuil de confiance du modèle | voir constat 3 ; `MIN_MODEL_SCORE = 0.85` dans `segmentModel.ts`, 2 tests |
 
 Ces essais tournent sur un PC : ils ne remplacent pas un vrai iPhone (Safari) ni un vrai téléphone Android de milieu de gamme.
 
@@ -44,3 +47,22 @@ Sur 200 images synthétiques « dispositif » (val), le segmenteur classique mes
 Risque réel : la feuille imprime un trait de coupe exactement au bord de la fenêtre. Si la fenêtre n'est pas découpée, une erreur de redressement de quelques dixièmes de mm fait entrer ce trait dans l'image redressée.
 
 **Correctif appliqué (02:25) dans `app/src/vision/segmentClassic.ts`** : les pixels de bord à moins de 2 mm du bord de la fenêtre sont ignorés, et un verre qui atteint cette marge compte comme « sorti » (constante `BORDER_MARGIN_MM = 2`). Mesuré d'abord sur une copie dans le banc : sur les mêmes 200 images, `LENS_OUT_OF_WINDOW` passe de 45 à 11. Ces photos deviennent des `NO_LENS`, donc rattrapables par le modèle. Aucun faux positif sur les images vides. Tests unitaires et 10 fixtures : tous verts avec la marge.
+
+### 2. Le modèle en recours multiplie par 4,7 les verres mesurés à 1 mm près (synthétique)
+
+Instantané de l'époque 4, 300 images de test synthétiques, **code de l'app** (classique, puis modèle via onnxruntime-web comme dans `worker.ts`, puis `measureLens`) :
+
+| Chemin | Verres mesurés | À 1 mm près (A et B) | Erreur moyenne A, B | Image vide prise pour un verre |
+|---|---|---|---|---|
+| Classique seul | 20 % | 17 % | 0,42 mm | 0 % |
+| Classique + modèle en recours | 100 % | 80 % | 0,52 mm | **47 %** |
+
+Sur rétro-éclairage (le dispositif prévu) : 93 % à 1 mm près avec le modèle (erreur moyenne 0,28 mm), 13 % sans. Lunettes montées : le modèle fait pire (2,8 mm), attendu, à citer comme limite. Inférence : 1,35 s médiane (Node, WASM un fil, PC chargé).
+
+### 3. Le modèle inventait un verre sur une fenêtre vide : seuil de confiance
+
+Le score d'un masque du modèle (probabilité moyenne à l'intérieur, déjà calculé par `postprocess`) sépare nettement les deux cas sur les 1 500 images de test : les 29 verres inventés sur des fenêtres vides ont un score de 0,64 à 0,71 ; **les 1 160 masques justes à 1 mm près ont tous un score ≥ 0,94**. Avec `MIN_MODEL_SCORE = 0.85`, `postprocess` répond `NO_LENS` aux 29 et garde les 1 160. À revérifier sur le modèle final et sur de vraies photos.
+
+### 4. Premier recours au modèle : 22 Mo à télécharger
+
+Le modèle (7,9 Mo en fp32) et le runtime ONNX (14,2 Mo) ne sont téléchargés qu'au premier recours. Sur le Wi-Fi d'un salon, la première photo difficile peut donc prendre de 10 à 30 s de plus. Options : précharger les deux fichiers en arrière-plan une fois OpenCV prêt, ou ouvrir l'app une fois sur le téléphone de démo avec une photo difficile avant le passage du jury. La copie int8 (2,2 Mo) n'est pas une option sûre : sur une entrée de bruit, son signe ne concorde avec le fp32 que sur 66 % des pixels.

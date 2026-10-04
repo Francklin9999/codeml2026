@@ -61,7 +61,7 @@ it.skipIf(!dir || !existsSync(resolve(dir, 'truth.csv')))('segmentation benchmar
   }
   let rows = readTruth();
   if (limit > 0) rows = rows.slice(0, limit);
-  const out: string[] = ['file,scene,A_true,B_true,classic_code,classic_score,classic_A,classic_B,model_code,model_A,model_B,model_ms,pipe_method,pipe_code,pipe_A,pipe_B'];
+  const out: string[] = ['file,scene,A_true,B_true,classic_code,classic_score,classic_A,classic_B,model_code,model_score,model_A,model_B,model_ms,pipe_method,pipe_code,pipe_A,pipe_B'];
   const runMs: number[] = [];
   for (const row of rows) {
     const r = loadRectified(row.file);
@@ -95,7 +95,7 @@ it.skipIf(!dir || !existsSync(resolve(dir, 'truth.csv')))('segmentation benchmar
     else pipe = { ...classic, method: 'classic' };
     const f = (v?: number) => (v === undefined ? '' : v.toFixed(3));
     out.push([row.file, row.scene, f(row.A), f(row.B), classic.code, f(classic.score), f(classic.A), f(classic.B),
-      model.code, f(model.A), f(model.B), Number.isNaN(ms) ? '' : ms.toFixed(1), pipe.method, pipe.code, f(pipe.A), f(pipe.B)].join(','));
+      model.code, f(model.score), f(model.A), f(model.B), Number.isNaN(ms) ? '' : ms.toFixed(1), pipe.method, pipe.code, f(pipe.A), f(pipe.B)].join(','));
   }
   writeFileSync(resolve(dir, outName), out.join('\n') + '\n');
   writeFileSync(resolve(dir, outName.replace(/\.csv$/, '_summary.json')), JSON.stringify({
