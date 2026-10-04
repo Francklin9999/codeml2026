@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import re
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -65,8 +67,53 @@ def validate_data(data_dir: Path) -> list[str]:
     return errors
 
 
-def require_valid_data(data_dir: Path) -> None:
+def _normalise_evidence(value: str) -> str:
+    value = value.replace("**", "").replace("\u00a0", " ")
+    value = unicodedata.normalize("NFC", value)
+    return re.sub(r"\s+", " ", value).strip().casefold()
+
+
+def validate_evidence(data_dir: Path, extracted_root: Path) -> list[str]:
+    """Ensure each curated quote, source and locator exists in extracted evidence."""
+
+    errors: list[str] = []
+    facts = load_json(data_dir / "facts.json", [])
+    inventory = load_json(extracted_root / "inventory.json", {"sources": []})
+    sources = {item["path"]: item for item in inventory.get("sources", [])}
+    locators: set[str] = set()
+    locator_path = extracted_root / "locators.jsonl"
+    if locator_path.exists():
+        for line in locator_path.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                locators.add(json.loads(line)["id"])
+    else:
+        errors.append("locators.jsonl absent")
+
+    for index, fact in enumerate(facts):
+        fact_id = fact.get("id", f"facts[{index}]")
+        source_file = fact.get("source_file")
+        locator = fact.get("locator")
+        quote = str(fact.get("quote", ""))
+        source = sources.get(source_file)
+        if source is None:
+            errors.append(f"{fact_id}: source inconnue {source_file!r}")
+            continue
+        if locator not in locators:
+            errors.append(f"{fact_id}: locateur inconnu {locator!r}")
+        text_path = extracted_root / source["text_path"]
+        if not text_path.is_file():
+            errors.append(f"{fact_id}: texte extrait absent {source['text_path']}")
+            continue
+        if _normalise_evidence(quote) not in _normalise_evidence(
+            text_path.read_text(encoding="utf-8")
+        ):
+            errors.append(f"{fact_id}: citation introuvable dans {source_file}")
+    return errors
+
+
+def require_valid_data(data_dir: Path, extracted_root: Path | None = None) -> None:
     errors = validate_data(data_dir)
+    if extracted_root is not None:
+        errors.extend(validate_evidence(data_dir, extracted_root))
     if errors:
         raise ValidationFailure("\n".join(errors))
-

@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from nova.validation import validate_data
+from nova.validation import validate_data, validate_evidence
 
 
 class ValidationTests(unittest.TestCase):
@@ -43,7 +43,37 @@ class ValidationTests(unittest.TestCase):
             self.assertTrue(any("Questions absentes" in error for error in errors))
             self.assertTrue(any("F-MISSING" in error for error in errors))
 
+    def test_evidence_validator_checks_source_locator_and_quote(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            data = root / "data"
+            extracted = root / "extracted"
+            (extracted / "text").mkdir(parents=True)
+            data.mkdir()
+            (data / "facts.json").write_text(
+                json.dumps(
+                    [
+                        {
+                            "id": "F-OK",
+                            "source_file": "source.txt",
+                            "locator": "SRC#L1",
+                            "quote": "preuve exacte",
+                        }
+                    ]
+                ), encoding="utf-8"
+            )
+            (extracted / "inventory.json").write_text(
+                json.dumps({"sources": [{"path": "source.txt", "text_path": "text/source.txt"}]}),
+                encoding="utf-8",
+            )
+            (extracted / "locators.jsonl").write_text(
+                json.dumps({"id": "SRC#L1"}) + "\n", encoding="utf-8"
+            )
+            (extracted / "text" / "source.txt").write_text(
+                "Une preuve exacte dans le corpus.", encoding="utf-8"
+            )
+            self.assertEqual([], validate_evidence(data, extracted))
+
 
 if __name__ == "__main__":
     unittest.main()
-
