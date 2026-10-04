@@ -1,122 +1,54 @@
-# ÉquiAlgo: fair student financing
+# ÉquiAlgo (IVADO): fair student financing
 
-Engineering and Computer Science Hackathon 2026. 24-hour challenge.
-
-A Quebec financial institution scores scholarship and student-loan applications
-with a machine learning model. It is 88% accurate. An internal audit found it
-grants awards to 48.4% of applicants from Montréal and the Capitale-Nationale,
-against 27.3% from Bas-Saint-Laurent, Côte-Nord and
-Gaspésie–Îles-de-la-Madeleine.
-
-Average R score is 27.3 in the remote regions and 28.0 in the centres. That
-accounts for part of the 21-point gap. The rest is unexplained.
-
-Your task: diagnose the bias, correct it, and propose a monitoring plan for
-production.
-
-All data is synthetic. The institution is fictional.
-
-## Setup
-
-```bash
-git clone <YOUR_REPO_URL>
-cd defi-equialgo
-python3 -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-jupyter notebook baseline_model.ipynb
-```
-
-Python 3.10 or newer. Run the notebook once before changing anything. It trains
-the production model, measures it, and audits it.
-
-## Files
-
-| File | Rows | Contents |
-|---|---|---|
-| `data/donnees_demandes.csv` | 10,000 | historical applications, with `decision_octroi` |
-| `data/candidats_evaluation.csv` | 4,000 | applications to score, no label |
-| `baseline_model.ipynb` | | production model, metrics, fairness audit |
-
-### Columns
-
-| Column | Meaning |
-|---|---|
-| `id_candidat` | identifier, `C000000` format |
-| `cote_r_equivalent` | academic performance, R score equivalent, 15 to 40 |
-| `programme_etudes` | program of study, 5 categories |
-| `region_administrative` | sensitive attribute, Quebec administrative region |
-| `code_postal_3` | first three characters of the postal code |
-| `revenu_familial_estime` | gross annual household income |
-| `heures_travail_semaine` | hours worked per week during studies |
-| `distance_domicile_campus_km` | home to campus, km |
-| `premiere_generation_universitaire` | 1 if first in family to attend university |
-| `decision_octroi` | target, 1 granted, 0 refused |
-
-Region values carry no accents and no spaces around the hyphen: `Montreal`,
-`Capitale-Nationale`, `Bas-Saint-Laurent`, `Cote-Nord`,
-`Gaspesie-Iles-de-la-Madeleine`.
+A scholarship-scoring model grants awards to 48.4% of applicants from Montréal and the
+Capitale-Nationale against 27.3% from three remote regions. The task: diagnose the bias, correct it,
+and propose a monitoring plan. All data is synthetic. Full rules: `consignes-fr.pdf`, `consignes-en.pdf`.
 
 ## Constraints
 
-**Fixed budget.** Your grant rate on the 4,000 evaluation applicants must fall
-between 36% and 44%. Outside that range the technical section scores zero.
-
-**`decision_octroi` is not the target.** Judges score against a reference
-standard built independently of the historical committee. You do not have it.
-The column records what the committee did, and the committee is under audit.
-
-**Deleting `region_administrative` does not work.** Dropping it moves the parity
-gap from 0.188 to 0.181. Dropping the postal code as well moves it to 0.173.
-Distance, hours worked, household income and postal code all carry regional
-information. Section 5 of the notebook measures this.
-
-## Deliverables
-
-A GitHub repository, public or shared with the judges, containing:
-
-- `predictions.csv` at the root. Two columns, 4,000 rows plus a header, values
-  0 or 1. The last notebook cell writes a valid example.
-- `audit_rapport.ipynb`. Measurement of the bias, your fairness metrics with
-  justification, and the proxy variables you found.
-- `model_corrige.py` or `.ipynb`. Your mitigation, with a Pareto front plot
-  across several settings of the fairness constraint.
-- `presentation.pdf`. Support for a five-minute pitch.
-
-```csv
-id_candidat,decision_octroi
-C000042,1
-C000117,0
-```
-
-## Scoring
+- **Budget.** The grant rate on the 4,000 evaluation applicants must be between 36% and 44%, otherwise
+  the technical section scores zero.
+- **`decision_octroi` is not the target.** Scoring uses a hidden reference standard built independently
+  of the historical committee.
+- **Dropping `region_administrative` is not enough.** Distance, hours worked, income and postal code
+  carry regional information.
 
 | Section | Points | Judged by |
 |---|---|---|
 | Diagnostic rigour | 25 | jury |
-| Technical solution | 35 | automated scorer |
+| Technical solution (equity 20, utility 15) | 35 | automated scorer |
 | Governance and ethics | 25 | jury |
 | Pitch and code quality | 15 | jury |
 
-The 35 automated points, both measured against the hidden reference standard:
+## Our solution
 
-- Equity, 20 points. Share of the baseline equal-opportunity gap closed. The
-  baseline gap is 0.270.
-- Utility, 15 points. Agreement with the reference standard, scaled between a
-  random budget-respecting draw and a perfect allocation.
+A sparse-spline logistic model of the historical committee, scored counterfactually: each applicant
+keeps their own cote R and working hours, every other feature is replaced by common reference profiles.
+The score is averaged over 30 seeds and the top 40% is granted (1,600 of 4,000; remote and centre both
+at 40.0%). Platform preview: 94.83% accuracy, 94.61% macro F1. Details, evidence and limits:
+[`MODEL_LOGIC.md`](MODEL_LOGIC.md).
 
-Both score zero if the budget constraint is broken.
+## Run
 
-## Notes
+```bash
+python -m venv venv
+venv\Scripts\activate             # Linux / macOS: source venv/bin/activate
+pip install -r requirements.txt
+python model_corrige.py           # writes predictions.csv and pareto_front.png
+```
 
-`fairlearn.postprocessing.ThresholdOptimizer` adjusts decision thresholds after
-training and runs in seconds. `fairlearn.reductions.ExponentiatedGradient`
-retrains under a constraint and takes minutes.
+## Files
 
-Demographic parity and equal opportunity cannot both hold when the two groups
-have different profiles. Choose one and be ready to defend the choice.
-
-A single model is not a Pareto front. Sweep the fairness constraint and plot the
-results.
-
-Mentors are available throughout.
+| Path | Contents |
+|---|---|
+| `predictions.csv` | Submission: `id_candidat,decision_octroi`, 4,000 rows |
+| `model_corrige.py` | Mitigation and Pareto front; uses `work/clean95/seeded_model.py` |
+| `model_analysis.ipynb` | Audit, proxy variables, model selection, graphs |
+| `MODEL_LOGIC.md` | What the model does and why, validation, monitoring plan |
+| `model_ensemble.py` | Entry point of the model-selection experiments in `work/codex_model/` |
+| `baseline_model.ipynb` | Organizers' production model and fairness audit |
+| `data/` | `donnees_demandes.csv` (10,000 labelled), `candidats_evaluation.csv` (4,000 to score) |
+| `work/clean95/` | Final seed-ensembled model, validation report, notebook builder |
+| `work/codex_model/` | Candidate models, reports, preview results (`platform_results.csv`) |
+| `work/agent_dgp/` | Analysis of how the synthetic data was generated |
+| `upload_final/`, `upload_model*/`, `upload_clean95/` | Files submitted to the preview, written by the scripts above |

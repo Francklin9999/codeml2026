@@ -1,5 +1,0 @@
-file,grants,changes_vs_94_70,estimated_errors_NOT_VALIDATION,description,sha256
-01_conditioned_consensus.csv,1590,49,198.62615292302,Mean of 64 moment-matched fits; probability threshold 0.5.,39a5e28bf566dce405bee9e00ab8469e70298b02e5a52809ee8d6f084d3c55ea
-02_conditioned_fixed_budget.csv,1599,50,198.7763782521604,Same fitted probabilities; exactly 1599 grants.,9d3756890cfc42e61481945baca1d51e36f60d0286d02120fdb19afb6592d8f1
-03_conservative_changes.csv,1589,26,200.2892056823265,Change only decisions with estimated correctness gain over 25 percentage points.,94c9df6bc0addda08d81e0d76be3894244ba45ed02b583e820e30a68a99d64a7
-04_half_strength.csv,1587,30,199.64536414920448,"Half-weight to feedback-conditioned probabilities, half to original prior.",08a5dcafb439729d5a2329526c3a2cbe692c89c9bab21c5075aaf40429f8d359

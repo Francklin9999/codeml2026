@@ -2,7 +2,6 @@
 
 > **À quoi ça sert :** les agents n'ont ni verre, ni téléphone, ni pied à coulisse. Tout ce qui est mesuré « pour de vrai » (précision, métriques du modèle, biais) dépend de ce que tu collectes. Cette liste dit quoi apporter, quoi photographier et comment, pour que la page `collect.html` de l'app (brief 17) range tout correctement.
 > **État :** v1 écrite avant la page de collecte. Le brief 17 la garde cohérente avec l'app (noms de fichiers, modes, quantités).
-> **Contexte du Discord :** [`MENTOR_NOTES.md`](MENTOR_NOTES.md).
 
 ---
 

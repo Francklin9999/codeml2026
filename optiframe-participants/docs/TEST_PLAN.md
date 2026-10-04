@@ -2,7 +2,7 @@
 
 > **Purpose:** the only place where real-world numbers live. A figure quoted anywhere else (README, pitch, demo) must point to a filled row here.
 > **State:** every results cell below is empty. Nothing has been measured on a real lens, a real phone or a real printer. Fill a cell only from a run you made, with the date and your initials.
-> **Read with:** [`COLLECTE_DONNEES.md`](COLLECTE_DONNEES.md) (what to shoot, in French), [`../tools/README.md`](../tools/README.md) (the report), [`ARCHITECTURE.md`](ARCHITECTURE.md), [`RISKS.md`](RISKS.md).
+> **Read with:** [`COLLECTE_DONNEES.md`](COLLECTE_DONNEES.md) (what to shoot, in French), [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ## 1. Calliper protocol (ground truth)
 
@@ -10,7 +10,7 @@
 2. Lay the lens flat, aligned on the guide line of the sheet: that line is the horizontal of the boxing system. A = width of the enclosing rectangle, B = its height.
 3. **Three readings of A and three of B**, jaws parallel to the axes, light pressure, the lens put down again between two readings. The reference is the median of the three (this is what `tools/accuracy_report.py` uses).
 4. Write the six readings, the edge thickness and the tint in `data/own_lenses.csv` (columns of [`../data/own_lenses.template.csv`](../data/own_lenses.template.csv): `lensId, description, A_mm_1, A_mm_2, A_mm_3, B_mm_1, B_mm_2, B_mm_3, edge_thickness_mm, tint, notes`; delete the two EXAMPLE rows), or type them in `collect.html`, mode Validation, which exports the same file.
-5. If possible a second person repeats the readings without seeing the first ones: the spread between people is the noise floor of the reference (strat8 E1).
+5. If possible a second person repeats the readings without seeing the first ones: the spread between people is the noise floor of the reference.
 6. Mounted glasses (SN-SF stand, they stay at the stand): A and B of each opening and the distance between lenses, without dismantling anything.
 
 ## 2. Test matrix
@@ -30,11 +30,11 @@ File names: set A `<lensId>_<phone>_<rep>.jpg`; set B `<lensId>_<pos>_<cond>.jpg
 
 | # | What | Threshold | Source | Checked with |
 |---|---|---|---|---|
-| Q1 | MAE of A and B on our own lenses, internal target | ≤ 0.5 mm | WINNING_PLAN, SN-SF mentor (ISO 12870) | `tools/accuracy_report.py` |
+| Q1 | MAE of A and B on our own lenses, internal target | ≤ 0.5 mm | SN-SF mentor (ISO 12870) | `tools/accuracy_report.py` |
 | Q2 | MAE of A and B, gate G2 and full marks of the rubric | ≤ 1.0 mm | CHALLENGE §4 | `tools/accuracy_report.py` |
 | Q3 | Spread of A or B between shots of one lens | ≤ 0.6 mm (`MAX_SPREAD_MM = 0.6`, `quality/fuse.ts`) | brief 07 | result screen, `quality` in `mesures.json` |
 | Q4 | Shift of the box centre between shots of one lens | ≤ 1.0 mm (`MAX_CENTRE_SHIFT_MM = 1.0`) | brief 07 | `INCONSISTENT_SHOTS` on set D |
-| Q5 | Printed SVG scale bar | 50.0 ± 0.2 mm | strat2 E6, strat9 T8 | calliper on the print, from Chrome and from Safari |
+| Q5 | Printed SVG scale bar | 50.0 ± 0.2 mm | printed scale bar | calliper on the print, from Chrome and from Safari |
 | Q6 | Printed reference sheet ruler | 100 mm; otherwise `rig/set_print_scale.py <measured mm>` (accepted 0.97 to 1.03) | brief 02 | calliper |
 | Q7 | STL | passes `tools/validate_stl.py` (watertight, winding consistent, single body, positive volume) **and** opens in a slicer with no error | CHALLENGE §4 | script and slicer |
 | Q8 | Rig set up by a stranger from the instruction sheet | under 2 minutes | CHALLENGE §3 | stopwatch, 3 people |
@@ -45,7 +45,7 @@ Constants in the code that these tests must confirm or move (all provisional, se
 
 | Constant | Value in code | File | Real-world value |
 |---|---|---|---|
-| `MAX_REPROJ_MM` | 0.3 mm (strat2 target 0.1 mm) | `app/src/vision/rectify.ts` | TO MEASURE |
+| `MAX_REPROJ_MM` | 0.3 mm (target 0.1 mm) | `app/src/vision/rectify.ts` | TO MEASURE |
 | `MAX_TILT_DEG` | 35° | `app/src/vision/rectify.ts` | TO MEASURE |
 | `MIN_SHARPNESS` | 0.00015 (dimensionless) | `app/src/vision/rectify.ts` | TO MEASURE |
 | `MAX_EDGE_WIDTH_PX` | 7.5 px | `app/src/vision/rectify.ts` | TO MEASURE |
@@ -108,7 +108,7 @@ One row per experiment of the adopted strategies. "Made measurable by" names wha
 | S6-E1 | Label quality of the paired capture, 50 random pairs | `training/data/autolabel.py --qc N` (11) | ≥ 95 % visually correct | | |
 | S6-E2 | Held-out lenses, hard conditions | `training/model/evaluate.py` (12) | IoU ≥ 0.97, MAE ≤ 0.7 mm | | |
 | S6-E3 | Ablation: synthetic only, real only, both | `train.py --sources synth, real, both` (12) | both best, or report honestly | | |
-| S6-E4 | Trained model against the classic segmenter (and strat5 if run) on the same hard set | `method` column of `results.csv` (14), `evaluate.py` (12) | better than classic in hard conditions | | |
+| S6-E4 | Trained model against the classic segmenter on the same hard set | `method` column of `results.csv` (14), `evaluate.py` (12) | better than classic in hard conditions | | |
 | S6-E5 | Browser latency on 2 phones; parity with PyTorch | `getLastTimings()` (13); `export_report.json` of `export.py` (12) | ≤ 3 s per lens; IoU parity ≥ 0.99 | | |
 | S7-E1 | Single shot against fused 3 shots, 8 lenses (the app fuses 1 to 3 shots, not 5) | `fuseShots` (07), result screen (10) | fused MAE ≤ 0.8 × single-shot MAE | | |
 | S7-E2 | Spread as a predictor of error | `quality.spreadA`, `spreadB` in `mesures.json` (07, 09) | positive correlation; threshold catches ≥ 80 % of shots with error > 1 mm | | |
@@ -145,14 +145,14 @@ Strategies not built as their own feature (one line each; none has a result to r
 |---|---|---|
 | 4 Refraction pattern | parked | two-shot distortion map against the classic segmenter, MAE ≤ 0.6 mm |
 | 5 Promptable foundation model | helper, not built | offline teacher for labels; browser latency ≤ 10 s per lens before shipping |
-| 11 Mechanical fixture | plan B, not built | SD of A and B ≤ 0.1 mm over 10 replaced shots (see [`RISKS.md`](RISKS.md)) |
+| 11 Mechanical fixture | plan B, not built | SD of A and B ≤ 0.1 mm over 10 replaced shots |
 | 12 Cross-polarisation | parked | background ≥ 10 × darker when crossed, outline visible on ≥ 6 of 8 lenses |
 | 13 Two-height capture | parked | recovered edge height within ± 0.5 mm on raised shapes |
 | 14 Shape model | parked | fitted A and B error ≤ 0.3 mm on corrupted edges |
 | 15 Exports (1:1 PDF only) | not built; only if the SVG print test fails | printed scale bar 50.0 ± 0.2 mm on two printers |
 | 16 Overlay | 2D overlay with the gap in mm is built (brief 10); live camera overlay parked | registration within 0.3 mm while the phone moves |
 | 17 Complete eyewear | parked | hinge coupon rotates freely after printing |
-| 19 Server-side path | plan B, not built | parity with the browser within 0.05 mm, ≤ 30 s per pair on 4G (see [`RISKS.md`](RISKS.md)) |
+| 19 Server-side path | plan B, not built | parity with the browser within 0.05 mm, ≤ 30 s per pair on 4G |
 | 20 Lens power | parked | sphere error ≤ 0.25 D on known lenses |
 
 ## 6. Results

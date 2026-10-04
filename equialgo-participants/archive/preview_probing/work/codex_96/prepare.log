@@ -1,7 +1,0 @@
-Baseline 01_pair_AB.csv: 200 observed errors; 48 selected decisions, 24.6 model-estimated errors.
-Design 9601: uniquely decoded 17/20 synthetic cases
-Design 9602: uniquely decoded 15/20 synthetic cases
-Design 9603: uniquely decoded 15/20 synthetic cases
-Design 9604: uniquely decoded 15/20 synthetic cases
-Held-out synthetic cases: 43/60 uniquely decoded
-Wrote 19 valid probe CSVs to /home/francklin99/Desktop/Coding/codeml/equialgo-participants/upload_96_probes

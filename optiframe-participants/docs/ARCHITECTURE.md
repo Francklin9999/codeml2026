@@ -1,7 +1,7 @@
 # OptiFrame: architecture
 
 > **Purpose:** how the pieces fit, for someone about to change one of them. Short on purpose.
-> **Read with:** [`../agents/WAVE1_INTERFACES.md`](../agents/WAVE1_INTERFACES.md) (exact exports and pitfalls of every module), [`../CHALLENGE.md`](../CHALLENGE.md) (the rules), [`TEST_PLAN.md`](TEST_PLAN.md) (how each claim is checked).
+> **Read with:** [`../CHALLENGE.md`](../CHALLENGE.md) (the rules), [`TEST_PLAN.md`](TEST_PLAN.md) (how each claim is checked).
 > **Rule:** no accuracy or phone-timing figure appears here. Real-world numbers are `TO MEASURE` until they are in the results tables of [`TEST_PLAN.md`](TEST_PLAN.md).
 
 ## 1. Pipeline
@@ -50,7 +50,7 @@ Offline side (Python, never loaded by the app): `rig/` draws the reference sheet
 
 ## 2. Data contracts
 
-Identical to the "Shared context" block of every brief in [`../agents/`](../agents/README.md). The code is `app/src/contracts.ts`; if this section and that file differ, the file wins and this section is fixed. Never edit the contracts without telling every module owner.
+The code is `app/src/contracts.ts`; if this section and that file differ, the file wins and this section is fixed. Never edit the contracts without telling every module owner.
 
 **Conventions.**
 - Units are millimetres everywhere outside image buffers. `PX_PER_MM = 10` for rectified images.
@@ -78,7 +78,7 @@ export type ErrorCode = 'NO_REFERENCE' | 'REFERENCE_TILTED' | 'BLURRY' | 'NO_LEN
 export class OptiError extends Error { constructor(public code: ErrorCode, detail = '') { super(code + (detail ? ': ' + detail : '')); } }
 ```
 
-**What the code adds to the contracts** (details in [`../agents/WAVE1_INTERFACES.md`](../agents/WAVE1_INTERFACES.md)):
+**What the code adds to the contracts**:
 
 - "Counter-clockwise" is meant in the numeric y-down frame: positive shoelace area. Contours have exactly 720 points.
 - `Rectified.H` maps board mm (already multiplied by `printScale`) to PHOTO pixels, 9 numbers row-major. It is not a rectified-pixel matrix.
@@ -94,23 +94,23 @@ One module = one owner brief. A change in a file goes through its brief's owner.
 
 | Entry point | File | Brief |
 |---|---|---|
-| contracts, Vite and test setup, service worker, deploy workflow | `app/src/contracts.ts`, `app/vite.config.ts`, `app/src/test/`, `app/src/swRegister.ts`, `app/public/sw.js`, `../.github/workflows/deploy.yml`, `app/README.md` | [01](../agents/01_app-scaffold-deploy.md) |
-| reference sheet, print scale, fixtures, light box | `rig/`, `app/public/board_spec.json`, `app/public/lightbox.html` | [02](../agents/02_reference-sheet.md) |
-| `capturePhoto(): Promise<Photo>`, `pickFile`, `chooseOriginalFile`, `decodeFile` | `app/src/capture/index.ts` | [03](../agents/03_capture.md) |
-| `rectify(photo: Photo, spec: BoardSpec): Promise<Rectified>`, `locateReference`, `loadOpenCv` | `app/src/vision/rectify.ts`, `opencv.ts`, `homography.ts` | [04](../agents/04_rectify.md) |
-| `segmentClassic(r: Rectified): Mask` | `app/src/vision/segmentClassic.ts` | [05](../agents/05_segment-classic.md) |
-| `measureLens(r: Rectified, m: Mask, eye: Eye): LensMeasurement`, `setBias`, `loadBias`, `rotationWarningDeg` | `app/src/measure/index.ts`, `app/public/bias.json` | [06](../agents/06_measure.md) |
-| `fuseShots(shots: LensMeasurement[]): LensMeasurement`, `messageFor(code: ErrorCode): string` | `app/src/quality/index.ts` | [07](../agents/07_quality-fusion.md) |
-| `generateFrame(left: LensMeasurement, right: LensMeasurement, p: FrameParams): Promise<FrameResult>` | `app/src/frame/index.ts` | [08](../agents/08_frame-generator.md) |
-| `contourToSvg(m: LensMeasurement): string`, `meshToStl(f: FrameResult): ArrayBuffer`, `measurementToJson`, `saveBlob` | `app/src/export/index.ts` | [09](../agents/09_exports.md) |
-| screens, `measureOne`, `measureOneDebug`, `checkSheet`, `warmUp`, `finishLens`, worker `handleMessage` | `app/index.html`, `app/src/main.ts`, `app/src/ui/`, `app/src/pipeline.ts`, `app/src/worker.ts`, `app/src/timing.ts` | [10](../agents/10_ui-flow.md) |
-| `synth.py`, `autolabel.py`, `split.py` | `training/data/` | [11](../agents/11_dataset-tools.md) |
-| `train.py`, `export.py`, `evaluate.py`, `train_colab.ipynb` | `training/model/` | [12](../agents/12_train-export.md) |
-| `segmentModel(r: Rectified): Promise<Mask>`, `isModelAvailable`, `getLastTimings` | `app/src/vision/segmentModel.ts`, `app/public/vendor/ort/` | [13](../agents/13_model-in-browser.md) |
-| evaluation page, `accuracy_report.py`, `validate_stl.py`, calliper template | `app/eval.html`, `app/src/eval/`, `tools/`, `data/` | [14](../agents/14_eval-tools.md) |
-| jury documents (French) | `README.md`, `docs/DISPOSITIF_CAPTURE.md`, `docs/PAS_A_PAS.md`, `docs/DONNEES_ET_IA.md`, `docs/LICENCES_ET_OUTILS_IA.md` | [15](../agents/15_docs-jury.md) |
-| internal documents | `docs/ARCHITECTURE.md`, `docs/TEST_PLAN.md`, `docs/RUBRIC_CHECKLIST.md`, `docs/RISKS.md`, `CLAUDE.md` | [16](../agents/16_docs-internal.md) |
-| data-collection page | `app/collect.html`, `app/src/collect/`, `docs/COLLECTE_DONNEES.md` | [17](../agents/17_data-collection.md) |
+| contracts, Vite and test setup, service worker, deploy workflow | `app/src/contracts.ts`, `app/vite.config.ts`, `app/src/test/`, `app/src/swRegister.ts`, `app/public/sw.js`, `../.github/workflows/deploy.yml` | 01 |
+| reference sheet, print scale, fixtures, light box | `rig/`, `app/public/board_spec.json`, `app/public/lightbox.html` | 02 |
+| `capturePhoto(): Promise<Photo>`, `pickFile`, `chooseOriginalFile`, `decodeFile` | `app/src/capture/index.ts` | 03 |
+| `rectify(photo: Photo, spec: BoardSpec): Promise<Rectified>`, `locateReference`, `loadOpenCv` | `app/src/vision/rectify.ts`, `opencv.ts`, `homography.ts` | 04 |
+| `segmentClassic(r: Rectified): Mask` | `app/src/vision/segmentClassic.ts` | 05 |
+| `measureLens(r: Rectified, m: Mask, eye: Eye): LensMeasurement`, `setBias`, `loadBias`, `rotationWarningDeg` | `app/src/measure/index.ts`, `app/public/bias.json` | 06 |
+| `fuseShots(shots: LensMeasurement[]): LensMeasurement`, `messageFor(code: ErrorCode): string` | `app/src/quality/index.ts` | 07 |
+| `generateFrame(left: LensMeasurement, right: LensMeasurement, p: FrameParams): Promise<FrameResult>` | `app/src/frame/index.ts` | 08 |
+| `contourToSvg(m: LensMeasurement): string`, `meshToStl(f: FrameResult): ArrayBuffer`, `measurementToJson`, `saveBlob` | `app/src/export/index.ts` | 09 |
+| screens, `measureOne`, `measureOneDebug`, `checkSheet`, `warmUp`, `finishLens`, worker `handleMessage` | `app/index.html`, `app/src/main.ts`, `app/src/ui/`, `app/src/pipeline.ts`, `app/src/worker.ts`, `app/src/timing.ts` | 10 |
+| `synth.py`, `autolabel.py`, `split.py` | `training/data/` | 11 |
+| `train.py`, `export.py`, `evaluate.py`, `train_colab.ipynb` | `training/model/` | 12 |
+| `segmentModel(r: Rectified): Promise<Mask>`, `isModelAvailable`, `getLastTimings` | `app/src/vision/segmentModel.ts`, `app/public/vendor/ort/` | 13 |
+| evaluation page, `accuracy_report.py`, `validate_stl.py`, calliper template | `app/eval.html`, `app/src/eval/`, `tools/`, `data/` | 14 |
+| jury documents (French) | `README.md`, `docs/DISPOSITIF_CAPTURE.md`, `docs/PAS_A_PAS.md`, `docs/DONNEES_ET_IA.md`, `docs/LICENCES_ET_OUTILS_IA.md` | 15 |
+| internal documents | `docs/ARCHITECTURE.md`, `docs/TEST_PLAN.md`, `docs/RUBRIC_CHECKLIST.md`, `CLAUDE.md` | 16 |
+| data-collection page | `app/collect.html`, `app/src/collect/`, `docs/COLLECTE_DONNEES.md` | 17 |
 
 Screens of the main page (`ui/screens.ts`, `data-screen` values): `home`, `capture`, `result`, `steps` ("Pas à pas": intermediate images and stage timings), `frame` (bridge, 3D preview, overlay, downloads). `?demo=1` walks them without a camera; `?demo=1&error=CODE` shows the sentence of one error code.
 
@@ -119,12 +119,10 @@ Screens of the main page (`ui/screens.ts`, `data-screen` values): `home`, `captu
 Paths relative to `optiframe-participants/` (the Git repository root is one level up and holds `.github/workflows/deploy.yml`).
 
 ```
-CHALLENGE.md, STATUS.md, CLAUDE.md, README.md (15)   rules decoded, state of the project, working rules, jury README
-consignes.pdf, manifest.json                         the organisers' brief (source of truth) and its checksum
-strat1.md ... strat20.md                             the 20 strategy files (ideas and their experiments)
-agents/        01 ... 17 briefs, README.md, WAVE1_INTERFACES.md, orchestration/ (workflow scripts, docs_backup/)
-docs/          WINNING_PLAN, PLAN_24H, DEMO_SCRIPT, MENTOR_NOTES, COLLECTE_DONNEES, HANDOFF_AUDIT,
-               ARCHITECTURE, TEST_PLAN, RUBRIC_CHECKLIST, RISKS, and the jury documents of brief 15
+CHALLENGE.md, CLAUDE.md, README.md                   rules decoded, working rules, jury README
+consignes.pdf                                        the organisers' brief (source of truth)
+docs/          DEMO_SCRIPT, COLLECTE_DONNEES, ARCHITECTURE, TEST_PLAN, RUBRIC_CHECKLIST, JOURNAL_POSTE2,
+               and the jury documents
 data/          own_lenses.template.csv (copy to own_lenses.csv for the calliper readings)
 app/
   index.html, eval.html, collect.html                the three Vite entries
@@ -160,7 +158,7 @@ There is no `work/` folder. The strategy files name `work/stratN/` folders: they
 
 ## 5. Time budget toward the 30 s limit
 
-The rule: a pair of lenses is processed in under 30 s on a mid-range phone ([`../CHALLENGE.md`](../CHALLENGE.md) §5). The "Pas à pas" screen shows the duration of each stage of the last photo on the device in hand, under the stage names below (`app/src/timing.ts`, `ui/screens.ts`). Design budget per lens from [`../strat10.md`](../strat10.md) §4.3: markers 1 s, rectify 1 s, segment 1 to 8 s, refine 1 s, fuse 1 s, at most 12 s per lens and 25 s for two.
+The rule: a pair of lenses is processed in under 30 s on a mid-range phone ([`../CHALLENGE.md`](../CHALLENGE.md) §5). The "Pas à pas" screen shows the duration of each stage of the last photo on the device in hand, under the stage names below (`app/src/timing.ts`, `ui/screens.ts`). Design budget per lens: markers 1 s, rectify 1 s, segment 1 to 8 s, refine 1 s, fuse 1 s, at most 12 s per lens and 25 s for two.
 
 | Stage (timing key) | What runs | Design budget | Mid-range Android | iPhone |
 |---|---|---|---|---|
@@ -173,7 +171,7 @@ The rule: a pair of lenses is processed in under 30 s on a mid-range phone ([`..
 | `measure` | contour refinement, parallax, bias, boxing | 1 s | TO MEASURE | TO MEASURE |
 | `round-trip` | what the page waits for one photo (worker time plus moving the pixels) | 12 s per lens | TO MEASURE | TO MEASURE |
 | `fuse` | `fuseShots`, 1 to 3 shots | 1 s | TO MEASURE | TO MEASURE |
-| `frame` | `generateFrame` (manifold-3d WASM) | 5 s (strat9 T7) | TO MEASURE | TO MEASURE |
+| `frame` | `generateFrame` (manifold-3d WASM) | 5 s | TO MEASURE | TO MEASURE |
 | `stl` | `meshToStl` | none set | TO MEASURE | TO MEASURE |
 | **Pair total** (2 lenses, shots as taken, frame, STL; user time excluded) | | **under 30 s** | TO MEASURE | TO MEASURE |
 

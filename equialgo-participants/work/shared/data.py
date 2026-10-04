@@ -1,4 +1,4 @@
-"""Shared feature construction for every EquiAlgo strategy (see strat1.md §4.3)."""
+"""Shared feature construction for every EquiAlgo strategy."""
 import numpy as np
 import pandas as pd
 

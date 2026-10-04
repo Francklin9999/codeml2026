@@ -101,7 +101,7 @@ Lignes à compléter par l'équipe. Chaque membre doit pouvoir expliquer le code
 
 | Outil | Version ou modèle | Usage | Partie du code | Relu et expliqué par |
 |---|---|---|---|---|
-| Claude Code (Anthropic) | `À COMPLÉTER` | Écriture du code et des tests à partir de fiches de tâche rédigées par module (dossier `agents/`), relecture par un second agent, rédaction des documents | `À COMPLÉTER` | `À COMPLÉTER` |
+| Claude Code (Anthropic) | `À COMPLÉTER` | Écriture du code et des tests à partir de fiches de tâche rédigées par module, relecture par un second agent, rédaction des documents | `À COMPLÉTER` | `À COMPLÉTER` |
 | Claude Code (Anthropic), modèle Claude Opus 5.5 | Session du 2026-10-04 sur un second poste ([`JOURNAL_POSTE2.md`](JOURNAL_POSTE2.md)) | Générateur synthétique du dispositif, outils de jeu de données, entraînement et export du modèle, bancs d'essai (code de l'app, navigateur réel), marge de bord du segmenteur classique, seuil de confiance et préchargement du modèle, documents | `training/data/synth_rig.py`, `build_dataset.py`, `preresize.py`, `make_bench.py`, `bench_report.py`, `training/model/train.py` (options), `app/bench/`, `app/src/vision/segmentClassic.ts` (marge), `app/src/vision/segmentModel.ts` (seuil), `app/src/worker.ts` (préchargement) | `À COMPLÉTER` |
 | `À COMPLÉTER` | `À COMPLÉTER` | `À COMPLÉTER` | `À COMPLÉTER` | `À COMPLÉTER` |
 

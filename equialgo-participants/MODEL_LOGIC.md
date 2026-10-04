@@ -106,7 +106,7 @@ Reproduce: `python work/clean95/seeded_model.py predict` (about 10 s, determinis
   stated proxy (merit = z(cote R) + 0.2·z(hours)) and are diagnostics, not accuracy.
 - The notebook's Pareto front uses that proxy, and agreement with it is high by construction because the proxy is
   the same merit definition the model implements. It shows the shape of the trade-off, not the jury's score.
-- About 5% of reference labels look like irreducible noise (`work/agent_dgp/README.md`), so no feature-based model
+- About 5% of reference labels look like irreducible noise (`work/agent_dgp/dgp_analysis.py`), so no feature-based model
   should be expected to reach 100%.
 - The merit definition is a policy choice. If the jury's reference weights income or region differently, results change.
 

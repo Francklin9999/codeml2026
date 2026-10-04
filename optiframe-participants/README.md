@@ -40,7 +40,7 @@ Temps de montage par une personne qui ne connaît pas le dispositif : `À COMPL�
 
 ## 5. Lancement local
 
-Node.js et npm suffisent pour l'app. Commandes de [`app/README.md`](app/README.md) :
+Node.js et npm suffisent pour l'app. Commandes :
 
 ```
 cd optiframe-participants/app
@@ -58,7 +58,7 @@ npm run size        # après un build : taille du JavaScript initial
 npm run preview     # sert dist/ en local
 ```
 
-Les tests de redressement lisent des images de test qui ne sont pas versionnées. Sur un clone neuf, les générer d'abord ([`rig/README.md`](rig/README.md)) :
+Les tests de redressement lisent des images de test qui ne sont pas versionnées. Sur un clone neuf, les générer d'abord :
 
 ```
 cd optiframe-participants/rig
@@ -99,7 +99,7 @@ Détail, tableaux de mesures et séparation par verre : [`docs/DONNEES_ET_IA.md`
 
 ## 8. Résultats mesurés
 
-Vérité terrain : pied à coulisse, trois lectures de A et de B par verre. Les tableaux se remplissent avec la sortie de `tools/accuracy_report.py` ([`tools/README.md`](tools/README.md)) sur les photos de [`docs/COLLECTE_DONNEES.md`](docs/COLLECTE_DONNEES.md).
+Vérité terrain : pied à coulisse, trois lectures de A et de B par verre. Les tableaux se remplissent avec la sortie de `tools/accuracy_report.py` sur les photos de [`docs/COLLECTE_DONNEES.md`](docs/COLLECTE_DONNEES.md).
 
 | Nombre de verres | Téléphones | Photos | Erreur moyenne A (mm) | Erreur moyenne B (mm) | Pire cas (mm) | Photos refusées |
 |---|---|---|---|---|---|---|
@@ -133,15 +133,13 @@ Repère donné par le mentor de SN-SF : la norme ISO 12870 tolère ±0,5 mm sur 
 
 Perspectives pour INOVA (idées étudiées, non construites) :
 
-| Idée | Fichier |
-|---|---|
-| Motif de réfraction affiché derrière le verre | [`strat4.md`](strat4.md) |
-| Polarisation croisée | [`strat12.md`](strat12.md) |
-| Capture à deux hauteurs (parallaxe mesurée) | [`strat13.md`](strat13.md) |
-| Modèle de forme des verres | [`strat14.md`](strat14.md) |
-| Lunettes complètes (verres montés, pont mesuré) | [`strat17.md`](strat17.md) |
-| Puissance du verre | [`strat20.md`](strat20.md) |
-| Superposition en direct dans la caméra | [`strat16.md`](strat16.md) |
+- Motif de réfraction affiché derrière le verre
+- Polarisation croisée
+- Capture à deux hauteurs (parallaxe mesurée)
+- Modèle de forme des verres
+- Lunettes complètes (verres montés, pont mesuré)
+- Puissance du verre
+- Superposition en direct dans la caméra
 
 ## 10. Outils d'IA utilisés
 

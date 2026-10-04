@@ -1,6 +1,6 @@
 # OptiFrame: rubric checklist
 
-> **Purpose:** every line the jury scores or requires, with the evidence that proves it and who owns it. Ticked line by line at H+23 ([`PLAN_24H.md`](PLAN_24H.md)).
+> **Purpose:** every line the jury scores or requires, with the evidence that proves it and who owns it. Ticked line by line at H+23.
 > **Source:** [`../CHALLENGE.md`](../CHALLENGE.md) §4, §5 and §6, itself taken from `consignes.pdf`.
 > **Roles:** L = lead, integration, presentation; V = capture and vision; D = data and AI; F = 3D and interface.
 > **Rule:** a box is ticked only when the evidence exists: a file in the repository, a screen on a real phone, or a filled row of [`TEST_PLAN.md`](TEST_PLAN.md) §6. "Built" in the last column means the code exists and passes its synthetic tests; it is not a tick.
@@ -29,7 +29,7 @@ The points of the eight criteria add up to one hundred, as in the brief. Bonuses
 | F3 | Mobile first: one hand, recent Chrome (Android) and Safari (iOS), readable on a 6-inch screen | TEST_PLAN §6.9; no overflow at 360 × 640 | L | ☐ | Built; never opened on a phone |
 | F4 | Camera built into the app, file import fallback if the camera is refused | Capture screen: "Prendre la photo", "Importer une photo" | L | ☐ | Built (`app/src/capture/`); TO MEASURE on both phones |
 | F5 | In-browser processing (recommended); a server only if its URL stays up | [`ARCHITECTURE.md`](ARCHITECTURE.md) §1: no server | L | ☐ | True by design |
-| F6 | Free hosting (GitHub Pages or similar); a temporary tunnel is tolerated | `.github/workflows/deploy.yml` at the Git root; `app/README.md` | L | ☑ | GitHub Pages; deploys of `548901c` and `6f54bd9` green (typecheck and tests gate the deploy) |
+| F6 | Free hosting (GitHub Pages or similar); a temporary tunnel is tolerated | `.github/workflows/deploy.yml` at the Git root | L | ☑ | GitHub Pages; deploys of `548901c` and `6f54bd9` green (typecheck and tests gate the deploy) |
 | F7 | No paid service and no closed API in the final version | [`LICENCES_ET_OUTILS_IA.md`](LICENCES_ET_OUTILS_IA.md); libraries self-hosted under `app/public/vendor/` | L | ☐ | No runtime network call besides the app's own files |
 | F8 | Result in under 30 seconds per pair of lenses on a mid-range phone | TEST_PLAN §6.8 ("Pas à pas" timings) | V | ☐ | TO MEASURE |
 | F9 | Button that exports the contour as SVG at 1:1 scale | Result screen: "Exporter le contour (SVG 1:1)"; TEST_PLAN §6.6 | F | ☐ | Built; print scale TO MEASURE |
@@ -47,7 +47,7 @@ The points of the eight criteria add up to one hundred, as in the brief. Bonuses
 | # | Deliverable | Expected content | Evidence (file or screen) | Owner | Done | State today |
 |---|---|---|---|---|---|---|
 | L1 | Web app online | Public HTTPS URL and QR code, testable on a smartphone without installation | URL and QR in [`../README.md`](../README.md) | L | ☐ | Online with QR; a real phone still has to open it (S1) |
-| L2 | Source code | Public Git repository (or shared with the jury) with local launch instructions | [`../README.md`](../README.md), `app/README.md` | L | ☑ | https://github.com/Francklin9999/codeml2026 is public (GitHub API `visibility: public`) |
+| L2 | Source code | Public Git repository (or shared with the jury) with local launch instructions | [`../README.md`](../README.md) | L | ☑ | https://github.com/Francklin9999/codeml2026 is public (GitHub API `visibility: public`) |
 | L3 | "Données et IA" file | Datasets and models (sources, licences), training method, performance measured on our own lenses | [`DONNEES_ET_IA.md`](DONNEES_ET_IA.md), TEST_PLAN §6.2 and §6.10 | D | ☐ | Sources, licences, training method and synthetic results written; performance on our own lenses TO MEASURE |
 | L4 | Trained model | Weights loaded by the app, plus a download link if they exceed 100 MB | `app/public/models/lens_seg.onnx` | D | ☑ | v2, 7.9 MB (no link needed), loaded by the live app: Chrome shows "méthode modèle" on the faint-rim fixtures (`app/bench/e2e_browser.mjs`); provenance and SHA-256 in `app/public/models/README.md` |
 | L5 | "Pas à pas" page | One photo with its intermediate images (reference, rectification, contour) | [`PAS_A_PAS.md`](PAS_A_PAS.md); "Pas à pas" screen of the app | V | ☐ | Screen built; real-photo images to add |
@@ -69,4 +69,4 @@ Tick at H+23, on the deployed version, no deployment in the last 30 minutes.
 | S6 | Rehearsed demo | Three rows filled in [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) §8; backup video plays offline | L | ☐ |
 | S7 | Every member can explain their part | Each one answers the questions of [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) §6 marked with their role | all | ☐ |
 
-Also before submitting: no figure in the README, the data file or the slides that is not in [`TEST_PLAN.md`](TEST_PLAN.md) §6; last-known-good tag pushed (`app/README.md`, Deploy).
+Also before submitting: no figure in the README, the data file or the slides that is not in [`TEST_PLAN.md`](TEST_PLAN.md) §6; last-known-good tag pushed.

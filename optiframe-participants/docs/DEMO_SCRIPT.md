@@ -81,7 +81,7 @@ Réponses à préparer avec nos propres chiffres. La colonne « Qui » indique l
 | Quelle est la différence entre votre A et celui du pied à coulisse ? | Même définition : rectangle englobant, côtés parallèles à l'horizontale du verre. L'horizontale est la ligne guide. Si le verre est posé de travers, l'app avertit. | V |
 | L'épaisseur du verre fausse-t-elle la mesure ? | Oui, par parallaxe : le bord est quelques millimètres au-dessus de la feuille. Effet estimé `À COMPLÉTER` mm, corrigé par `À COMPLÉTER`. | V |
 | Quels outils d'IA avez-vous utilisés pour coder ? | Liste déclarée dans le README. Chaque membre explique le code de sa partie. | L |
-| Que feriez-vous avec une semaine de plus ? | `À COMPLÉTER` : choisir dans la liste « Parked » de [`WINNING_PLAN.md`](WINNING_PLAN.md). | Voix |
+| Que feriez-vous avec une semaine de plus ? | `À COMPLÉTER` : choisir dans les perspectives du README (section 9). | Voix |
 | Qu'est-ce qui ne marche pas ? | La section 5, sans détour. | Voix |
 
 ## 7. Vidéo de secours

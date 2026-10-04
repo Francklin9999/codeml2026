@@ -90,7 +90,7 @@ Dès qu'il y aura des photos réelles, les images synthétiques n'iront **que da
 
 Pourquoi ce modèle : il est petit, il s'entraîne en peu de temps sur Colab, et il tourne dans le navigateur sans serveur. Le modèle voit toujours la fenêtre redressée, donc le verre à une échelle connue : la tâche est plus simple qu'une segmentation sur photo brute. Écartés : Ultralytics YOLO (licence AGPL-3.0) et Segment Anything dans le navigateur (trop lourd) ; SAM reste une option d'étiquetage hors ligne décrite dans le protocole, non utilisée à ce jour.
 
-Commandes exactes : `training/model/README.md`. Carnet Colab : `training/model/train_colab.ipynb`.
+Carnet Colab : `training/model/train_colab.ipynb`.
 
 | Entraînement réalisé | Valeur |
 |---|---|

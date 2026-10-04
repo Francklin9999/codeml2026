@@ -2,7 +2,6 @@
 
 > **Source of truth:** [`consignes.pdf`](consignes.pdf) (SN-SF, 5 pages, French only). Everything below is taken from it unless tagged otherwise.
 > **Tags:** **[brief]** = stated in the PDF. **[assumption]** = our reading of an ambiguous sentence, to confirm with a mentor (see [§10](#10-ambiguities-to-clear-with-a-mentor-in-the-first-hour)). **[ours]** = our own target or advice.
-> **Read next:** [`docs/WINNING_PLAN.md`](docs/WINNING_PLAN.md) for how we intend to win, [`docs/PLAN_24H.md`](docs/PLAN_24H.md) for who does what and when.
 
 ---
 
@@ -175,7 +174,7 @@ Team roles suggested in the annex:
 
 Each answer changes a design decision. Until answered, we build for the stricter reading.
 
-**Answers received so far** (Discord, paraphrased in [`docs/MENTOR_NOTES.md`](docs/MENTOR_NOTES.md)): the organisers keep about ten pairs of *mounted* glasses at the SN-SF stand for testing segmentation (relevant to question 1), and the SN-SF mentor gives ±0.5 mm (ISO 12870) as the real tolerance on lens size **and bridge**. No answer yet on the other questions.
+**Answers received so far** (Discord, paraphrased): the organisers keep about ten pairs of *mounted* glasses at the SN-SF stand for testing segmentation (relevant to question 1), and the SN-SF mentor gives ±0.5 mm (ISO 12870) as the real tolerance on lens size **and bridge**. No answer yet on the other questions.
 
 | # | Question | Why it matters |
 |---|---|---|

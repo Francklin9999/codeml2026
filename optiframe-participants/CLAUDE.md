@@ -3,17 +3,16 @@
 ## What this is
 A 24-hour hackathon project. A static mobile web app (public HTTPS URL, no install, no account, no API key, no paid or closed service) photographs a spectacle lens lying in the window of a printed reference sheet, rectifies the photo, segments the lens, measures width A, height B and perimeter in mm, then generates a 3D-printable frame front (two rims, bridge, hinge tenons) as a watertight STL. All processing runs in the browser, under 30 s per pair, on recent Chrome (Android) and Safari (iOS). The jury compares A and B with a calliper: full marks at a mean error of 1 mm or less.
 
-Read first: `STATUS.md` (state today), `CHALLENGE.md` (rules and rubric), `docs/ARCHITECTURE.md` (pipeline, contracts, layout), `agents/WAVE1_INTERFACES.md` (what each module really exports).
+Read first: `CHALLENGE.md` (rules and rubric), `docs/ARCHITECTURE.md` (pipeline, contracts, layout).
 
 ## Rules
-1. **One module = one owner brief.** The table in `docs/ARCHITECTURE.md` §3 and `agents/README.md` says which brief owns which files. Edit only inside the module you were asked to change; a change needed elsewhere is reported, not made.
+1. **One module = one owner.** The table in `docs/ARCHITECTURE.md` §3 says which files belong to which module. Edit only inside the module you were asked to change; a change needed elsewhere is reported, not made.
 2. **Never state an accuracy figure that is not in the TEST_PLAN results** (`docs/TEST_PLAN.md` §6). The same goes for phone timings, model metrics and print results. Until measured, write `TO MEASURE` (English) or `À COMPLÉTER` (French). Numbers from synthetic tests are labelled as synthetic.
-3. **Never change `app/src/contracts.ts`** without telling every owner; the same block is copied in every brief and in `docs/ARCHITECTURE.md` §2.
+3. **Never change `app/src/contracts.ts`** without telling every owner; the same block is copied in `docs/ARCHITECTURE.md` §2.
 4. Failures leave a module as `OptiError` with a code of `ErrorCode`; no other exception, and no technical text on screen (`quality/messageFor` gives the French sentence).
-5. `work/stratN/` folders named in the `stratN.md` files are scratch space, not source: do not create them for product code, do not import from them, do not document them as part of the app. When a strategy conflicts with a brief or a contract, the brief wins.
-6. Keep it small: no extra feature, no abstraction for later, comments only where the reason is not obvious. No UI framework, no CDN at runtime (third-party libraries are self-hosted under `app/public/vendor/`).
-7. No personal data in photos or datasets (faces, names, prescriptions). No manual annotation of evaluation photos.
-8. AI tools used on the project are declared in `docs/LICENCES_ET_OUTILS_IA.md` as they are used.
+5. Keep it small: no extra feature, no abstraction for later, comments only where the reason is not obvious. No UI framework, no CDN at runtime (third-party libraries are self-hosted under `app/public/vendor/`).
+6. No personal data in photos or datasets (faces, names, prescriptions). No manual annotation of evaluation photos.
+7. AI tools used on the project are declared in `docs/LICENCES_ET_OUTILS_IA.md` as they are used.
 
 ## Conventions
 - Millimetres everywhere outside image buffers; rectified images are 10 px/mm (`PX_PER_MM`).
@@ -46,7 +45,7 @@ cd .. && tools/.venv/Scripts/python -m pytest tools/tests -q
 tools/.venv/Scripts/python tools/accuracy_report.py results.csv own_lenses.csv
 tools/.venv/Scripts/python tools/validate_stl.py monture.stl
 ```
-On macOS and Linux use `.venv/bin/python`. Deployment: push to `main`; the workflow is `.github/workflows/deploy.yml` at the Git repository root (see `app/README.md`).
+On macOS and Linux use `.venv/bin/python`. Deployment: push to `main`; the workflow is `.github/workflows/deploy.yml` at the Git repository root.
 
 ## Before saying "done"
 - Typecheck and the tests of the module you touched pass; say what you ran and its result.

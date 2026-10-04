@@ -10,7 +10,6 @@ the code written on the registry — never by her name.
 | Demo script | [`DEMO.md`](DEMO.md) (offline capture → connectivity back → review of an uncertain field → match decision) |
 | Record lifecycle | [`LIFECYCLE.md`](LIFECYCLE.md) (one transition table shared by the app and the tested model) |
 | Measured results | [`work/RESULTS_SUMMARY.md`](work/RESULTS_SUMMARY.md), every run in [`work/results.md`](work/results.md) |
-| Engineering notes, per strategy | [`work/README.md`](work/README.md) and `strat1.md … strat20.md` (status + results log of each) |
 | What would need an external resource | [`AMELIORATIONS_EXTERNES.md`](AMELIORATIONS_EXTERNES.md) (Gemini, data collection day, bigger GPU, WhatsApp) |
 
 ## Quick start (≈ 5 min, no training needed)
@@ -31,7 +30,7 @@ A full automated rehearsal runs at `http://localhost:8765/?db=e2e&e2e=1`.
 
 Trained models ship in `models/` (CRNN 13 MB fp16, checkbox CNN 0.3 MB, calibrator as plain JSON). Page templates
 are rebuilt from the specimen PDF automatically on first use. Re-training everything is documented in
-`work/README.md` (synthetic data generation + a few hours on a laptop GPU).
+`work/` (synthetic data generation + a few hours on a laptop GPU).
 
 ## Architecture
 

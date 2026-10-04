@@ -1,7 +1,0 @@
-file,model,rule,grants,pred_errors_model,pred_sd_model,P_beat_212_model,pred_errors_calibrated,pred_sd_calibrated,P_beat_212_calibrated,changed_vs_r4_16,min_diff_scored_files,min_diff_team_pending
-work/agent_readings/ar_01.csv,rank blend,top 1595 by rank blend 0.25 x r4_16 score + 0.75 x model_B_spline_academic_hours,1595,211.0,2.4,0.505,213.4,3.6,0.296,24,8,18
-work/agent_readings/ar_02.csv,probit_base5_ridge.05,top 1602 by z_cote +0.194 z_hours +0.015 z_loginc -0.010 z_firstgen -0.003 z_logdist -0.015 remote (MAP of probit_base5_ridge.05),1602,211.8,3.0,0.4,214.2,4.5,0.275,17,17,19
-work/agent_readings/ar_03.csv,hours-curve,top 1595 by hours-curve a=0.18 a2=0.02 d=-0.05,1595,212.9,3.6,0.292,215.4,5.4,0.233,28,18,26
-work/agent_readings/ar_04.csv,linear,top 1603 by linear a=0.195 d=-0.07,1603,212.9,2.5,0.218,215.4,3.7,0.147,10,10,8
-work/agent_readings/ar_05.csv,rank blend,top 1595 by rank blend 0.50 x r4_16 score + 0.50 x model_F_ensemble,1595,212.8,2.4,0.224,215.3,3.7,0.149,16,8,14
-work/agent_readings/ar_06.csv,probit_base4_regions,"top 1603 by posterior-mean P(ref=1) over 200 draws of probit_base4_regions [z_cote + w.(z_hours, z_loginc, z_firstgen, z_logdist, reg_Cap, reg_Bas, reg_Cot, reg_Gas), sigma]",1603,212.4,3.2,0.33,214.9,4.7,0.239,20,18,20

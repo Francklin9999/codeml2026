@@ -1,3 +1,0 @@
-Baseline certified_19_readings_180_errors.csv: 180 errors (Derived from upload_96_probes: 20 certified corrections); 48 selected decisions, 26.9 model-estimated errors.
-Reused the independently tested subset design; selected new applicants.
-Wrote 19 valid probe CSVs to /home/francklin99/Desktop/Coding/codeml/equialgo-participants/upload_96_round2
