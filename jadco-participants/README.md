@@ -7,7 +7,7 @@ Les CSV CRM restent à la racine : ils ne sont jamais inclus dans le bundle.
 ## Prêt pour le jury
 
 - [`work/submission/jadco_submission.zip`](work/submission/jadco_submission.zip) : bundle vérifié, avec manifeste SHA-256.
-- [`work/presentation/presentation.pdf`](work/presentation/presentation.pdf) : huit diapositives avec graphiques calculés.
+- [`presentation.pdf`](presentation.pdf) : huit diapositives avec graphiques calculés (copie de `work/presentation/presentation.pdf`, régénérée par `release.py`).
 - [`work/presentation/PRESENTATION.md`](work/presentation/PRESENTATION.md) : notes de présentation et réponses aux questions du jury.
 - [`work/final/outputs/final_answer.json`](work/final/outputs/final_answer.json) : estimation, définition, bandes et scénarios.
 - [`work/final/AUDIT_PROGRESS.md`](work/final/AUDIT_PROGRESS.md) : provenance, corrections et limites.
