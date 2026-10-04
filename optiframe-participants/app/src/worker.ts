@@ -91,6 +91,21 @@ export async function handleMessage(msg: WorkerRequest, onStep: (s: Step) => voi
   }
 }
 
+/**
+ * Loads the optional model in the background once OpenCV is ready, so the first photo that needs it does not wait
+ * for its download (model about 8 MB + onnxruntime 14 MB). Without a deployed model this is one HEAD request.
+ * Skipped when the browser asks to save data. Resolves with whether the model is ready; never rejects.
+ */
+export async function prefetchModel(nav: { connection?: { saveData?: boolean } } | undefined = (globalThis as { navigator?: { connection?: { saveData?: boolean } } }).navigator): Promise<boolean> {
+  if (nav?.connection?.saveData) return false;
+  try {
+    const model = await import('./vision/segmentModel');
+    return await model.isModelAvailable();
+  } catch {
+    return false;
+  }
+}
+
 /** Is the sheet readable in this photo? Resolves with the marker count when it can be read. */
 export async function handleCheck(msg: CheckRequest): Promise<CheckResponse> {
   try {
@@ -115,7 +130,7 @@ if (typeof scope.WorkerGlobalScope !== 'undefined' && globalThis instanceof (sco
     const msg = e.data;
     if (msg?.type === 'warmup') {
       // The 13 MB of OpenCV.js are fetched and compiled here, off the UI thread; photos share the same promise.
-      loadOpenCv().then(() => scope.postMessage({ engine: 'ready' }), () => scope.postMessage({ engine: 'failed' }));
+      loadOpenCv().then(() => { scope.postMessage({ engine: 'ready' }); void prefetchModel(); }, () => scope.postMessage({ engine: 'failed' }));
       return;
     }
     const image = msg?.photo?.image;

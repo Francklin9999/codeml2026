@@ -14,7 +14,7 @@ vi.mock('./vision/segmentClassic', () => ({ segmentClassic }));
 vi.mock('./vision/segmentModel', () => ({ isModelAvailable, segmentModel }));
 vi.mock('./measure', () => ({ measureLens, setBias }));
 
-import { handleMessage, ownBuffers, type WorkerRequest } from './worker';
+import { handleMessage, ownBuffers, prefetchModel, type WorkerRequest } from './worker';
 
 const photo: Photo = { image: new ImageData(2, 2), source: 'file' };
 const spec = {} as BoardSpec;
@@ -152,5 +152,26 @@ describe('worker pipeline', () => {
     const spec = { printScale: 2, markers: [{ id: 0, corners: [[0, 0], [1, 0], [1, 1], [0, 1]] }] } as unknown as BoardSpec;
     const res = await handleMessage({ ...request, type: 'debug', spec });
     expect(res).toEqual({ ok: true, result: { tag: 'result' }, timings: expect.any(Object), debug: { markers: [[[5, 7], [7, 7], [7, 9], [5, 9]]], rectified: rectified.image, mask } });
+  });
+});
+
+describe('prefetchModel (background load once OpenCV is ready)', () => {
+  beforeEach(() => { isModelAvailable.mockReset(); });
+
+  it('loads the model session when one is deployed', async () => {
+    isModelAvailable.mockResolvedValue(true);
+    expect(await prefetchModel({})).toBe(true);
+    expect(isModelAvailable).toHaveBeenCalledTimes(1);
+  });
+
+  it('does nothing when the browser asks to save data', async () => {
+    isModelAvailable.mockResolvedValue(true);
+    expect(await prefetchModel({ connection: { saveData: true } })).toBe(false);
+    expect(isModelAvailable).not.toHaveBeenCalled();
+  });
+
+  it('never rejects, even if loading throws', async () => {
+    isModelAvailable.mockRejectedValue(new Error('offline'));
+    expect(await prefetchModel(undefined)).toBe(false);
   });
 });
