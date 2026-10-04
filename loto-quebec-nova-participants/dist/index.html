@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Mémoire opérationnelle hors ligne du projet NOVA">
+  <title>NOVA — Mémoire opérationnelle</title>
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-view="brief">
+  <a class="skip-link" href="#contenu">Aller au contenu</a>
+  <header class="site-header">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">N</span>
+      <div>
+        <p class="eyebrow">Mémoire opérationnelle</p>
+        <p class="brand-name">Projet NOVA</p>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span class="offline-badge"><span aria-hidden="true">●</span> Disponible hors ligne</span>
+      <span id="as-of" class="as-of"></span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <nav class="side-nav" aria-label="Sections de la mémoire">
+      <a href="#brief" data-route="brief">Tableau de bord</a>
+      <a href="#questions" data-route="questions">Questions Q01–Q10</a>
+      <a href="#timeline" data-route="timeline">Chronologie</a>
+      <a href="#decisions" data-route="decisions">Décisions</a>
+      <a href="#contradictions" data-route="contradictions">Contradictions</a>
+      <a href="#actions" data-route="actions">Actions</a>
+      <a href="#risks" data-route="risks">Risques</a>
+      <a href="#sources" data-route="sources">Sources</a>
+      <a href="#limits" data-route="limits">Limites</a>
+      <a href="#versions" data-route="versions">Versions et diff</a>
+    </nav>
+
+    <div class="workspace">
+      <form id="search-form" class="search" role="search">
+        <label for="search-input">Rechercher dans les faits vérifiés</label>
+        <div class="search-row">
+          <input id="search-input" name="q" type="search" autocomplete="off"
+                 placeholder="Ex. sécurité, facture, mise en production">
+          <button type="submit">Rechercher</button>
+        </div>
+        <p class="search-hint">Recherche locale seulement · aucune donnée n’est envoyée.</p>
+      </form>
+
+      <main id="contenu" tabindex="-1">
+        <div id="app-status" class="status-banner" role="status" aria-live="polite"></div>
+        <section id="view" aria-live="polite" aria-busy="false"></section>
+      </main>
+    </div>
+  </div>
+
+  <noscript>
+    <div class="noscript">JavaScript est requis pour parcourir cette copie locale. Aucune connexion réseau n’est nécessaire.</div>
+  </noscript>
+
+  <!-- Le générateur remplace ou précède ce fichier par window.NOVA_DATA = {...}. -->
+  <script src="nova-data.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
