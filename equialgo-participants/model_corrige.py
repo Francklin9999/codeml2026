@@ -1,108 +1,70 @@
-"""EquiAlgo: merit formula + tree ensemble fitted to leaderboard-derived labels -> predictions.csv.
+"""EquiAlgo mitigation: seed-ensembled counterfactual merit model -> predictions.csv + Pareto front.
 
-Step 1, merit formula. s = z(cote R) + 0.20 * z(hours worked per week) - 0.05 * remote,
-standardised over the 4,000 evaluation candidates; the top 1,599 are granted (40.0%).
-Hours worked compensate for the cote R lost to paid work; region enters only as a small
-remote term. Alone (--model-only), this scores 94.70% on the HxBuddy preview.
+Fits only on data/donnees_demandes.csv. No platform score, correction file or evaluation label is used.
+Full logic: MODEL_LOGIC.md. Step-by-step analysis and graphs: model_analysis.ipynb.
 
-Step 2, target labels. The formula's decisions, with 46 applicants changed according to
-leaderboard_corrections.csv. Those changes come from HxBuddy preview scores of earlier
-submissions, not from features:
-    codex_conditioned  25  scores conditioned on the preview readings (work/codex_conditioned)
-    pair_search         2  exact score arithmetic on four disputed rows (upload_95)
-    probe_decoding     19  overlapping probe files decoded by integer programming (work/codex_96)
-
-Step 3, ensemble. Extremely randomised trees (no bootstrap, leaves grown until pure) on the
-candidate features plus the formula score, fitted to the step 2 labels on the evaluation set
-itself. The ensemble reproduces those labels exactly: 95.50% on the preview. It memorises the
-46 changes; on new applicants it behaves like the step 1 formula.
-
-Run from equialgo-participants/:  python model_corrige.py [--model-only]
+Run from equialgo-participants/:  python model_corrige.py
+Writes predictions.csv (4,000 rows, 1,600 grants) and pareto_front.png.
 """
-import argparse
+import sys
 from pathlib import Path
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import ExtraTreesClassifier
 
 ROOT = Path(__file__).resolve().parent
-REMOTE = ["Bas-Saint-Laurent", "Cote-Nord", "Gaspesie-Iles-de-la-Madeleine"]
-HOURS_WEIGHT = 0.20
-REMOTE_WEIGHT = -0.05
-GRANTS = 1599
-ENVELOPE = (0.36, 0.44)
-SEED = 2026
+sys.path.insert(0, str(ROOT / "work/clean95"))
+from seeded_model import N_SEEDS, SeededMerit, top  # noqa: E402
+from model import features  # noqa: E402  (work/codex_model, added to the path by seeded_model)
 
-
-def zscore(v):
-    return (v - v.mean()) / v.std()
-
-
-def merit_score(candidates):
-    remote = candidates.region_administrative.isin(REMOTE).to_numpy().astype(float)
-    return (zscore(candidates.cote_r_equivalent.to_numpy())
-            + HOURS_WEIGHT * zscore(candidates.heures_travail_semaine.to_numpy())
-            + REMOTE_WEIGHT * remote)
-
-
-def formula_decisions(score):
-    decisions = np.zeros(len(score), dtype=int)
-    decisions[np.argsort(-score, kind="stable")[:GRANTS]] = 1
-    return decisions
-
-
-def target_labels(candidates, decisions):
-    corrections = pd.read_csv(ROOT / "leaderboard_corrections.csv")
-    assert corrections.id_candidat.is_unique
-    position = pd.Series(np.arange(len(candidates)), index=candidates.id_candidat)
-    rows = position.loc[corrections.id_candidat].to_numpy()
-    if not np.array_equal(decisions[rows], corrections.formula_decision.to_numpy()):
-        raise ValueError("Formula output changed: the corrections no longer apply to it.")
-    labels = decisions.copy()
-    labels[rows] = corrections.corrected_decision.to_numpy()
-    return labels, corrections.source.value_counts()
-
-
-def feature_frame(candidates, score):
-    X = pd.DataFrame({
-        "merit_score": score,
-        "cote_r": candidates.cote_r_equivalent,
-        "hours": candidates.heures_travail_semaine,
-        "log_income": np.log(candidates.revenu_familial_estime),
-        "log_distance": np.log1p(candidates.distance_domicile_campus_km),
-        "first_gen": candidates.premiere_generation_universitaire,
-    })
-    categorical = pd.get_dummies(candidates[["programme_etudes", "region_administrative"]]).astype(float)
-    return X.join(categorical)
+REMOTE = {"Bas-Saint-Laurent", "Cote-Nord", "Gaspesie-Iles-de-la-Madeleine"}
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--model-only", action="store_true", help="write the merit formula's decisions only")
-    parser.add_argument("--output", default="predictions.csv")
-    args = parser.parse_args()
+    history = pd.read_csv(ROOT / "data/donnees_demandes.csv")
+    applicants = pd.read_csv(ROOT / "data/candidats_evaluation.csv")
+    model = SeededMerit(range(N_SEEDS)).fit(history)
 
-    candidates = pd.read_csv(ROOT / "data" / "candidats_evaluation.csv")
-    score = merit_score(candidates)
-    decisions = formula_decisions(score)
-    print(f"merit formula: {decisions.sum()} grants")
-    if not args.model_only:
-        labels, counts = target_labels(candidates, decisions)
-        print(f"target labels: {counts.sum()} leaderboard-derived changes "
-              f"({', '.join(f'{k} {v}' for k, v in counts.items())})")
-        X = feature_frame(candidates, score)
-        ensemble = ExtraTreesClassifier(n_estimators=300, bootstrap=False, min_samples_leaf=1,
-                                        max_features=0.5, random_state=SEED, n_jobs=-1).fit(X, labels)
-        decisions = ensemble.predict(X).astype(int)
-        print(f"ensemble: {int((decisions == labels).sum())}/{len(labels)} target labels reproduced")
+    # 1. Decisions: counterfactual merit score, top 40% of the cohort.
+    members = model.member_scores(applicants)
+    neutral = members.mean(0)
+    decision = model.allocate(applicants, neutral)
+    assert len(decision) == 4000 and 0.36 <= decision.mean() <= 0.44
+    pd.DataFrame({"id_candidat": applicants.id_candidat, "decision_octroi": decision}).to_csv(
+        ROOT / "predictions.csv", index=False)
+    print("predictions.csv written:", int(decision.sum()), "grants")
 
-    rate = decisions.mean()
-    assert len(decisions) == 4000 and candidates.id_candidat.is_unique
-    assert ENVELOPE[0] <= rate <= ENVELOPE[1], f"grant rate {rate:.4f} outside the envelope"
-    pd.DataFrame({"id_candidat": candidates.id_candidat, "decision_octroi": decisions}).to_csv(
-        ROOT / args.output, index=False)
-    print(f"wrote {args.output}: {decisions.sum()} grants ({rate:.2%})")
+    # 2. Pareto front over correction strength (lambda) and budget, against a stated PROXY reference
+    #    (top 40% by z(cote R) + 0.2 z(hours)). Agreement with it is high by construction; it shows the
+    #    shape of the fairness/utility trade-off and is NOT an estimate of the jury's reference.
+    raw = np.mean([m[0].predict_proba(features(applicants))[:, 1] for m in model.members_], axis=0)
+    remote = applicants.region_administrative.isin(REMOTE).to_numpy()
+    z = lambda c: (applicants[c] - history[c].mean()) / history[c].std()
+    proxy = top((z("cote_r_equivalent") + 0.2 * z("heures_travail_semaine")).to_numpy())
+
+    def metrics(pred):
+        pos = proxy == 1
+        tpr = pd.Series(pred[pos]).groupby(remote[pos]).mean()
+        return (pred == proxy).mean() * 100, abs(tpr[False] - tpr[True])
+
+    fig, ax = plt.subplots(figsize=(8, 5.2))
+    for share, color in [(.36, "#718096"), (.40, "#2b6cb0"), (.44, "#2f855a")]:
+        pts = [metrics(top(l * neutral + (1 - l) * raw, share)) for l in np.linspace(0, 1, 11)]
+        gap, agree = [p[1] for p in pts], [p[0] for p in pts]
+        ax.plot(gap, agree, "o-", color=color, label=f"budget {share:.0%}")
+        ax.annotate("committee-style", (gap[0], agree[0]), fontsize=7, xytext=(4, 4), textcoords="offset points")
+        ax.annotate("ours", (gap[-1], agree[-1]), fontsize=7, xytext=(4, -9), textcoords="offset points")
+    ax.set_xlabel("equal-opportunity gap vs proxy reference (lower is better)")
+    ax.set_ylabel("agreement with proxy reference (%)")
+    ax.set_title("Pareto front: correction strength lambda from 0 to 1")
+    ax.legend(); fig.tight_layout(); fig.savefig(ROOT / "pareto_front.png", dpi=130)
+    for lam in (0, .5, 1):
+        a, g = metrics(top(lam * neutral + (1 - lam) * raw))
+        print(f"lambda={lam:.1f}  agreement {a:.2f}%  EO gap {g:.3f}")
+    print("pareto_front.png written")
 
 
 if __name__ == "__main__":
