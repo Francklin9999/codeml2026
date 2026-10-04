@@ -6,7 +6,7 @@
 //   npm run build && npx vite preview --port 4173 &
 //   node bench/e2e_browser.mjs [--url http://localhost:4173/] [--chrome <path>] [--out <dir>]
 //        [--photo-r <png>] [--photo-l <png>] [--cpu 4] [--net 4g]
-// --cpu N slows the CPU N times (DevTools emulation; 4 is the usual stand-in for a mid-range phone);
+// --cpu N slows the page's CPU N times (DevTools emulation; NOT the Web Worker where the processing runs);
 // --net 4g|3g throttles the network (4g: 9 Mbit/s down, 60 ms; 3g: 1.6 Mbit/s, 150 ms). Emulation, not a phone.
 //
 // puppeteer-core is not an app dependency: install it anywhere and point NODE_PATH at it, e.g.
@@ -50,6 +50,8 @@ try {
   page.on('response', (r) => { if (r.status() >= 400) report.console.push(`HTTP ${r.status()} ${r.url()}`); });
   const cdp = await page.createCDPSession();
   await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: out, eventsEnabled: true });
+  // Slows the page only: Chrome refuses CPU throttling on workers ("only supported for pages, not workers"), and OpenCV,
+  // the model and the measurement run in the Web Worker. So --cpu says nothing about phone processing times.
   if (cpu > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpu });
   if (net) { await cdp.send('Network.enable'); await cdp.send('Network.emulateNetworkConditions', { offline: false, ...NETS[net] }); }
 
