@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import unittest
 from pathlib import Path
 
 
@@ -97,3 +98,12 @@ def test_empty_data_file_contains_no_project_claims() -> None:
     assert "window.NOVA_DATA = window.NOVA_DATA || {};" in empty_data
     assert "$" not in empty_data
     assert not re.search(r"\b20\d{2}-\d{2}-\d{2}\b", empty_data)
+
+
+def load_tests(loader, tests, pattern):
+    """Expose the dependency-free assertion tests to unittest discovery."""
+    suite = unittest.TestSuite()
+    for name, function in sorted(globals().items()):
+        if name.startswith("test_") and callable(function):
+            suite.addTest(unittest.FunctionTestCase(function, description=name))
+    return suite
