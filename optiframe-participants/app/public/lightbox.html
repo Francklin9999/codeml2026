@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>OptiFrame - boîte à lumière</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #fff; color: #222; font: 16px/1.45 system-ui, sans-serif; }
+  body { display: flex; align-items: center; justify-content: center; }
+  main { max-width: 34rem; padding: 1rem; text-align: center; }
+  button { font: inherit; padding: .7rem 1.4rem; border: 2px solid #222; border-radius: .5rem; background: #fff; color: #222; }
+  p { margin: .8rem 0; }
+  small { color: #555; }
+  /* once the screen is a plain white light, the controls disappear; a tap brings them back */
+  body.light main { display: none; }
+  body.light.show main { display: block; }
+</style>
+</head>
+<body>
+<main>
+  <h1 style="font-size:1.3rem;margin:0 0 .5rem">Boîte à lumière OptiFrame</h1>
+  <p><button id="go" type="button">Plein écran</button></p>
+  <p><strong>Réglez la luminosité de l'écran au maximum</strong> et désactivez l'économiseur d'écran.</p>
+  <p>Posez la feuille imprimée à plat sur l'écran, la fenêtre au centre de l'écran.</p>
+  <p><small>Si des motifs en moiré (rayures ondulées) apparaissent dans la fenêtre, glissez une feuille de papier calque entre l'écran et la feuille imprimée.</small></p>
+  <p><small id="status" aria-live="polite"></small></p>
+  <p><small>Touchez l'écran pour afficher ou masquer ces consignes.</small></p>
+</main>
+<script>
+(function () {
+  var body = document.body, status = document.getElementById('status'), lock = null;
+
+  function fsElement() { return document.fullscreenElement || document.webkitFullscreenElement || null; }
+
+  async function keepAwake() {
+    if (!('wakeLock' in navigator)) { status.textContent = "Veille non bloquée par la page : désactivez la mise en veille de l'appareil."; return; }
+    try {
+      lock = await navigator.wakeLock.request('screen');
+      lock.addEventListener('release', function () { lock = null; });
+      status.textContent = 'Écran maintenu allumé.';
+    } catch (e) {
+      status.textContent = "Veille non bloquée par la page : désactivez la mise en veille de l'appareil.";
+    }
+  }
+
+  document.getElementById('go').addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    var el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (req) { try { var p = req.call(el); if (p && p.catch) p.catch(function () {}); } catch (e) {} }
+    body.classList.add('light'); body.classList.remove('show');
+    keepAwake();
+  });
+
+  document.addEventListener('click', function () {
+    if (body.classList.contains('light')) body.classList.toggle('show');
+  });
+
+  function onFsChange() { if (!fsElement()) body.classList.remove('light', 'show'); }
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
+
+  // the lock is dropped when the tab is hidden; take it again when we come back
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && body.classList.contains('light') && !lock) keepAwake();
+  });
+})();
+</script>
+</body>
+</html>

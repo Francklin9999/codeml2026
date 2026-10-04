@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.venv*/
+**/.venv/
+__pycache__/
+.pytest_cache/
+training/_local/
+*.pt
+*.pth
+rig/out/fixtures/
+*.log

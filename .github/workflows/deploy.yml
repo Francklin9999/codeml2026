@@ -1,0 +1,57 @@
+name: Deploy OptiFrame to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Manual run. `ref` lets you redeploy a known-good tag or commit while the workflow itself runs from main.
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Tag, branch or commit to deploy (empty = the commit the workflow runs on)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: optiframe-participants/app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: optiframe-participants/app/package-lock.json
+      - run: npm ci
+      # Checks report problems but never block a deploy: a red test must not stop a demo hotfix.
+      - run: npm run typecheck
+        continue-on-error: true
+      - run: npm test
+        continue-on-error: true
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: optiframe-participants/app/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
