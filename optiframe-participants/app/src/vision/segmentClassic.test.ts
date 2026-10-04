@@ -47,6 +47,10 @@ interface Scene {
   specks?: boolean;
   noise?: number; // grey levels
   glareDisc?: { cx: number; cy: number; rad: number };
+  /** Window cut a little off on one side: a darker paper strip, then the printed cut line. */
+  borderStrip?: { side: 'left' | 'right' | 'top' | 'bottom'; widthMm: number; paper: number; lineMm: number };
+  /** Arc of the ring left out (broken rim), as seen from (cx, cy), degrees from +x towards +y. */
+  gap?: { cx: number; cy: number; fromDeg: number; toDeg: number };
   seed?: number;
 }
 
@@ -72,7 +76,9 @@ function render(s: Scene): { rect: Rectified; truth: Uint8Array } {
       let t = 1;
       if (s.style === 'ring') {
         const ringCov = cover(sd) - cover(sd + ringMm);
-        t -= contrast * ringCov;
+        const deg = s.gap ? (Math.atan2(my - s.gap.cy, mx - s.gap.cx) * 180) / Math.PI : 0;
+        const inGap = s.gap && deg >= s.gap.fromDeg && deg <= s.gap.toDeg;
+        if (!inGap) t -= contrast * ringCov;
       } else {
         t -= contrast * cover(sd, s.edgeBlurMm ?? 1 / ppm);
       }
@@ -90,6 +96,12 @@ function render(s: Scene): { rect: Rectified; truth: Uint8Array } {
       const light = 200 * (1 + 0.12 * ((2 * x) / w - 1) + 0.05 * ((2 * y) / h - 1));
       let v = light * t + gauss() * noise;
       if (s.glareDisc && Math.hypot(mx - s.glareDisc.cx, my - s.glareDisc.cy) < s.glareDisc.rad) v = 255;
+      if (s.borderStrip) {
+        const { side, widthMm, paper, lineMm } = s.borderStrip;
+        const d = side === 'left' ? mx : side === 'right' ? WIN_W_MM - mx : side === 'top' ? my : WIN_H_MM - my;
+        if (d < widthMm) v *= paper;
+        else if (d < widthMm + lineMm) v *= 0.15;
+      }
       const o = (y * w + x) * 4;
       rgba[o] = rgba[o + 1] = rgba[o + 2] = v;
       rgba[o + 3] = 255;
@@ -206,6 +218,26 @@ describe('segmentClassic, error codes', () => {
 
   it('LENS_OUT_OF_WINDOW when the ring is cut by the window border', () => {
     const { rect } = render({ shape: ellipse(62, 32, 25, 18), style: 'ring' });
+    expect(codeOf(() => segmentClassic(rect))).toBe('LENS_OUT_OF_WINDOW');
+  });
+
+  it('a paper strip and the printed cut line along a border are not a lens past the border', () => {
+    for (const side of ['left', 'top'] as const) {
+      // faint rim (contrast 0.3): the strip is the strongest dark structure in the window
+      const { rect, truth } = render({ shape: lens, style: 'ring', contrast: 0.3, seed: 21, borderStrip: { side, widthMm: 1.2, paper: 0.6, lineMm: 0.3 } });
+      expect(iou(segmentClassic(rect).data, truth)).toBeGreaterThanOrEqual(0.98);
+    }
+  });
+
+  it('broken rim beside a border strip: NO_LENS (the model may try), not LENS_OUT_OF_WINDOW', () => {
+    // Without the border margin the strip is the largest dark blob and the photo is refused for good.
+    const { rect } = render({ shape: lens, style: 'ring', seed: 22, gap: { cx: 40, cy: 32, fromDeg: -30, toDeg: 30 },
+      borderStrip: { side: 'left', widthMm: 1.2, paper: 0.6, lineMm: 0.3 } });
+    expect(codeOf(() => segmentClassic(rect))).toBe('NO_LENS');
+  });
+
+  it('LENS_OUT_OF_WINDOW when the rim enters the 2 mm border margin', () => {
+    const { rect } = render({ shape: ellipse(26.5, 32, 25, 18), style: 'ring' }); // left edge at 1.5 mm
     expect(codeOf(() => segmentClassic(rect))).toBe('LENS_OUT_OF_WINDOW');
   });
 

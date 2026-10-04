@@ -16,7 +16,7 @@ Modèle à remplir. Tous les chiffres sont à compléter après la prise de vue 
 
 ## Conditions de prise de vue
 
-`easy` (rétroéclairage), `room`, `lamp1`, `lamp2`, `lamp3`, `flash`, `pattern`, `color` (voir `capture_protocol.md`). Nombre de photos par condition : À COMPLÉTER.
+`easy` (rétroéclairage), `room`, `lampL`, `lampT`, `lampR`, `flash`, `pattern`, `colour` (voir `capture_protocol.md`). Nombre de photos par condition : À COMPLÉTER.
 
 ## Découpage
 

@@ -91,6 +91,8 @@ def main(argv: list[str] | None = None) -> dict:
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--amp", action="store_true", help="mixed precision (float16) on CUDA: about 2x faster on tensor-core GPUs")
+    ap.add_argument("--init", default=None, help="start from this checkpoint (fine-tuning) instead of the ImageNet encoder")
     args = ap.parse_args(argv)
 
     out = common.refuse_app_dir(Path(args.out))
@@ -103,12 +105,22 @@ def main(argv: list[str] | None = None) -> dict:
         raise SystemExit(f"need train and val samples, got {len(train_s)} train ({args.sources}) and {len(val_s)} val")
 
     gen = torch.Generator().manual_seed(args.seed)
+    # persistent workers: on Windows (spawn) re-creating them every epoch re-imports torch each time
+    keep = args.workers > 0
     train_loader = DataLoader(LensDataset(train_s, True, args.seed), batch_size=args.batch, shuffle=True, drop_last=len(train_s) > args.batch,
-                              num_workers=args.workers, worker_init_fn=_worker_init, generator=gen)
-    val_loader = DataLoader(LensDataset(val_s, False), batch_size=args.batch, num_workers=args.workers)
+                              num_workers=args.workers, worker_init_fn=_worker_init, generator=gen, persistent_workers=keep,
+                              pin_memory=args.device.startswith("cuda"))
+    val_loader = DataLoader(LensDataset(val_s, False), batch_size=args.batch, num_workers=args.workers, persistent_workers=keep)
 
     device = torch.device(args.device)
-    model = common.build_model(None if args.encoder_weights == "none" else "imagenet").to(device)
+    amp = args.amp and device.type == "cuda"
+    if device.type == "cuda":
+        torch.backends.cudnn.benchmark = True      # fixed input size: let cuDNN pick its fastest kernels
+    if args.init:
+        model = common.load_checkpoint(args.init).to(device)
+    else:
+        model = common.build_model(None if args.encoder_weights == "none" else "imagenet").to(device)
+    scaler = torch.amp.GradScaler("cuda", enabled=amp)
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs)
 
@@ -117,11 +129,14 @@ def main(argv: list[str] | None = None) -> dict:
         model.train()
         t0, losses = time.time(), []
         for x, y in train_loader:
-            x, y = x.to(device), y.to(device)
-            loss = bce_dice_loss(model(x), y)
+            x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
+            with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=amp):
+                logits = model(x)
+            loss = bce_dice_loss(logits.float(), y)
             opt.zero_grad()
-            loss.backward()
-            opt.step()
+            scaler.scale(loss).backward()
+            scaler.step(opt)
+            scaler.update()
             losses.append(loss.item())
         sched.step()
         val_iou = validate(model, val_loader, device)

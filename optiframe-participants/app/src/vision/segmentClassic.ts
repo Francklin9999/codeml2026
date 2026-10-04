@@ -13,6 +13,10 @@ const MIN_SOLIDITY = 0.9;
 const GLARE_LEVEL = 250; // raw grey value counted as saturated
 const GLARE_FRACTION = 0.05;
 const MIN_PARTIAL_EXTENT_MM = 15; // a border-touching blob shorter than this is dust, not a cut lens
+/** Rim pixels this close to the window border are ignored: a window cut slightly off, the printed cut line or a
+ *  shadow at the edge must not read as a lens past the border. A lens reaching the margin still counts as out.
+ *  Measured on rig-like synthetic windows (app/bench): LENS_OUT_OF_WINDOW false refusals 45 -> 11 of 200. */
+export const BORDER_MARGIN_MM = 2;
 
 const FLAT_BG = 200; // flat-fielded background level (leaves headroom above the background)
 const SHADOW_FRACTION = 0.8; // pixels darker than this share of the local mean are left out of the illumination estimate
@@ -452,7 +456,8 @@ function judge(b: Blob | null, grey: Uint8Array, flat: Uint8Array, w: number, h:
   const contrast = rimContrast(b, flat, w, h, ppm);
   if (contrast < MIN_RIM_CONTRAST) return { kind: 'none' };
   const bw = (b.maxX - b.minX + 1) / ppm, bh = (b.maxY - b.minY + 1) / ppm;
-  const touches = b.minX === 0 || b.minY === 0 || b.maxX === w - 1 || b.maxY === h - 1;
+  const m = px(BORDER_MARGIN_MM, ppm);
+  const touches = b.minX <= m || b.minY <= m || b.maxX >= w - 1 - m || b.maxY >= h - 1 - m;
   if (touches) return Math.max(bw, bh) >= MIN_PARTIAL_EXTENT_MM ? { kind: 'out' } : { kind: 'none' };
   const area = b.area / (ppm * ppm);
   if (area < AREA_MM2.min || area > AREA_MM2.max || bw < WIDTH_MM.min || bw > WIDTH_MM.max) return { kind: 'none' };
@@ -473,6 +478,13 @@ function darkRegion(flat: Uint8Array, w: number, h: number): Uint8Array {
   return out;
 }
 
+/** Clears a band of m pixels along the four borders. */
+function clearMargin(b: Uint8Array, w: number, h: number, m: number): void {
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) if (y < m || y >= h - m || x < m || x >= w - m) b[y * w + x] = 0;
+  }
+}
+
 function run(r: Rectified): Mask {
   const { width: w, height: h } = r.image;
   const ppm = r.pxPerMm;
@@ -486,12 +498,15 @@ function run(r: Rectified): Mask {
   const rim = new Uint8Array(w * h);
   for (let i = 0; i < rim.length; i++) if (e[i] > thr) rim[i] = 1;
 
+  clearMargin(rim, w, h, px(BORDER_MARGIN_MM, ppm));
   let sawOut = false;
   const first = judge(lensFromRim(rim, w, h, ppm), grey, flat, w, h, ppm);
   if (first.kind === 'ok') return first.mask;
   if (first.kind === 'out') sawOut = true;
 
-  const second = judge(lensFromRim(darkRegion(flat, w, h), w, h, ppm), grey, flat, w, h, ppm);
+  const dark = darkRegion(flat, w, h);
+  clearMargin(dark, w, h, px(BORDER_MARGIN_MM, ppm));
+  const second = judge(lensFromRim(dark, w, h, ppm), grey, flat, w, h, ppm);
   if (second.kind === 'ok') return second.mask;
   if (second.kind === 'out') sawOut = true;
 

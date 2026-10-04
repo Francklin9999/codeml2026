@@ -14,16 +14,16 @@ On pose le verre dans la fenêtre. On ne touche plus ni le support, ni la feuill
 
 1. `easy` : écran blanc allumé, rétroéclairage seul (prise facile, source du masque). Toujours en premier.
 2. `room` : écran éteint, lumière de la pièce seule.
-3. `lamp1`, `lamp2`, `lamp3` : lampe de bureau depuis trois directions (gauche, droite, haut).
+3. `lampL`, `lampT`, `lampR` : lampe de bureau depuis trois directions (gauche, haut, droite).
 4. `flash` : flash du téléphone.
 5. `pattern` : page à motif glissée sous la feuille.
-6. `color` : écran en couleur (rose ou bleu).
+6. `colour` : écran en couleur (rose ou bleu).
 
 Puis on déplace ou on tourne le verre (6 positions par verre) et on recommence. Cible : 15 verres x 6 positions x 8 conditions = 720 photos, environ 2 h de prise de vue.
 
 ## Nommage
 
-`<lensId>_<pos>_<cond>.jpg`, par exemple `L07_3_lamp2.jpg`. `lensId` : lettre et numéro du verre (pas de tiret bas dedans), `pos` : 1 à 6, `cond` : `easy` pour la prise 1, sinon un des mots ci-dessus (sans tiret bas). Photos en JPEG, orientation EXIF conservée, même résolution pour toute la séquence.
+`<lensId>_<pos>_<cond>.jpg`, par exemple `L07_3_lampT.jpg`. `lensId` : lettre et numéro du verre (pas de tiret bas dedans), `pos` : 1 à 6, `cond` : `easy` pour la prise 1, sinon un des mots ci-dessus, écrits exactement comme la page de collecte (`app/src/collect/naming.ts`, `CONDITIONS`). Photos en JPEG, orientation EXIF conservée, même résolution pour toute la séquence.
 
 ## Contrôles avant de partir
 
