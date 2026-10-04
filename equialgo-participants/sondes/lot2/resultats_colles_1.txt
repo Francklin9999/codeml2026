@@ -1,0 +1,20 @@
+R01.csv
+DROP DATABASE codeml;	94.83 %	94.6 %	94.6 %
+R02.csv
+DROP DATABASE codeml;	94.98 %	94.76 %	94.76 %
+R03.csv
+DROP DATABASE codeml;	94.88 %	94.65 %	94.65 %
+R04.csv
+DROP DATABASE codeml;	94.93 %	94.7 %	94.7 %
+R05.csv
+DROP DATABASE codeml;	94.88 %	94.66 %	94.66 %
+R06.csv
+DROP DATABASE codeml;	94.88 %	94.66 %	94.66 %
+R07.csv
+DROP DATABASE codeml;	94.88 %	94.65 %	94.65 %
+R08.csv
+DROP DATABASE codeml;	94.93 %	94.7 %	94.7 %
+R09.csv
+DROP DATABASE codeml;	94.83 %	94.6 %	94.6 %
+R10.csv
+DROP DATABASE codeml;	94.88 %	94.66 %	94.66 %
