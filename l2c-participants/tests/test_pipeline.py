@@ -33,6 +33,28 @@ def test_discovery_reads_type_and_levels_from_names(tmp_path):
     assert hints["DEMO_DALLE NIV 2"] == ("dalle", ("2",))
 
 
+def test_discovery_tolerates_another_folder_layout(tmp_path):
+    def pdf(path):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        doc = pymupdf.open()
+        doc.new_page()
+        doc.save(path)
+
+    root = tmp_path / "PROJET"
+    pdf(root / "Plans" / "STR_S-501.pdf")
+    pdf(root / "Plans" / "STR_S-601.pdf")
+    pdf(root / "Dessins d'atelier" / "Colonnes" / "COL NIV 2.pdf")
+    pdf(root / "Dessins d'atelier" / "Dalles" / "PLAN DALLE NIV 2.pdf")  # "PLAN" in a shop drawing's name
+    pdf(root / "Dessins_atelier" / "Murs" / "PLAN MUR NIV 3.pdf")
+    files = discover(root)
+    assert sorted(p.name for p in files.plans) == ["STR_S-501.pdf", "STR_S-601.pdf"]
+    assert sorted(p.name for p in files.shops) == ["COL NIV 2.pdf", "PLAN DALLE NIV 2.pdf", "PLAN MUR NIV 3.pdf"]
+    assert shop_file_hints(files.shops[0], root)[0] in ("colonne", "dalle")
+
+    pdf(root / "L2C_PLAN_STR_PROJET.pdf")  # a plan at the root is preferred to plans elsewhere
+    assert [p.name for p in discover(root).plans] == ["L2C_PLAN_STR_PROJET.pdf"]
+
+
 def test_every_planted_discrepancy_is_found(run):
     found = [(r.type_element, e.attribut, e.plan, e.atelier) for r in run.results if r.statut == NON_CONFORME
              for e in r.ecarts]
@@ -80,6 +102,10 @@ def test_report_and_annotated_pdfs(run, tmp_path):
     for sheet in ("S-101", "S-301", "S-401", "S-501", "S-601"):
         assert sheet in text
     assert "NC-0001" in text and "manque 2" in text
+    assert "Liste des écarts" in text and "Quantité 8 -> 6 (25M)" in text  # every finding on one list first
+
+    rows = run.files["ecarts"].read_text(encoding="utf-8-sig").splitlines()
+    assert rows[0].startswith("id;statut;feuillet") and len(rows) - 1 == sum(r.statut != "conforme" for r in run.results)
 
     written = annotate_project(run.results, tmp_path)
     plan = next(p for src, p in written.items() if "PLAN" in src)
@@ -171,3 +197,19 @@ def test_autocad_shx_comments_are_read_as_text():
     lines = page_text_lines(page, min_words=25)
     assert [l.text for l in lines] == ["8-25M"]
     assert abs(lines[0].bbox[0] - 40) < 2 and abs(lines[0].bbox[1] - 50) < 2
+
+
+def test_a_page_the_ocr_cannot_read_does_not_stop_the_run(tmp_path, monkeypatch):
+    import l2c_rebar.pdf.ocr as ocr
+
+    class Broken:
+        def read_page(self, page):
+            raise RuntimeError("unreadable")
+
+    monkeypatch.setattr(ocr, "_init_worker", lambda cfg, threads: setattr(ocr, "_WORKER_ENGINE", Broken()))
+    pdf = tmp_path / "plot.pdf"
+    doc = pymupdf.open()
+    doc.new_page()
+    doc.save(pdf)
+    assert ocr.ocr_pages([(pdf, 0)], Config(workers=1), tmp_path / "cache") == 1
+    assert not list((tmp_path / "cache").glob("*.json"))  # left out, so a later run tries it again

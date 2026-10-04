@@ -27,6 +27,11 @@ def _config(args: argparse.Namespace) -> Config:
         value = getattr(args, name, None)
         if value is not None:
             setattr(cfg, name, value)
+    if getattr(args, "fast", False):
+        # Live demonstration: OCR at 200 dpi (about 25% faster, 79% of callouts read exactly instead of 85%)
+        # and no image extracts in the report.
+        cfg.ocr_dpi = 200
+        cfg.crops = False
     if getattr(args, "no_crops", False):
         cfg.crops = False
     if getattr(args, "no_annotate", False):
@@ -105,6 +110,7 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
     summary = summarize_scores(scores)
     print(f"Non-conformités connues : {summary['connues']} | signalées au bon endroit : {summary['signalees']} | "
           f"avec les mêmes valeurs : {summary['memes_valeurs']}")
+    rows = []
     for score in scores:
         if score.same_values:
             stage = "trouvée, mêmes valeurs"
@@ -119,6 +125,11 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
         else:
             stage = "feuillet non lu"
         print(f"  ligne {score.row} ({score.type_element}) : {stage}")
+        rows.append({"ligne": score.row, "type_element": score.type_element, "etape": stage, "trouvee": score.found})
+    # Stage flags only, never the content of the list.
+    report = out.out_dir / f"{out.project}_evaluation.json"
+    report.write_text(json.dumps({"resume": summary, "lignes": rows}, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"  Écrit : {report}")
     return 0
 
 
@@ -139,6 +150,8 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--ocr", choices=["auto", "off", "force"], help="OCR local des pages sans texte (défaut : auto)")
     run.add_argument("--workers", type=int, help="Processus OCR en parallèle")
     run.add_argument("--no-crops", action="store_true", help="Rapport sans extraits d'image (plus rapide)")
+    run.add_argument("--fast", action="store_true",
+                     help="Démonstration en direct : OCR à 200 dpi et rapport sans extraits d'image (environ 25 %% plus rapide)")
     run.add_argument("--no-annotate", action="store_true", help="Ne pas produire les PDF annotés")
     run.add_argument("--quiet", action="store_true")
     run.set_defaults(func=cmd_run)

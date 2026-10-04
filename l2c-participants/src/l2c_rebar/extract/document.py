@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pymupdf
 
-from ..config import TYPE_PREFIXES, Config
+from ..config import Config
 from ..models import SOURCE_PLAN, BBox, Bar, Element, TextLine
 from ..parsing.elements import find_labels, find_levels, label_candidates, level_tokens, resolve_type
 from ..parsing.rebar import find_bars, normalize_ocr
@@ -17,7 +17,8 @@ from ..pdf import ocr as ocr_mod
 from ..pdf.sheets import detect_sheet
 from ..pdf.text import page_text_lines
 from .grid import GridAxes, find_grid_axes, link_tags, page_marks
-from .layout import Label, assign_labels, assign_row_levels, center, cluster_stacked, flag_bar_list_rows, union
+from .layout import (Label, assign_labels, assign_row_levels, attach_spacing_lines, center, cluster_stacked,
+                     flag_bar_list_rows, union)
 
 
 _BARE_COUNT = re.compile(r"(\d{1,3})\s?\(\s?(\d{1,3})\s?\)")
@@ -42,6 +43,24 @@ class PageData:
     axes: GridAxes = field(default_factory=GridAxes)  # building grid of a plan view (column sheets)
     marks: list[BBox] = field(default_factory=list)  # dark filled rectangles: columns drawn in plan
     segments: list[tuple] = field(default_factory=list)  # short lines, among them the tag leaders
+    own_lines: list[TextLine] = field(default_factory=list)  # the page's own text objects
+    raw_ocr: list[TextLine] | None = None  # OCR lines as the detector boxed them, when the page was read by OCR
+    ocr_only: bool = False  # OCR forced: the text objects of the page are not used
+
+
+def _with_ocr(own: list[TextLine], ocr: list[TextLine], ocr_only: bool) -> list[TextLine]:
+    # Keep the few real text objects of the page (the lettering-only OCR image does not show
+    # them) and drop what OCR read a second time on top of them.
+    return ocr if ocr_only else own + _not_covered(ocr, own)
+
+
+def rejoin(page: PageData, gap: float) -> PageData:
+    """The same page with the OCR pieces of each row joined (see `ocr.join_row_fragments`)."""
+    if page.raw_ocr is None or gap <= 0:
+        return page
+    lines = _with_ocr(page.own_lines, ocr_mod.join_row_fragments(page.raw_ocr, gap), page.ocr_only)
+    # Grid bubbles read in pieces ("1" and "2" for 12) are whole again: read the grid anew.
+    return replace(page, lines=lines, axes=find_grid_axes(lines))
 
 
 @dataclass
@@ -102,12 +121,11 @@ def read_document(
             origin = "text"
             n_words = sum(len(l.text.split()) for l in lines)
             use_ocr = cfg.ocr == "force" and source != SOURCE_PLAN
+            own_lines, cached = lines, None
             if (n_words < cfg.ocr_min_words or use_ocr) and cfg.ocr != "off" and cache_dir is not None:
                 cached = ocr_mod.load_cached(ocr_mod.cache_path(cache_dir, path, i, cfg))
                 if cached is not None:
-                    # Keep the few real text objects of the page (the lettering-only OCR image does
-                    # not show them) and drop what OCR read a second time on top of them.
-                    lines, origin = (cached if use_ocr else lines + _not_covered(cached, lines)), "ocr"
+                    lines, origin = _with_ocr(own_lines, cached, use_ocr), "ocr"
             if not lines:
                 origin = "empty"
 
@@ -126,8 +144,13 @@ def read_document(
 
             data = PageData(path=path, source=source, page_index=i, size=size, lines=lines, origin=origin,
                             feuillet=feuillet, title=title, type_element=type_element, levels=levels,
-                            sheet_conf=1.0 if source != SOURCE_PLAN else (sheet.conf if sheet else 0.3))
-            data.axes = find_grid_axes(lines)  # the building grid, when the page is a plan view
+                            sheet_conf=1.0 if source != SOURCE_PLAN else (sheet.conf if sheet else 0.3),
+                            own_lines=own_lines, raw_ocr=cached, ocr_only=use_ocr)
+            # The building grid, when the page is a plan view.  OCR boxes a two-digit bubble ("12")
+            # in pieces as often as whole: read the grid from the rows joined back.
+            joined = cached is not None and cfg.ocr_join_gap > 0
+            data.axes = find_grid_axes(
+                _with_ocr(own_lines, ocr_mod.join_row_fragments(cached, cfg.ocr_join_gap), use_ocr) if joined else lines)
             if source == SOURCE_PLAN and type_element in cfg.grid_types and data.axes.usable:
                 # Elements drawn as rectangles on the grid and found by their place, not by a name.
                 data.marks, data.segments = page_marks(page)
@@ -182,6 +205,12 @@ def _tag_box(group: list[Bar], box: BBox, lines: list[TextLine]) -> BBox:
     return (x0 - 4.0, y0 - 4.0, x1 + 4.0, y1 + 4.0)
 
 
+def _lacks_spacing(text: str) -> bool:
+    """A line holding a rebar callout that gives no spacing."""
+    bars = find_bars(text)
+    return bool(bars) and all(b.espacement_mm is None for b in bars)
+
+
 def extract_page(page: PageData, cfg: Config, shared_labels: set[str], use_labels: bool = True,
                  header_pull: float | None = None) -> list[Element]:
     """Elements of one page.  With `use_labels` off, every callout group is its
@@ -192,11 +221,13 @@ def extract_page(page: PageData, cfg: Config, shared_labels: set[str], use_label
     labels: list[Label] = []
     level_toks: list[tuple[str, float, float]] = []
 
+    lines = [replace(l, text=normalize_ocr(l.text)) if l.origin == "ocr" else l for l in page.lines]
+    if cfg.attach_spacing_lines:
+        lines = attach_spacing_lines(lines, _lacks_spacing)
+
     group_no = 0
-    for line in page.lines:
+    for line in lines:
         is_ocr = line.origin == "ocr"
-        if is_ocr:
-            line = replace(line, text=normalize_ocr(line.text))
         spans: list[tuple[int, int]] = []  # characters taken by callouts (size, mark, spacing...)
         for bm in find_bars(line.text):
             spans.append((bm.start, bm.end))
@@ -252,6 +283,7 @@ def extract_page(page: PageData, cfg: Config, shared_labels: set[str], use_label
             type_element=page.type_element, element=element, x=anchor[0], y=anchor[1], bars=group,
             labeled=labeled, levels=tuple(levels), conf=round(conf, 3), page_size=page.size, path=str(page.path),
             ocr=page.origin == "ocr", grid=page.axes.coords(*(spot or anchor)),
+            grid_ref=page.axes.ref(*(spot or anchor)),
         )
 
     elements: list[Element] = []
@@ -298,7 +330,7 @@ def extract_page(page: PageData, cfg: Config, shared_labels: set[str], use_label
         for i, mark in enumerate(link_tags(tags, page.marks, page.segments)):
             if mark is not None:
                 spots[i] = center(page.marks[mark])
-                grid_names[i] = page.axes.name(*spots[i])
+                grid_names[i] = page.axes.name(*spots[i], between=cfg.grid_between)
 
     seq: Counter = Counter()
     for group, box, grid, spot in zip(groups, boxes, grid_names, spots):
@@ -309,6 +341,7 @@ def extract_page(page: PageData, cfg: Config, shared_labels: set[str], use_label
         if grid is not None:
             el = make(grid[0], group, (cx, cy), True, levels, min(0.95, mean_conf) * (0.6 + 0.4 * grid[1]), spot)
             el.label = grid[0]
+            el.grid_ref = grid[0]
             elements.append(el)
             continue
         zone = _zone(cx, cy, page.size)
@@ -336,22 +369,6 @@ def extract_pages(pages: list[PageData], cfg: Config, shared: dict[str, set[str]
         elements.extend(extract_page(page, cfg, shared.get(page.type_element, set()), use_labels,
                                      (header_pulls or {}).get(page.type_element)))
     return elements
-
-
-def types_sharing_labels(shared: dict[str, set[str]], minimum: int) -> set[str]:
-    """Element types whose usual labels (C.., S.., P..) appear on both sides.
-
-    A column schedule keyed by grid lines and a shop drawing keyed by column
-    names have nothing to join on: for such a type, names are ignored and the
-    comparison falls back to content.
-    """
-    out = set()
-    for type_element, labels in shared.items():
-        prefixes = TYPE_PREFIXES.get(type_element, frozenset())
-        usual = [l for l in labels if l.rstrip("ABCDEFGHIJKLMNOPQRSTUVWXYZ").rstrip("0123456789") in prefixes]
-        if len(usual) >= minimum:
-            out.add(type_element)
-    return out
 
 
 def assign_ids(elements: list[Element]) -> None:

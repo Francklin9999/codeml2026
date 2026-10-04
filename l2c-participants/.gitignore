@@ -22,3 +22,6 @@ dist/
 # Research notes (not part of the deliverable)
 /research_notes/
 /reports/
+
+# Handover notes mention results derived from the known-mismatch list
+/HANDOFF.md

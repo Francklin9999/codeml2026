@@ -126,3 +126,36 @@ def test_sheets_and_types():
 )
 def test_levels(name, levels):
     assert find_levels(name) == levels
+
+
+def test_ocr_pieces_of_one_row_are_read_as_one_line():
+    from l2c_rebar.models import TextLine
+    from l2c_rebar.pdf.ocr import join_row_fragments
+
+    callout = TextLine("24 10M 10A12", (100, 100, 160, 108), origin="ocr")
+    spaces = TextLine("23@300", (168, 100.5, 196, 108.5), origin="ocr")  # the detector cut the line here
+    other = TextLine("8 25M 301", (400, 100, 450, 108), origin="ocr")  # same row, another column of the sheet
+    below = TextLine("B-12", (100, 130, 120, 138), origin="ocr")
+    lines = join_row_fragments([callout, spaces, other, below])
+    assert sorted(l.text for l in lines) == ["24 10M 10A12 23@300", "8 25M 301", "B-12"]
+    joined = next(l for l in lines if l.text.startswith("24"))
+    assert joined.bbox == (100, 100, 196, 108.5)
+    assert one(joined.text).espacement_mm == 300
+
+
+def test_a_spacing_written_on_the_next_line_belongs_to_the_callout_above():
+    from l2c_rebar.extract.document import _lacks_spacing
+    from l2c_rebar.extract.layout import attach_spacing_lines
+    from l2c_rebar.models import TextLine
+
+    callout = TextLine("24 15M 12-06", (100, 100, 160, 108))
+    spacing = TextLine('@12"', (110, 110, 130, 118))  # stacked right under it
+    elsewhere = TextLine("8 20M 3600", (300, 100, 350, 108))
+    # text running up the sheet: the line before is on the left
+    up = TextLine("12 10M 10A01", (500, 300, 508, 360), dx=0.0, dy=-1.0)
+    up_spacing = TextLine("11@300", (510, 310, 518, 340), dx=0.0, dy=-1.0)
+    lines = attach_spacing_lines([callout, spacing, elsewhere, up, up_spacing], _lacks_spacing)
+    texts = [l.text for l in lines]
+    assert '24 15M 12-06 @12"' in texts and "8 20M 3600" in texts and "12 10M 10A01 11@300" in texts
+    assert one('24 15M 12-06 @12"').espacement_mm == 305
+    assert one("12 10M 10A01 11@300").espacement_mm == 300

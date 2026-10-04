@@ -1,5 +1,5 @@
 """Counts-only run with per-type counters; never prints document text."""
-import sys, json
+import sys
 from collections import Counter
 from pathlib import Path
 from l2c_rebar.pipeline import run_project

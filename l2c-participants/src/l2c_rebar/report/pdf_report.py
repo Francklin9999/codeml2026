@@ -54,12 +54,22 @@ def _zone(x: float, y: float, size: tuple[float, float]) -> str:
     return f"{'ABCDEFGH'[col]}{row + 1}"
 
 
+def grid_place(el: Element | None) -> str | None:
+    """Grid location of an element as the engineer looks for it ("B-12"), when it stands on a plan view.
+    A shop element named by its own label is found by that label instead."""
+    if el is None or not el.grid_ref or (el.source != "plan" and el.labeled):
+        return None
+    return el.grid_ref
+
+
 def _where(el: Element | None, with_file: bool = False) -> str:
-    """Human-readable location: page, x, y (PDF points, top-left origin) and sheet zone."""
+    """Human-readable location: grid axes, page, x, y (PDF points, top-left origin) and sheet zone."""
     if el is None:
         return "-"
     head = f"{el.fichier}\n" if with_file else f"{el.feuillet}, "
-    return f"{head}p. {el.page}, x={el.x:.0f}, y={el.y:.0f} (zone {_zone(el.x, el.y, el.page_size)})"
+    place = grid_place(el)
+    axes = f"axes {place}, " if place else ""
+    return f"{head}{axes}p. {el.page}, x={el.x:.0f}, y={el.y:.0f} (zone {_zone(el.x, el.y, el.page_size)})"
 
 
 def _bars(el: Element | None, limit: int = 4) -> str:
@@ -128,8 +138,10 @@ def _summary_table(results: list[Result]) -> Table:
 
 def _finding_card(r: Result, cropper: Cropper | None) -> list:
     color = GRAVITE_COLOR.get(r.gravite, GREY)
+    place = grid_place(r.plan)
+    axes = f" - axes {place}" if place and place != r.element else ""
     title = (f'<font color="{RED.hexval()}"><b>{r.id}</b></font> &nbsp; <b>{escape(r.type_element.capitalize())} '
-             f'{escape(r.element)}</b>{escape(_levels(r.plan or r.atelier))} &nbsp; '
+             f'{escape(r.element)}{escape(axes)}</b>{escape(_levels(r.plan or r.atelier))} &nbsp; '
              f'<font color="{color.hexval()}">gravité {r.gravite}</font> &nbsp; '
              f'<font color="#5F6B7A">confiance {r.confiance:.2f}{" - à valider" if r.a_valider else ""}</font>')
     flow: list = [Paragraph(title, BODY)]
@@ -161,6 +173,48 @@ def _finding_card(r: Result, cropper: Cropper | None) -> list:
                                                                           ("LEFTPADDING", (0, 0), (-1, -1), 0)]))
     flow.append(Spacer(1, 5))
     return [KeepTogether(flow)]
+
+
+def _short_ecart(r: Result) -> str:
+    """The discrepancies of a finding in a few words: "Quantité 6 -> 4 (25M)"."""
+    if r.statut == MANQUANT:
+        return "Absent à l'atelier : " + _bars(r.plan, 3)
+    parts = []
+    for e in r.ecarts:
+        if e.attribut == "absence":
+            parts.append(f"Introuvable : {e.plan}")
+        elif e.attribut == "quantite":
+            size = e.plan_bar.diametre if e.plan_bar is not None and e.plan_bar.diametre else ""
+            parts.append(f"Quantité {e.plan} -> {e.atelier}" + (f" ({size})" if size else ""))
+        elif e.attribut == "espacement_mm":
+            parts.append(f"Espacement {e.plan} -> {e.atelier} mm")
+        elif e.attribut == "longueur_mm":
+            parts.append(f"Longueur {e.plan} -> {e.atelier} mm")
+        else:
+            parts.append(f"Diamètre {e.plan} -> {e.atelier}")
+    return " ; ".join(parts)
+
+
+def _findings_index(results: list[Result], limit: int) -> list:
+    """Every non-conformity and missing element on one list, by sheet and grid place: the list an
+    engineer (or a checker holding a list of known discrepancies) goes through first."""
+    rows_in = [r for r in results if r.statut in (NON_CONFORME, MANQUANT)]
+    rows_in.sort(key=lambda r: (r.feuillet, r.statut != NON_CONFORME, grid_place(r.plan) or "~", r.element))
+    head = ["ID", "Feuillet", "Axes", "Élément", "Écart (plan -> atelier)", "Gravité", "Conf."]
+    rows: list[list] = [[_p(h, CELL_B) for h in head]]
+    extra = []
+    for i, r in enumerate(rows_in[:limit], start=1):
+        rows.append([_p(r.id), _p(r.feuillet), _p(grid_place(r.plan) or "-"), _p(f"{r.element}{_levels(r.plan)}"),
+                     _p(_short_ecart(r)), _p(r.gravite if r.statut == NON_CONFORME else "majeur"),
+                     _p(f"{r.confiance:.2f}{' *' if r.a_valider else ''}")])
+        if r.statut == NON_CONFORME:
+            extra.append(("TEXTCOLOR", (0, i), (0, i), RED))
+    flow: list = [_table(rows, [17 * mm, 17 * mm, 22 * mm, 30 * mm, 66 * mm, 15 * mm, 13 * mm], extra=extra)]
+    if len(rows_in) > limit:
+        flow.append(_p(f"... et {len(rows_in) - limit} autres, listés dans le fichier JSON de comparaison.", MUTED))
+    flow.append(_p("* à valider (confiance inférieure à 0,60). Les fiches détaillées, avec extraits d'image, suivent "
+                   "par feuillet.", MUTED))
+    return flow
 
 
 def _list_table(results: list[Result], side: str, limit: int) -> list:
@@ -224,6 +278,14 @@ def build_report(project: str, results: list[Result], coverage: Coverage, stats:
     if coverage.reperes_non_fiables:
         notes.append("Appariement par repère jugé non fiable (presque aucun accord) et remplacé par une comparaison "
                      "par contenu pour : " + ", ".join(coverage.reperes_non_fiables) + ". À vérifier manuellement.")
+    if coverage.ocr_lignes_recollees:
+        notes.append("Dessins d'atelier lus par OCR : les morceaux d'une même ligne de texte, lus séparément, ont été "
+                     "recollés pour : " + ", ".join(coverage.ocr_lignes_recollees) + " (lecture qui confirme le plus "
+                     "souvent le plan).")
+    if coverage.accord_par_type:
+        notes.append("Accord plan / atelier des éléments appariés par repère (part des barres confirmées) : "
+                      + ", ".join(f"{t} {round(100 * a)} %" for t, a in sorted(coverage.accord_par_type.items()))
+                      + ". Sous 90 %, les écarts de ce type voient leur confiance réduite d'autant.")
     if coverage.non_verifies:
         notes.append(f"{coverage.non_verifies} annotations de dalle écrites sans diamètre (par exemple « 12(6) ») n'ont pu être "
                      "ni confirmées ni contredites : elles sont dans le JSON, pas dans les écarts.")
@@ -235,6 +297,11 @@ def build_report(project: str, results: list[Result], coverage: Coverage, stats:
     if notes:
         story.append(Paragraph("Couverture de la vérification", H2))
         story += [Paragraph(f"&bull; {escape(n)}", BODY) for n in notes]
+
+    if any(r.statut in (NON_CONFORME, MANQUANT) for r in results):
+        story.append(PageBreak())
+        story.append(Paragraph("Liste des écarts, par feuillet et par axes", H2))
+        story += _findings_index(results, cfg.max_index_rows)
 
     by_sheet: dict[str, list[Result]] = defaultdict(list)
     for r in results:

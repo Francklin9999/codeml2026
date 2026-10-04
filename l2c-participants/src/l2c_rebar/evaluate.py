@@ -101,6 +101,16 @@ def _place(axes: GridAxes, x: float, y: float, reach: int = 1) -> tuple[set[str]
 
 
 def _at(known: Known, el: Element, axes: GridAxes | None) -> bool:
+    if el.label and "/" in el.label:  # between labelled lines ("B-C/12"): the list may name the line "B.1"
+        letter, number = el.label.split("/", 1)
+
+        def fits(tokens: set[str], part: str) -> bool:
+            if "-" not in part:  # on the line itself
+                return part in tokens
+            # between two lines: "B.1" sits after B, so it is compared with the lower line only
+            return any(t.split(".")[0] == part.split("-")[0] for t in tokens)
+
+        return (not known.letters or fits(known.letters, letter)) and (not known.numbers or fits(known.numbers, number))
     if el.label and "-" in el.label:  # already named by its grid crossing
         letter, number = el.label.split("-", 1)
         return (not known.letters or letter in known.letters) and (not known.numbers or number in known.numbers)

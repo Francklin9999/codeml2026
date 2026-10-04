@@ -16,6 +16,7 @@ import hashlib
 import json
 import os
 from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 from pathlib import Path
 from typing import Iterable, Optional
 
@@ -159,6 +160,44 @@ class OcrEngine:
         return lines
 
 
+def join_row_fragments(lines: list[TextLine], gap: float = 1.5) -> list[TextLine]:
+    """Glue back the pieces of one line of lettering that the OCR detector boxed separately.
+
+    The detector cuts a line at wide spaces: "24 10M 10A12" and, further right, "23@300"
+    (23 spaces at 300 mm) come out as two boxes, and the spacing is lost to the callout.
+    Horizontal pieces of the same height, on the same row, closer than `gap` times their
+    height, are read as one line.
+    """
+    flat = sorted((l for l in lines if not l.vertical), key=lambda l: l.bbox[0])
+    rows: list[list[TextLine]] = []
+    by_band: dict[int, list[int]] = {}  # rows indexed by the height band of their first piece
+    for line in flat:
+        h = line.bbox[3] - line.bbox[1]
+        cy = (line.bbox[1] + line.bbox[3]) / 2
+        band = int(cy // 4.0)
+        for idx in (i for b in range(band - 3, band + 4) for i in by_band.get(b, ())):
+            last = rows[idx][-1]
+            lh = last.bbox[3] - last.bbox[1]
+            if (abs(cy - (last.bbox[1] + last.bbox[3]) / 2) <= 0.35 * min(h, lh) and 0.65 <= h / max(lh, 1e-6) <= 1.5
+                    and -0.3 * min(h, lh) <= line.bbox[0] - last.bbox[2] <= gap * max(h, lh)):
+                rows[idx].append(line)
+                break
+        else:
+            by_band.setdefault(band, []).append(len(rows))
+            rows.append([line])
+    out = [l for l in lines if l.vertical]
+    for row in rows:
+        if len(row) == 1:
+            out.append(row[0])
+            continue
+        out.append(TextLine(
+            text=" ".join(l.text for l in row),
+            bbox=(row[0].bbox[0], min(l.bbox[1] for l in row), row[-1].bbox[2], max(l.bbox[3] for l in row)),
+            size=max(l.size for l in row), dx=1.0, dy=0.0, origin="ocr", conf=min(l.conf for l in row),
+        ))
+    return out
+
+
 def _starts(length: int, tile: int, stride: int) -> list[int]:
     if length <= tile:
         return [0]
@@ -235,10 +274,14 @@ def _init_worker(cfg: Config, threads: int) -> None:
 
 
 def _ocr_task(task: tuple[str, int, str]) -> int:
+    """Lines read on one page, or -1 when that page could not be read (it is then left out, not fatal)."""
     pdf_path, page_index, out_path = task
     assert _WORKER_ENGINE is not None
-    with pymupdf.open(pdf_path) as doc:
-        lines = _WORKER_ENGINE.read_page(doc[page_index])
+    try:
+        with pymupdf.open(pdf_path) as doc:
+            lines = _WORKER_ENGINE.read_page(doc[page_index])
+    except Exception:  # one unreadable page must not stop the analysis of the project
+        return -1
     save_cached(Path(out_path), lines)
     return len(lines)
 
@@ -256,17 +299,37 @@ def ocr_pages(tasks: Iterable[tuple[Path, int]], cfg: Config, cache_dir: Path, p
     workers = max(1, min(cfg.workers, 2 if gpu_available(cfg) else cfg.workers, len(todo)))
     threads = max(1, (os.cpu_count() or 2) // workers)
     done = 0
-    if workers == 1:
-        _init_worker(cfg, threads)
-        for task in todo:
-            _ocr_task(task)
-            done += 1
-            if progress:
-                progress(done, len(todo))
-        return done
-    with ProcessPoolExecutor(max_workers=workers, initializer=_init_worker, initargs=(cfg, threads)) as pool:
-        for _ in pool.map(_ocr_task, todo):
-            done += 1
-            if progress:
-                progress(done, len(todo))
+    if workers > 1:
+        try:
+            with ProcessPoolExecutor(max_workers=workers, initializer=_init_worker, initargs=(cfg, threads)) as pool:
+                for _ in pool.map(_ocr_task, todo):
+                    done += 1
+                    if progress:
+                        progress(done, len(todo))
+            return done
+        except BrokenProcessPool:
+            # A worker died (out of memory, GPU driver reset).  Finish one page at a time, each in a
+            # worker of its own, so that a page that kills its worker is skipped, not the whole run.
+            todo = [task for task in todo if not Path(task[2]).exists()]
+            total = done + len(todo)
+            while todo:
+                try:
+                    with ProcessPoolExecutor(max_workers=1, initializer=_init_worker,
+                                             initargs=(cfg, max(1, os.cpu_count() or 1))) as pool:
+                        while todo:
+                            pool.submit(_ocr_task, todo[0]).result()
+                            todo.pop(0)
+                            done += 1
+                            if progress:
+                                progress(done, total)
+                except BrokenProcessPool:
+                    todo.pop(0)  # this page brought its worker down: left out, retried on the next run
+                    done += 1
+            return done
+    _init_worker(cfg, threads)
+    for task in todo:
+        _ocr_task(task)
+        done += 1
+        if progress:
+            progress(done, len(todo))
     return done

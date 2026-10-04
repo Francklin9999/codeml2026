@@ -9,7 +9,8 @@ For one project it produces:
 |---|---|---|
 | JSON database | `<project>_elements.json` | Every rebar annotation found on the plans and the shop drawings, in the Appendix A schema (sheet, page, x, y, element, bars) |
 | Comparison | `<project>_comparaison.json` | Each element classified: compliant, non-compliant (with the discrepancy), missing from the shop drawings, added in the shop drawings |
-| PDF report | `<project>_rapport.pdf` | Counts per plan sheet, then each non-conformity with its location and an image extract of both drawings |
+| PDF report | `<project>_rapport.pdf` | Counts per plan sheet, one list of every finding by sheet and grid place (`axes B-12`), then each non-conformity with its location and an image extract of both drawings |
+| Findings for a spreadsheet | `<project>_ecarts.csv` | One row per finding (semicolons, opens in Excel): sheet, grid place, element, discrepancy, severity, confidence, page and x, y on both drawings |
 | Annotated PDFs | `annotes/*_annote.pdf` | Copies of the plan and shop drawings with each finding circled and linked to its counterpart |
 | Details | `<project>_details.json` | What the schema has no room for: confidence, raw text, bounding boxes, storey |
 
@@ -42,11 +43,27 @@ PROJECT/
 ```
 
 Useful options of `run`: `--ocr off` (skip pages without text, a few seconds per project), `--no-crops`
-(report without image extracts), `--config file.json` (override any field of `Config`, see
-`src/l2c_rebar/config.py`).
+(report without image extracts), `--fast` (live demonstration: OCR at 200 dpi and no image extracts, about 25%
+faster), `--config file.json` (override any field of `Config`, see `src/l2c_rebar/config.py`).
+
+While OCR runs, the console shows the pages done and an estimate of the time left. A page the OCR cannot read
+is left out (and retried on the next run) instead of stopping the analysis.
 
 To try the tool without any confidential data, `notebooks/demo.ipynb` builds a made-up project with planted
 errors and runs the whole pipeline on it.
+
+### Live demonstration on an unseen project
+
+1. Beforehand, with a network connection: `pytest -m slow` once, so the OCR models are downloaded and cached.
+2. As soon as the project is handed over: `python -m l2c_rebar run path\to\EVAL --fast`. Pages with a text layer
+   take seconds; pages without text take 10 to 25 s each on a DirectX 12 GPU, and the console shows the time left.
+3. While OCR runs, walk through a development project's report: the list of findings by sheet and axes on the
+   second page, one finding card with both image extracts, the annotated PDFs and their cross links.
+4. When the run ends: `outputs\EVAL\EVAL_rapport.pdf`, then `python -m l2c_rebar ui` to validate uncertain findings.
+5. Given a list of known non-conformities (sheet, grid location, plan value, shop value):
+   `python -m l2c_rebar evaluate path\to\EVAL known.xlsx` prints, row by row, how far the tool got.
+
+The slides (`python tools/build_slides.py`, PDF in `outputs/presentation/`) read their figures from `outputs/`.
 
 ### Reading sheets that have no text
 
@@ -63,6 +80,13 @@ text layer, used as ground truth):
 On vector plots the page is first redrawn with only its character-sized paths, so that dimension lines and bars
 no longer cross the lettering (`pdf/vector.py`). Text that AutoCAD stores beside stroke lettering as
 "AutoCAD SHX Text" comments is read directly when a plot kept it.
+
+The OCR detector cuts a line of lettering at wide spaces: a shop callout `24 10M 10A12` and, further right,
+`23@300` (23 spaces at 300 mm) come out as two boxes, and the tie spacing would be lost. Pieces of the same height
+on the same row, closer than 1.5 text heights, can be joined back into one line (`pdf/ocr.py:join_row_fragments`,
+`ocr_join_gap`); the grid is then read again, since two-digit bubbles also come out in pieces. Whether to join is
+decided per element type, by agreement (see below): on the development projects it helps slabs and walls
+everywhere, and column sheets on one project out of three.
 
 The PP-OCRv5 models are fetched once by `rapidocr` on first use and then cached; run once with a network
 connection before a demonstration. With a DirectX 12 GPU, a sheet takes 15 to 25 seconds instead of minutes:
@@ -104,8 +128,18 @@ Each element gets one of the four statuses required by the rules. Each discrepan
 | majeur | Bars not found, larger size substituted, shorter length |
 | mineur | More steel than designed |
 
-Each result carries a confidence between 0 and 1. Below 0.60 it is flagged "à valider": text read by OCR, match
-by content, uncertain storey. The interface lets the engineer confirm or reject those, and regenerates the report.
+Each result carries a confidence between 0 and 1. Below 0.60 it is flagged "à valider": low OCR score, text read
+by OCR combined with a match by content, uncertain storey, shared detail. Findings made by name also inherit how
+well their element type reads overall: when fewer than 90% of the bars paired by name are confirmed for a type,
+its findings lose confidence in proportion (the report states the agreement per type). The interface lets the
+engineer confirm or reject the flagged results, and regenerates the report.
+
+### Finding an element on the sheet
+
+Every finding gives the plan sheet, the page, x, y in PDF points, a sheet zone (A1 to H6) and, on plan views, the
+place on the building grid as the engineer reads it: the crossing (`axes B-12`) when the element stands on both
+lines, otherwise the bay it falls in (`axes B-C/11-12`). The same place is in the comparison JSON (`axes_plan`,
+`axes_atelier`) and in the details file (`axes`).
 
 ### Calibrated by agreement
 
@@ -122,9 +156,13 @@ readings and keeps the one that agrees most often.
 4. **Per element or totals.** A detail drawn once for several elements (`B-12, B-13`) may list the bars of one
    or the total for all; the reading that agrees most is kept. A shop quantity that is an exact multiple of the
    plan quantity is taken as such a shared detail, not as a surplus.
-5. **Mass disagreement means a wrong pairing.** If fewer than half of the pairs made by name agree for a type,
-   the pairing is abandoned for that type and stated in the report.
-6. **Missing elements are reported only where the sheet was read well.** When fewer than half of a sheet's
+5. **Mass disagreement means a wrong pairing.** If fewer than half of the bars of the pairs made by name are
+   confirmed for a type, the pairing is abandoned for that type and stated in the report. Counted per bar, not
+   per element: a beam with eight bars and one misread disagrees as a whole, yet its pairing is plainly right.
+6. **Pieces of OCR lines.** Joining the pieces of a row that the OCR detector boxed separately gives callouts
+   their spacing or quantity back, but on sheets laid out as tables it can glue neighbouring cells. Both readings
+   are compared per element type, and the one that confirms more plan bars is kept (stated in the report).
+7. **Missing elements are reported only where the sheet was read well.** When fewer than half of a sheet's
    elements are found in the shop drawings, the report says so once instead of listing each element.
 
 ## The JSON database
@@ -177,9 +215,15 @@ These are stated plainly because they decide how far the output can be trusted.
 - **Slab callouts written without a bar size** (a bare `12(6)`) are read into the JSON and confirmed by position
   when possible; otherwise they are counted as not verified. A plain number beside a bar is not read yet.
 - **The order of reinforcement layers is not compared** (plan "layer 1" against the shop drawing's layering).
+- **Columns on intermediate grid lines.** A shop drawing may name a column `B.1-12` where the plan prints no `B.1`
+  bubble. Such a column is named by its nearest labelled line on the plan and the shop element is reported as
+  added. Naming plan columns by the bay they stand in (`grid_between`) is available but off: on the development
+  projects position alone does not tell these columns from columns drawn off-centre.
+- **Footings without a tag.** A footing linked to its table row or detail only by its drawn shape is not read; its
+  bars are compared by content, not at its place.
 - **OCR is imperfect.** Even at 85% of callouts read exactly, a dense sheet carries misreads. Every result that
-  rests on OCR text is flagged "à valider". On one development project the column sheets read by OCR disagree
-  with the plan for a third of the columns, which is not credible: those findings need the engineer.
+  rests on OCR text says so and has its confidence lowered. On one development project the column sheets read by
+  OCR disagree with the plan for a third of the columns, which is not credible: those findings need the engineer.
 - **Layout rules are heuristics.** A callout is given to the nearest plausible label; dense sheets can mislead it.
 - **Development was done almost entirely without reading the drawings.** The confidentiality rule forbids
   sending documents to external AI services, and this tool was written with an AI coding assistant. The
@@ -208,6 +252,7 @@ src/l2c_rebar/
   report/     pdf_report.py  crops.py  annotate.py
 tests/        grammar, layout, grid, comparison, interface, end-to-end on two made-up projects
 notebooks/    demo.ipynb (generated by build_notebook.py)
+tools/        build_slides.py (presentation deck), diagnostics/ (counts-only probes used during development)
 ```
 
 ## Confidentiality

@@ -5,7 +5,7 @@ import pytest
 from l2c_rebar.config import Config
 from l2c_rebar.evaluate import axes_of_plan, load_known, score_run, summarize_scores
 from l2c_rebar.extract.document import read_document
-from l2c_rebar.extract.grid import GridAxes, link_tags, placement_modes
+from l2c_rebar.extract.grid import GridAxes, find_grid_axes, link_tags, placement_modes
 from l2c_rebar.models import NON_CONFORME
 from l2c_rebar.parsing.elements import find_grid_refs, find_labels
 from l2c_rebar.parsing.rebar import find_bars
@@ -54,6 +54,20 @@ def test_a_point_off_the_grid_has_no_name():
     assert axes.name(200.0, 100.0) is None
 
 
+def test_a_point_is_located_by_crossing_or_by_bay():
+    axes = GridAxes(vertical=[("1", 100.0), ("2", 300.0), ("3", 500.0)], horizontal=[("A", 100.0), ("B", 300.0)])
+    assert axes.ref(310.0, 95.0) == "A-2"  # near both lines: the crossing
+    assert axes.ref(400.0, 200.0) == "A-B/2-3"  # inside a bay: the lines around it
+    assert axes.ref(100.0, 200.0) == "A-B/1"
+    assert axes.ref(2000.0, 200.0) is None  # far off the grid
+    assert GridAxes().ref(10.0, 10.0) is None
+
+
+def test_findings_on_plan_views_carry_their_grid_place(run):
+    placed = [e for e in run.plan_elements if e.label]
+    assert placed and all(e.grid_ref == e.label for e in placed)  # a column at B-2 is reported at axes B-2
+
+
 def test_tags_follow_their_usual_place_beside_the_column():
     centres = [100 + 200 * i for i in range(6)]
     marks = [(x - 6, 91, x + 6, 109) for x in centres]
@@ -99,3 +113,43 @@ def test_evaluate_command_prints_the_score_and_nothing_from_the_list(project, tm
     assert "connues : 3" in printed and "avec les mêmes valeurs : 3" in printed
     assert printed.count("trouvée, mêmes valeurs") == 3
     assert "8-25M" not in printed and "C-3" not in printed  # stage flags only, no content of the list
+
+
+def test_a_column_between_labelled_lines_is_named_by_its_bay():
+    from l2c_rebar.extract.grid import bay_key
+
+    axes = GridAxes(vertical=[("1", 100.0), ("2", 300.0), ("3", 500.0)], horizontal=[("A", 100.0), ("B", 300.0)])
+    assert axes.name(104.0, 296.0, between=0.1)[0] == "B-1"  # on both lines
+    assert axes.name(160.0, 100.0, between=0.1)[0] == "A/1-2"  # 0.3 bay past line 1: an unlabelled line
+    assert axes.name(160.0, 100.0)[0] == "A-1"  # without `between`, the nearest line as before
+    assert bay_key("B-C/12") == bay_key("B.1-12") == bay_key("B-12") == ("B", "12")
+    assert bay_key("A/1-2") == bay_key("A-1.5") == ("A", "1")
+
+
+def test_a_shop_column_on_an_intermediate_line_finds_its_plan_column():
+    from l2c_rebar.compare import compare_project
+    from l2c_rebar.models import CONFORME, Bar, Element
+
+    def column(source, label, qty):
+        el = Element(source=source, fichier="f.pdf", feuillet="S-501", page=1, type_element="colonne", element=label,
+                     x=0.0, y=0.0, bars=[Bar(diametre="25M", quantite=qty)], labeled=True, levels=("2",))
+        el.label = label
+        return el
+
+    plan = [column("plan", "B-C/12", 8), column("plan", "B-12", 6)]
+    shop = [column("atelier", "B.1-12", 8), column("atelier", "B-12", 6)]
+    results, _ = compare_project(plan, shop, Config())
+    pairs = {(r.plan.label, r.atelier.label): r.statut for r in results if r.plan and r.atelier}
+    assert pairs == {("B-C/12", "B.1-12"): CONFORME, ("B-12", "B-12"): CONFORME}
+
+
+def test_a_two_digit_bubble_read_in_pieces_by_ocr_still_names_its_line():
+    from l2c_rebar.models import TextLine
+
+    def bubble(text, x, y, origin="ocr"):
+        return TextLine(text, (x - 6, y - 6, x + 6, y + 6), size=12.0, origin=origin)
+
+    lines = [bubble(t, 100 + 200 * i, 40) for i, t in enumerate(["10", "11", "1 2", "13"])]
+    lines += [bubble(t, 40, 100 + 200 * i) for i, t in enumerate("ABC")]
+    axes = find_grid_axes(lines)
+    assert sorted(label for label, _ in axes.vertical) == ["10", "11", "12", "13"]

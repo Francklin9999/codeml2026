@@ -9,10 +9,11 @@ Drawings state ownership by position, in three ways this module handles:
 
 from __future__ import annotations
 
+import re
 import statistics
 from dataclasses import dataclass, field
 
-from ..models import BBox, Bar
+from ..models import BBox, Bar, TextLine
 
 
 def center(b: BBox) -> tuple[float, float]:
@@ -123,6 +124,62 @@ def assign_labels(bars: list[Bar], labels: list[Label], radius: float, header_pu
                     best = (cost, lab)
 
         out.append(best[1] if best and best[0] <= 1.5 * radius else None)
+    return out
+
+
+_SPACING_LINE = re.compile(r"^\s*(?:\d{1,3}\s?)?@\s?\d{1,4}(?:\s?(?:\"|''|”|″|mm))?(?:\s?(?:c\s?/\s?c|c\.\s?c\.?))?\s*$",
+                           re.IGNORECASE)
+
+
+def attach_spacing_lines(lines: list[TextLine], has_callout, gap: float = 1.0) -> list[TextLine]:
+    """Give a callout the spacing written on the line right after it.
+
+    Detailers often stack "24 15M 12-06" and, on the next line, "@12"" (or "23@300": 23
+    spaces at 300 mm).  The spacing line is appended to the callout line just before it
+    in reading order: above it for horizontal text, beside it for text running up or down
+    the sheet.  `has_callout(text)` tells whether a line holds a callout without a spacing.
+    """
+    out = list(lines)
+    spacings = [line for line in lines if _SPACING_LINE.match(line.text)]
+    if not spacings:
+        return out
+    cell = 60.0
+    index: dict[tuple[int, int], list[int]] = {}
+    for k, cand in enumerate(lines):
+        if has_callout(cand.text):
+            cx0, cy0, cx1, cy1 = cand.bbox
+            for gx in range(int(cx0 // cell), int(cx1 // cell) + 1):
+                for gy in range(int(cy0 // cell), int(cy1 // cell) + 1):
+                    index.setdefault((gx, gy), []).append(k)
+    taken: set[int] = set()
+    for line in spacings:
+        x0, y0, x1, y1 = line.bbox
+        thick = (x1 - x0) if line.vertical else (y1 - y0)
+        best: tuple[float, int] | None = None
+        near = {k for gx in range(int((x0 - 2 * thick) // cell), int((x1 + 2 * thick) // cell) + 1)
+                for gy in range(int((y0 - 2 * thick) // cell), int((y1 + 2 * thick) // cell) + 1)
+                for k in index.get((gx, gy), ())}
+        for k in sorted(near):
+            cand = out[k]
+            if k in taken or cand.vertical != line.vertical:
+                continue
+            cx0, cy0, cx1, cy1 = cand.bbox
+            if not line.vertical:
+                along = min(x1, cx1) - max(x0, cx0)
+                between = y0 - cy1
+            elif line.dy < 0:  # reads bottom to top: the line before is on the left
+                along = min(y1, cy1) - max(y0, cy0)
+                between = x0 - cx1
+            else:
+                along = min(y1, cy1) - max(y0, cy0)
+                between = cx0 - x1
+            if along > 0 and -0.3 * thick <= between <= gap * thick and (best is None or between < best[0]):
+                best = (between, k)
+        if best is not None:
+            taken.add(best[1])
+            cand = out[best[1]]
+            out[best[1]] = TextLine(text=f"{cand.text} {line.text.strip()}", bbox=cand.bbox, size=cand.size, dx=cand.dx,
+                                    dy=cand.dy, origin=cand.origin, conf=min(cand.conf, line.conf))
     return out
 
 

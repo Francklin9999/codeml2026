@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import re
 import statistics
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import pymupdf
 
@@ -33,6 +33,16 @@ class GridAxes:
     def usable(self) -> bool:
         return len(self.vertical) >= 2 and len(self.horizontal) >= 2
 
+    @property
+    def ordered(self) -> bool:
+        """True when labels run in order along each direction (A, B, C... and 1, 2, 3... or the
+        reverse), as on a building grid; cells of a schedule read as "axes" seldom do."""
+        def monotonic(lines: list[tuple[str, float]]) -> bool:
+            values = [v for _, v in sorted((p, label_value(l)) for l, p in lines) if v is not None]
+            steps = [b - a for a, b in zip(values, values[1:]) if b != a]
+            return len(steps) < 2 or min(sum(d > 0 for d in steps), sum(d < 0 for d in steps)) <= 1
+        return monotonic(self.vertical) and monotonic(self.horizontal)
+
     def coords(self, x: float, y: float) -> tuple[float, float, float, float] | None:
         """Where a point stands on the grid, whatever the scale or orientation of the sheet:
         (letter coordinate, number coordinate, letter step, number step).  Midway between
@@ -45,11 +55,26 @@ class GridAxes:
         (ca, sa), (cd, sd) = across, down
         return (ca, cd, sa, sd) if self.letters_are_vertical else (cd, ca, sd, sa)
 
-    def name(self, x: float, y: float) -> tuple[str, float] | None:
+    def ref(self, x: float, y: float) -> str | None:
+        """Where a point stands, in the words an engineer uses to find it on the sheet: the crossing
+        ("B-12") when the point is near both lines, otherwise the bay it falls in ("B-C/11-12",
+        "B/11-12").  None off the grid."""
+        if not self.usable or not self.ordered:
+            return None
+        across, down = _bay(self.vertical, x), _bay(self.horizontal, y)
+        if across is None or down is None:
+            return None
+        letter, number = (across, down) if self.letters_are_vertical else (down, across)
+        return f"{letter}-{number}" if "-" not in letter + number else f"{letter}/{number}"
+
+    def name(self, x: float, y: float, between: float = 0.0) -> tuple[str, float] | None:
         """Grid reference of a point, letter first ("B-3"), with a confidence.
 
         The point takes the nearest line of each direction; it must lie within
-        40% of the local line spacing, else it is not on the grid.
+        40% of the local line spacing, else it is not on the grid.  With `between`,
+        a point further than that share of a bay from its nearest line stands on an
+        intermediate line the plan does not label ("B.1" on the shop drawing): it is
+        named by the lines around it, "B-C/3".
         """
         if not self.usable:
             return None
@@ -58,8 +83,12 @@ class GridAxes:
         if along_x is None or along_y is None:
             return None
         (lx, ox), (ly, oy) = along_x, along_y
+        if between > 0:
+            lx = (_bracket(self.vertical, x) or lx) if ox > between else lx
+            ly = (_bracket(self.horizontal, y) or ly) if oy > between else ly
         letter, number = (lx, ly) if self.letters_are_vertical else (ly, lx)
-        return f"{letter}-{number}", round(1.0 - max(ox, oy), 2)
+        sep = "/" if "-" in letter + number else "-"
+        return f"{letter}{sep}{number}", round(1.0 - max(ox, oy), 2)
 
 
 def label_value(label: str) -> float | None:
@@ -96,6 +125,54 @@ def _interpolate(lines: list[tuple[str, float]], pos: float, overhang: float = 1
     return v0 + t * (v1 - v0), abs(v1 - v0)
 
 
+def _bay(lines: list[tuple[str, float]], pos: float, near: float = 0.25) -> str | None:
+    """Grid line a position is on ("B"), or the two lines it falls between ("B-C").  None beyond
+    the outermost lines (by more than `near` of a bay)."""
+    ordered = sorted(lines, key=lambda it: it[1])
+    if len(ordered) < 2:
+        return None
+    i = 0
+    while i + 2 < len(ordered) and pos > ordered[i + 1][1]:
+        i += 1
+    (la, a), (lb, b) = ordered[i], ordered[i + 1]
+    if b - a < 1.0:
+        return None
+    t = (pos - a) / (b - a)
+    if t < -near or t > 1.0 + near:  # beyond the outermost lines: not on the grid
+        return None
+    if t <= near:
+        return la
+    if t >= 1.0 - near:
+        return lb
+    return f"{la}-{lb}"
+
+
+def _bracket(lines: list[tuple[str, float]], pos: float) -> str | None:
+    """The two labelled lines a position falls between, lower label first ("B-C", "3-4")."""
+    ordered = sorted(lines, key=lambda it: it[1])
+    for (la, a), (lb, b) in zip(ordered, ordered[1:]):
+        if a <= pos <= b:
+            va, vb = label_value(la), label_value(lb)
+            if va is None or vb is None:
+                return None
+            return f"{la}-{lb}" if va <= vb else f"{lb}-{la}"
+    return None
+
+
+def bay_key(label: str) -> tuple[str, str] | None:
+    """Lower grid lines of the bay an element stands in, from either way of writing it:
+    "B-C/12" (between B and C, on 12) and "B.1-12" (intermediate line B.1) both give ("B", "12")."""
+    if "/" in label:
+        letter, number = label.split("/", 1)
+    elif "-" in label:
+        letter, number = label.split("-", 1)
+    else:
+        return None
+    lo_letter = letter.split("-")[0].split(".")[0]
+    lo_number = number.split("-")[0].split(".")[0]
+    return (lo_letter, lo_number) if lo_letter and lo_number else None
+
+
 def _nearest(lines: list[tuple[str, float]], pos: float) -> tuple[str, float] | None:
     ordered = sorted(lines, key=lambda it: it[1])
     idx = min(range(len(ordered)), key=lambda i: abs(ordered[i][1] - pos))
@@ -127,6 +204,8 @@ def find_grid_axes(lines: list[TextLine]) -> GridAxes:
     """Read the grid from its bubbles: one family of labels (letters or numbers)
     runs along a row and names the vertical lines, the other runs down a column
     and names the horizontal lines.  Bubbles are the largest short labels."""
+    # OCR may join the two pieces of a bubble with a space ("1 2" for 12).
+    lines = [replace(l, text=l.text.replace(" ", "")) if l.origin == "ocr" and len(l.text) <= 6 else l for l in lines]
     letters = [l for l in lines if _LETTER.match(l.text.strip())]
     numbers = [l for l in lines if _NUMBER.match(l.text.strip())]
     if len(letters) < 3 or len(numbers) < 3:

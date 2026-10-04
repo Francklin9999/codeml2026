@@ -20,6 +20,7 @@ from dataclasses import dataclass, field, replace
 
 from .config import ELEMENT_TYPES, Config
 from .models import AJOUTE, CONFORME, MANQUANT, NON_CONFORME, Bar, Ecart, Element, Result
+from .extract.grid import bay_key
 
 _SIZE_MM = {"10M": 11.3, "15M": 16.0, "20M": 19.5, "25M": 25.2, "30M": 29.9, "35M": 35.7, "45M": 43.7, "55M": 56.4}
 _ATTR_LABEL = {"quantite": "Quantité", "espacement_mm": "Espacement", "longueur_mm": "Longueur", "diametre": "Diamètre"}
@@ -215,12 +216,14 @@ def _levels_compatible(a: Element, b: Element) -> bool:
 
 
 def _result(statut: str, plan: Element | None, shop: Element | None, feuillet: str, comp: BarComparison | None,
-            methode: str, factor: float, note: str = "") -> Result:
+            methode: str, factor: float, note: str = "", ocr_factor: float = 0.8) -> Result:
     ref = plan or shop
     assert ref is not None
+    # Element confidences already carry the OCR score of their lines; `ocr_factor` adds the
+    # risk of a misread the score does not see (a 2 read as a 5 with full confidence).
     conf = min(e.conf for e in (plan, shop) if e is not None) * factor
     if any(e is not None and e.ocr for e in (plan, shop)):
-        conf *= 0.62  # text read by OCR: below the validation threshold whatever the rest
+        conf *= ocr_factor
         note = (note + " " if note else "") + "Texte lu par OCR."
     if comp is not None and comp.multiples:
         conf *= 0.85
@@ -230,7 +233,7 @@ def _result(statut: str, plan: Element | None, shop: Element | None, feuillet: s
         note = (note + " " if note else "") + "Seul le diamètre a pu être vérifié."
     return Result(statut=statut, type_element=ref.type_element, element=ref.element, feuillet=feuillet, plan=plan,
                   atelier=shop, ecarts=list(comp.ecarts) if comp else [], confiance=round(max(0.05, min(conf, 0.99)), 2),
-                  methode=methode, note=note.strip())
+                  methode=methode, note=note.strip(), verifiees=comp.checked if comp else 0)
 
 
 @dataclass
@@ -246,6 +249,8 @@ class Coverage:
     non_verifies: int = 0  # plan callouts that could be neither confirmed nor contradicted
     feuillets_lecture_partielle: dict[str, str] = field(default_factory=dict)  # sheet -> found/total
     reperes_non_fiables: list[str] = field(default_factory=list)  # types where pairing by name was abandoned
+    ocr_lignes_recollees: list[str] = field(default_factory=list)  # types whose OCR rows were joined back
+    accord_par_type: dict[str, float] = field(default_factory=dict)  # share of bars confirmed in pairs made by name
 
 
 class Comparator:
@@ -269,6 +274,9 @@ class Comparator:
         self._sheets = self._sheet_index()
 
     # -- helpers ---------------------------------------------------------
+    def _result(self, *args, **kwargs) -> Result:
+        return _result(*args, ocr_factor=self.cfg.ocr_confidence_factor, **kwargs)
+
     @staticmethod
     def _normalised_positions(elements: list[Element]) -> dict[int, tuple[float, float]]:
         """Position of each element inside the drawn area of its page, in [0, 1]."""
@@ -388,10 +396,13 @@ class Comparator:
     def _match_labels(self) -> tuple[list[Element], list[Element]]:
         index: dict[tuple[str, str], list[Element]] = defaultdict(list)
         by_label: dict[str, list[Element]] = defaultdict(list)
+        between: dict[tuple[str, tuple[str, str]], list[Element]] = defaultdict(list)
         for p in self.plan:
             if p.label:
                 index[(p.type_element, p.label)].append(p)
                 by_label[p.label].append(p)
+                if "/" in p.label and (key := bay_key(p.label)):
+                    between[(p.type_element, key)].append(p)  # a column between two labelled lines
 
         pairs: list[tuple[Element, list[Element], float]] = []
         loose_shop: list[Element] = []
@@ -404,6 +415,10 @@ class Comparator:
                 other = by_label.get(s.label, [])
                 if other and len({p.type_element for p in other}) == 1:
                     cands, factor = other, 0.8  # same label filed under another element type
+            if not cands and "." in s.label and (key := bay_key(s.label)):
+                # The shop drawing names an intermediate line ("B.1-12") that the plan leaves
+                # unlabelled: the plan element standing between B and the next line, on 12.
+                cands, factor = between.get((s.type_element, key)), 0.9
             if cands:
                 pairs.append((s, cands, factor))
             else:
@@ -445,7 +460,7 @@ class Comparator:
             if comp.ecarts and all(e.attribut == "absence" for e in comp.ecarts):
                 f2 *= 0.75  # nothing contradicts the plan; bars may simply be drawn elsewhere
             statut = CONFORME if comp.conform else NON_CONFORME
-            self.results.append(_result(statut, p, s, p.feuillet, comp, "repere", factor * f2, note))
+            self.results.append(self._result(statut, p, s, p.feuillet, comp, "repere", factor * f2, note))
 
         shop_labels = {(s.type_element, s.label) for s in self.shop if s.label}
         # Share of the named plan elements of each sheet that the shop drawings account for.
@@ -468,7 +483,7 @@ class Comparator:
                     # not provided or could not be read.  Said once, not element by element.
                     self.coverage.feuillets_lecture_partielle[p.feuillet] = f"{found}/{total}"
                     continue
-                self.results.append(_result(MANQUANT, p, None, p.feuillet, None, "repere", 0.7,
+                self.results.append(self._result(MANQUANT, p, None, p.feuillet, None, "repere", 0.7,
                                             "Repère présent à l'atelier, mais pas pour ce niveau."))
                 continue
             loose_plan.append(p)
@@ -601,14 +616,14 @@ class Comparator:
                 _, s, comp = conform
                 if consumes:
                     used.add(id(s))
-                self.results.append(_result(CONFORME, p, s, p.feuillet, comp, "signature", label_factor))
+                self.results.append(self._result(CONFORME, p, s, p.feuillet, comp, "signature", label_factor))
             elif mismatch is not None:
                 _, s, comp = mismatch
                 used.add(id(s))
-                self.results.append(_result(NON_CONFORME, p, s, p.feuillet, comp, "signature", 0.7 * label_factor,
+                self.results.append(self._result(NON_CONFORME, p, s, p.feuillet, comp, "signature", 0.7 * label_factor,
                                             "Apparié par contenu et position : à confirmer sur le feuillet."))
             else:
-                self.results.append(_result(MANQUANT, p, None, p.feuillet, None, "signature", 0.6 * label_factor))
+                self.results.append(self._result(MANQUANT, p, None, p.feuillet, None, "signature", 0.6 * label_factor))
 
         # "Added in the shop drawings" is said of named elements only.  A shop
         # drawing calls out every bar while a plan relies on typical notes, so an
@@ -618,7 +633,7 @@ class Comparator:
             if id(s) in used or id(s) in self._typical or s.type_element not in plan_types:
                 continue
             if s.label:
-                self.results.append(_result(AJOUTE, None, s, self._plan_sheet_for(s), None, "signature", 0.7))
+                self.results.append(self._result(AJOUTE, None, s, self._plan_sheet_for(s), None, "signature", 0.7))
             else:
                 self.unpaired_shop += 1
 
@@ -652,7 +667,7 @@ class Comparator:
             return False
         self._typical.update(id(s) for s in near)
         partner = min(near, key=lambda s: self._bays(p, s))
-        self.results.append(_result(CONFORME, p, partner, p.feuillet, comp, "position", 0.85))
+        self.results.append(self._result(CONFORME, p, partner, p.feuillet, comp, "position", 0.85))
         return True
 
     # -- driver ----------------------------------------------------------

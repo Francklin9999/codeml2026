@@ -55,7 +55,9 @@ cells = [
     md("The synthetic project plants five discrepancies; all five must be found, with no false alarm:"),
     code("found = {(r.type_element, e.attribut, e.plan, e.atelier) for r in out.results for e in r.ecarts}\n"
          "pd.DataFrame([{**p, 'detecte': (p['type'], p['attribut'], p['plan'], p['atelier']) in found} for p in PLANTED])"),
-    md("## 5. PDF report and annotated PDFs"),
+    md("## 5. PDF report and annotated PDFs\n\nThe report opens with counts per plan sheet, then one list of every "
+       "non-conformity and missing element, by sheet and grid place (`axes B-12`), then a detailed card per finding "
+       "with image extracts of both drawings."),
     code("from l2c_rebar.report.pdf_report import build_report\nfrom l2c_rebar.report.annotate import annotate_project\n\n"
          "report = build_report(out.project, out.results, out.coverage, out.stats, OUT / 'rapport.pdf', Config())\n"
          "annotated = annotate_project(out.results, OUT)\nprint(report.name, '+', len(annotated), 'annotated PDFs')"),
@@ -89,6 +91,7 @@ cells = [
          "pages, _ = read_document(discover(GRID).plans[0], 'plan', Config(ocr='off'), None)\n"
          "summarize_scores(score_run(known, grid_out.plan_elements, grid_out.results, axes_of_plan(pages)))"),
     md("## 7. Same thing from the command line\n\n```\npython -m l2c_rebar run <project folder>               # JSON + PDF report + annotated PDFs\n"
+       "python -m l2c_rebar run <project folder> --fast        # live demonstration: OCR at 200 dpi, no image extracts\n"
        "python -m l2c_rebar evaluate <project folder> known.xlsx  # score against documented non-conformities\n"
        "python -m l2c_rebar ui                                 # interface with validation of uncertain cases\n"
        "python -m l2c_rebar diff old.pdf new.pdf               # what changed between two revisions\n```"),

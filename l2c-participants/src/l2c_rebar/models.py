@@ -149,6 +149,7 @@ class Element:
     multiplicity: int = 1  # number of elements sharing this detail ("B-12, B-13" -> 2)
     ocr: bool = False  # read by OCR rather than from a text layer
     grid: Optional[tuple[float, float, float, float]] = None  # place on the building grid (see GridAxes.coords)
+    grid_ref: Optional[str] = None  # the same place as an engineer writes it: "B-12", "B-C/11-12"
 
     @property
     def key(self) -> str:
@@ -198,6 +199,7 @@ class Result:
     methode: str = "repere"  # repere (label match) / signature (content match)
     note: str = ""
     id: str = ""
+    verifiees: int = 0  # plan bars confirmed by the shop drawing in this pair
 
     @property
     def a_valider(self) -> bool:
