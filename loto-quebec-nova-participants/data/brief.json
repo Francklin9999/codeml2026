@@ -1,0 +1,89 @@
+{
+  "title": "Brief de reprise — NOVA",
+  "baseline": "2026-09-30T09:00:00-04:00",
+  "status": "Cible approuvée mais conditionnelle; trois validations bloquent encore le go-live.",
+  "sections": [
+    {
+      "id": "responsable",
+      "title": "Responsable",
+      "summary": "Nicolas Perron est chargé de projet depuis le 16 septembre 2026; Élodie Caron assurait auparavant ce rôle et est restée disponible quelques jours pour la transition.",
+      "fact_ids": ["F-PM-NICOLAS", "F-PM-INITIAL"],
+      "sources": [
+        {"file": "01_Courriels/E06_Transition_charge_projet.eml", "locator": "corps, paragraphes 2-3"},
+        {"file": "07_Conversations_Teams/Teams_16sept_Transition.txt", "locator": "08:45-08:47"}
+      ]
+    },
+    {
+      "id": "date_conditions",
+      "title": "Date approuvée et conditions",
+      "summary": "Le comité a approuvé le 22 octobre 2026 le 10 septembre. La date n'est pas un go garanti: il faut 1) l'acceptation sécurité de SEC-210, 2) la fermeture d'ACC-303, 3) l'approbation du runbook incluant le rollback.",
+      "fact_ids": ["F-GOLIVE-APPROVED-22", "F-GOLIVE-CONDITIONAL", "F-GOLIVE-THREE-CONDITIONS"],
+      "sources": [
+        {"file": "02_Reunions/M04_Transcript_Comite_direction_10sept.txt", "locator": "15:22-15:27"},
+        {"file": "02_Reunions/M06_Transcript_Comite_26sept.txt", "locator": "10:02-10:15"}
+      ]
+    },
+    {
+      "id": "portee",
+      "title": "Portée",
+      "summary": "La phase 1 comprend SSO, demandes, pièces jointes, workflow, tableau de suivi et rapports standards; CR-01 ajoute les rapports avancés. L'optimisation mobile avancée CR-04 est reportée en phase 2 et demeure non approuvée.",
+      "fact_ids": ["F-SCOPE-PHASE1", "F-CR01-APPROVED", "F-CR04-DRAFT", "F-CR04-DEFERRED"],
+      "sources": [
+        {"file": "04_Documents_projet/Charte_Projet_NOVA_v1.txt", "locator": "section Portée phase 1"},
+        {"file": "06_Architecture_et_decisions/Decision_Portee_Phase2.md", "locator": "document complet"}
+      ]
+    },
+    {
+      "id": "budget_factures",
+      "title": "Budget et factures",
+      "summary": "Autorisé: 204 000 $ (180 000 $ + CR-01 de 24 000 $). Facturé: 186 000 $, dont 168 000 $ adossés à une autorisation. Payé: 132 000 $. INV-003 de 54 000 $ est en validation: isoler la ligne CR-04 non autorisée de 18 000 $ et traiter séparément le jalon 3 de 36 000 $. Le reste autorisé non encore facturé est de 36 000 $ sur le contrat de base.",
+      "fact_ids": ["F-BUDGET-AUTHORIZED-TOTAL", "F-INV001-PAID", "F-INVOICE-PAID", "F-FINANCE-TOTALS", "F-INV003-TOTAL", "F-INV003-BASE-LINE", "F-INV003-UNAUTHORIZED-LINE"],
+      "sources": [
+        {"file": "05_Contrats_et_finances/CONTRAT_Boreal_NOVA.pdf", "locator": "page 1, Valeur contractuelle"},
+        {"file": "05_Contrats_et_finances/CR-01_Rapports_avances_APPROUVE.pdf", "locator": "page 1, Impact financier et Décision"},
+        {"file": "05_Contrats_et_finances/INV-003.pdf", "locator": "page 1, Facturation"}
+      ]
+    },
+    {
+      "id": "priorites",
+      "title": "Priorités immédiates",
+      "summary": "1) obtenir les trois validations de go-live; 2) corriger INV-003; 3) remettre à jour le plan, R-01 et le statut; 4) ne pas annoncer le 22 octobre comme garanti; 5) tenir une revue go/no-go documentée.",
+      "fact_ids": ["F-SEC210-NOT-ACCEPTED", "F-ACC303-OPEN", "F-OPS601-OPEN", "F-INV003-HOLD-CR04", "F-PLAN-V3-STALE", "F-RISK-R01-STALE", "F-RISK-R01-INFO-DATE", "F-STATUS-REPORT-STALE"],
+      "action_ids": ["A-SEC-RETEST", "A-ACC303-FIX", "A-ACC303-RETEST", "A-RUNBOOK-FINAL", "A-RUNBOOK-APPROVE", "A-INV003-CORRECT", "A-PLAN-CORRECT", "A-RISK-R01-CLOSE", "A-STATUS-CORRECT", "A-GONOGO-COMMITTEE"]
+    }
+  ],
+  "go_live_conditions": [
+    {
+      "number": 1,
+      "condition": "Validation sécurité de SEC-210",
+      "current_state": "Correctif livré, non accepté; re-test planifié sans date.",
+      "owner": "Sophie Lambert",
+      "action_ids": ["A-SEC-RETEST"],
+      "fact_ids": ["F-SEC210-DELIVERED", "F-SEC210-NOT-ACCEPTED"]
+    },
+    {
+      "number": 2,
+      "condition": "Fermeture d'ACC-303",
+      "current_state": "Ouvert et bloquant; correctif seulement annoncé pour une prochaine build.",
+      "owner": "Boréal pour livrer; Mélissa Gagnon pour valider",
+      "action_ids": ["A-ACC303-FIX", "A-ACC303-RETEST"],
+      "fact_ids": ["F-ACC303-OPEN", "F-ACC303-SCREENSHOT"]
+    },
+    {
+      "number": 3,
+      "condition": "Approbation du runbook incluant rollback",
+      "current_state": "Version finale non reçue; retour arrière TODO et validation post-déploiement à compléter.",
+      "owner": "Boréal pour livrer; Olivier Côté pour approuver",
+      "action_ids": ["A-RUNBOOK-FINAL", "A-RUNBOOK-APPROVE"],
+      "fact_ids": ["F-OPS601-OPEN", "F-RUNBOOK-MISSING", "F-RUNBOOK-STEP5", "F-RUNBOOK-OWNER-GO"]
+    }
+  ],
+  "top_risks": ["R-SECURITY", "R-ACCESSIBILITY", "R-OPERATIONS"],
+  "blocking_unknowns": ["U-SEC-RETEST-DATE", "U-ACC303-BUILD", "U-RUNBOOK-DUE", "U-RUNBOOK-STEP5", "U-GONOGO-DATE"],
+  "caveats": [
+    "Une proposition fournisseur ne modifie pas une décision approuvée.",
+    "Une livraison fournisseur ne constitue pas une validation du responsable.",
+    "La date d'information d'un document dérivé peut être antérieure à sa date de fichier.",
+    "Les échéances absentes sont marquées « à confirmer »; aucune approbation ou date n'est inventée."
+  ]
+}

@@ -1,0 +1,92 @@
+[
+  {
+    "id": "U-SEC-RETEST-DATE",
+    "unknown": "Date et critères détaillés du re-test sécurité SEC-210.",
+    "impact": "Bloque la confirmation de la condition de go-live no 1.",
+    "severity": "blocking",
+    "ask": "Sophie Lambert",
+    "proposed_question": "Pouvez-vous confirmer la date du re-test de SEC-210, les scénarios exécutés et les critères d'acceptation?",
+    "expected_location": {"file": "03_Tickets/SEC-210.txt", "locator": "commentaire du 26 sept 15:40, qui dit seulement « Re-test planifié »"},
+    "fact_ids": ["F-SEC210-NOT-ACCEPTED"]
+  },
+  {
+    "id": "U-ACC303-BUILD",
+    "unknown": "Date et numéro de la prochaine build contenant le correctif ACC-303.",
+    "impact": "Empêche de planifier le re-test de la condition de go-live no 2.",
+    "severity": "blocking",
+    "ask": "Julien Moreau, Boréal Numérique",
+    "proposed_question": "Quelle build contiendra le correctif ACC-303 et quand sera-t-elle disponible en validation?",
+    "expected_location": {"file": "03_Tickets/ACC-303.txt", "locator": "commentaire du 26 sept 11:03, qui dit seulement « prochaine build »"},
+    "fact_ids": ["F-ACC303-OPEN"]
+  },
+  {
+    "id": "U-RUNBOOK-DUE",
+    "unknown": "Date ferme de livraison du runbook final.",
+    "impact": "Empêche de réserver le temps de revue avant le go-live.",
+    "severity": "blocking",
+    "ask": "Julien Moreau et Olivier Côté",
+    "proposed_question": "Quand la version finale du runbook sera-t-elle livrée afin qu'Olivier puisse l'éprouver et l'approuver avant le 22 octobre?",
+    "expected_location": {"file": "03_Tickets/OPS-601.txt", "locator": "commentaire du 29 sept, aucune date annoncée"},
+    "fact_ids": ["F-OPS601-OPEN", "F-RUNBOOK-OWNER-GO"]
+  },
+  {
+    "id": "U-RUNBOOK-STEP5",
+    "unknown": "Progrès de l'étape 5, validation fonctionnelle post-déploiement, depuis la capture du 25 septembre.",
+    "impact": "Le runbook peut rester inexécutable même si le rollback est ajouté.",
+    "severity": "blocking",
+    "ask": "Boréal opérations et Olivier Côté",
+    "proposed_question": "L'étape 5 de validation fonctionnelle post-déploiement est-elle maintenant rédigée et testée?",
+    "expected_location": {"file": "03_Tickets/OPS-601_runbook.png", "locator": "étape 5 « À compléter »"},
+    "fact_ids": ["F-RUNBOOK-MISSING"]
+  },
+  {
+    "id": "U-INV003-REMEDY",
+    "unknown": "Mécanisme final de correction d'INV-003 et date de traitement de la ligne autorisée de 36 000 $.",
+    "impact": "La facture demeure en validation et le montant payable n'est pas encore libéré.",
+    "severity": "blocking_finance",
+    "ask": "Amélie Fortin et Nicolas Perron",
+    "proposed_question": "Demandons-nous une facture corrigée ou une note de crédit pour les 18 000 $, et pouvons-nous valider séparément le jalon 3 de 36 000 $?",
+    "expected_location": {"file": "01_Courriels/E07_Facture_003_question.eml", "locator": "corps, question non résolue dans le corpus"},
+    "fact_ids": ["F-INV003-UNAUTHORIZED-LINE", "F-INV003-HOLD-CR04", "F-INV003-BASE-LINE"]
+  },
+  {
+    "id": "U-MOBILE-WORK",
+    "unknown": "Nature, volume et imputation des ajustements mobiles que Boréal dit avoir commencé à examiner.",
+    "impact": "Risque de travail hors portée et de nouvelle contestation financière.",
+    "severity": "blocking_finance",
+    "ask": "Julien Moreau et Nicolas Perron",
+    "proposed_question": "Quels travaux mobiles ont été amorcés, quand, sur quelle autorisation et sur quel budget?",
+    "expected_location": {"file": "02_Reunions/M06_Transcript_Comite_26sept.txt", "locator": "10:24-10:25"},
+    "fact_ids": ["F-CR04-DEFERRED", "F-INV003-UNAUTHORIZED-LINE"]
+  },
+  {
+    "id": "U-GONOGO-DATE",
+    "unknown": "Date du prochain comité et de la décision go/no-go.",
+    "impact": "Aucune instance datée n'est encore documentée pour constater les trois validations.",
+    "severity": "blocking",
+    "ask": "Nicolas Perron",
+    "proposed_question": "Quand aura lieu la revue go/no-go et quels documents devront être fournis pour chacune des trois conditions?",
+    "expected_location": {"file": "01_Courriels/E09_Rappel_mise_en_production.eml", "locator": "corps, aucune date de comité indiquée"},
+    "fact_ids": ["F-GOLIVE-CONDITIONAL", "F-GOLIVE-THREE-CONDITIONS"]
+  },
+  {
+    "id": "U-HOSTING-VERIFIER",
+    "unknown": "Identité de la personne de l'équipe architecture et détail du contrôle ayant vérifié Canada Central.",
+    "impact": "La preuve de mise en œuvre existe, mais son protocole technique n'est pas détaillé.",
+    "severity": "informative",
+    "ask": "Marc Gervais",
+    "proposed_question": "Qui a vérifié la migration Canada Central le 27 août et quel contrôle technique a été conservé?",
+    "expected_location": {"file": "02_Reunions/M03_CR_Comite_27aout.txt", "locator": "Résumé de gestion, puce 1, sans nom ni protocole"},
+    "fact_ids": ["F-HOSTING-VERIFIED"]
+  },
+  {
+    "id": "U-CONTRACT-SLIP",
+    "unknown": "Conséquences et options contractuelles si la mise en production dépasse le 31 octobre.",
+    "impact": "Un autre glissement pourrait dépasser la période documentée du contrat.",
+    "severity": "informative",
+    "ask": "Responsable contractuel ou affaires juridiques",
+    "proposed_question": "Quelles dispositions s'appliquent si la cible glisse après le 31 octobre 2026?",
+    "expected_location": {"file": "05_Contrats_et_finances/CONTRAT_Boreal_NOVA.pdf", "locator": "page 1, Période; aucune clause de prolongation visible"},
+    "fact_ids": ["F-CONTRACT-BASE", "F-GOLIVE-APPROVED-22"]
+  }
+]

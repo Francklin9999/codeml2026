@@ -1,0 +1,62 @@
+[
+  {
+    "id": "C-GOLIVE-PLAN",
+    "subject": "Date de mise en production",
+    "claim_a": {"statement": "Le plan v3 affiche le 15 octobre.", "file": "04_Documents_projet/Plan_Projet_NOVA_v3_12sept.xlsx", "locator": "Plan projet!E7:F7", "date": "2026-09-12", "authority": "document dérivé"},
+    "claim_b": {"statement": "Le comité a approuvé le 22 octobre.", "file": "02_Reunions/M04_Transcript_Comite_direction_10sept.txt", "locator": "15:22-15:25", "date": "2026-09-10", "authority": "comité de direction"},
+    "resolution": "Le 22 octobre est la valeur courante. Une décision explicite du comité prévaut sur un plan dérivé non corrigé; Teams confirme le 15 septembre que le plan est resté périmé.",
+    "authority_rule": "Une décision de comité prévaut sur un document de planification dérivé, même si le fichier dérivé est plus récent.",
+    "status": "resolved",
+    "fact_ids": ["F-GOLIVE-APPROVED-22", "F-PLAN-V3-STALE"]
+  },
+  {
+    "id": "C-RISK-R01",
+    "subject": "État du risque connecteur",
+    "claim_a": {"statement": "R-01 est indiqué ouvert dans le registre du 29 septembre.", "file": "04_Documents_projet/Registre_Risques_29sept.xlsx", "locator": "Risques!F2 et H2", "date": "2026-09-29", "authority": "registre dérivé, information au 9 septembre"},
+    "claim_b": {"statement": "INT-101 est validé et fermé le 17 septembre.", "file": "03_Tickets/INT-101.txt", "locator": "commentaire du 17 sept 16:10", "date": "2026-09-17", "authority": "validation du responsable intégration"},
+    "resolution": "R-01 doit être fermé. La date du fichier ne reflète pas la date d'information de la ligne: H2 dit « Suivi au 9 septembre 2026 »; la validation propriétaire du 17 septembre est ultérieure et plus autoritaire.",
+    "authority_rule": "Comparer la date d'information, pas seulement la date du fichier; une validation du propriétaire prévaut sur un registre dérivé.",
+    "status": "resolved",
+    "fact_ids": ["F-RISK-R01-STALE", "F-RISK-R01-INFO-DATE", "F-INT-CLOSED"]
+  },
+  {
+    "id": "C-STATUS-SECURITY",
+    "subject": "Acceptation sécurité",
+    "claim_a": {"statement": "Le rapport du 21 septembre marque la sécurité VERT.", "file": "04_Documents_projet/Rapport_Statut_21sept.pdf", "locator": "page 1, ligne Sécurité", "date": "2026-09-21", "authority": "rapport dérivé"},
+    "claim_b": {"statement": "Sophie maintient SEC-210 EN VALIDATION au 26 septembre.", "file": "03_Tickets/SEC-210.txt", "locator": "commentaire du 26 sept 15:40", "date": "2026-09-26", "authority": "responsable sécurité"},
+    "resolution": "La sécurité n'est pas acceptée. Le rapport reconnaît avoir précédé la vérification détaillée et ne remplace pas la décision de la responsable sécurité.",
+    "authority_rule": "La validation du responsable de domaine, plus récente, prévaut sur un résumé de gestion dérivé.",
+    "status": "resolved",
+    "fact_ids": ["F-STATUS-REPORT-STALE", "F-SEC210-NOT-ACCEPTED"]
+  },
+  {
+    "id": "C-STATUS-ACCESSIBILITY",
+    "subject": "Complétude accessibilité",
+    "claim_a": {"statement": "Le rapport du 21 septembre marque l'accessibilité VERT et le brouillon d'Alex la dit complétée.", "file": "01_Courriels/E11_Communication_statut.eml", "locator": "corps, citation du brouillon", "date": "2026-09-21", "authority": "communication basée sur rapport dérivé"},
+    "claim_b": {"statement": "ACC-303 est toujours ouvert et bloquant le 26 septembre.", "file": "03_Tickets/ACC-303.txt", "locator": "commentaire du 26 sept 11:03", "date": "2026-09-26", "authority": "responsable accessibilité"},
+    "resolution": "L'accessibilité n'est pas complétée: ACC-301 et ACC-302 le sont, mais ACC-303 reste ouvert.",
+    "authority_rule": "Le ticket courant tenu par la responsable de domaine prévaut sur un brouillon de communication et un rapport agrégé.",
+    "status": "resolved",
+    "fact_ids": ["F-STATUS-REPORT-STALE", "F-ACC303-OPEN", "F-ACC301-CLOSED", "F-ACC302-CLOSED"]
+  },
+  {
+    "id": "C-MOBILE-SCOPE",
+    "subject": "Portée mobile avancée",
+    "claim_a": {"statement": "Boréal pensait l'optimisation mobile incluse dans la portée initiale.", "file": "07_Conversations_Teams/Teams_22sept_Mobile.txt", "locator": "13:03", "date": "2026-09-22", "authority": "impression fournisseur"},
+    "claim_b": {"statement": "CR-04 n'est pas approuvée et les optimisations avancées sont reportées en phase 2.", "file": "06_Architecture_et_decisions/Decision_Portee_Phase2.md", "locator": "document complet", "date": "2026-09-24", "authority": "décision formelle de portée"},
+    "resolution": "Le mobile avancé est hors portée de la phase 1 et non autorisé; seule la compatibilité mobile de base demeure incluse.",
+    "authority_rule": "Le contrat et la décision formelle de portée prévalent sur la croyance du fournisseur.",
+    "status": "resolved",
+    "fact_ids": ["F-SCOPE-MOBILE-STALE-CLAIM", "F-CR04-DRAFT", "F-CR04-DEFERRED"]
+  },
+  {
+    "id": "C-PROJECT-MANAGER",
+    "subject": "Chargé de projet",
+    "claim_a": {"statement": "Les documents historiques nomment Élodie Caron.", "file": "04_Documents_projet/Charte_Projet_NOVA_v1.txt", "locator": "en-tête", "date": "2026-07-07", "authority": "charte historique"},
+    "claim_b": {"statement": "Nicolas Perron reprend officiellement le rôle le 16 septembre.", "file": "01_Courriels/E06_Transition_charge_projet.eml", "locator": "corps, paragraphe 2", "date": "2026-09-16", "authority": "transition formelle"},
+    "resolution": "Nicolas est le responsable courant depuis le 16 septembre; Élodie reste l'ancienne responsable pour l'historique.",
+    "authority_rule": "À autorité formelle comparable, la transition la plus récente prévaut pour l'état courant.",
+    "status": "resolved",
+    "fact_ids": ["F-PM-INITIAL", "F-PM-NICOLAS"]
+  }
+]
