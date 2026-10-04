@@ -199,24 +199,26 @@ Repère : le mentor de SN-SF donne ±0,5 mm (ISO 12870) comme tolérance réelle
 
 Banc `app/bench/seg_bench.test.ts` : il exécute **le code de l'app**, sans bouchon, sur des fenêtres redressées synthétiques dont A et B sont connus exactement : `segmentClassic`, puis le modèle exactement comme `worker.ts` l'enchaîne (onnxruntime-web, WebAssembly), puis `measureLens` avec son affinage du bord au sous-pixel. Résumé par `training/data/bench_report.py`. Un verre compte « à 1 mm près » si |ΔA| et |ΔB| sont tous deux sous 1 mm.
 
-Modèle v2 livré, code actuel de l'app (recours au modèle après `NO_LENS` ou `LENS_OUT_OF_WINDOW` de la méthode sans IA, seuil de confiance 0,85, marge de 1 mm), 600 fenêtres de test, 300 tables mouchetées, 200 verres qui dépassent de la fenêtre. Entre parenthèses : le modèle v1 avec le même code.
+Modèle v2 livré, code actuel de l'app (recours au modèle après `NO_LENS` ou `LENS_OUT_OF_WINDOW` de la méthode sans IA, seuil de confiance 0,85, marge de 1 mm, filtre des points accrochés à un mouchet décrit plus bas), 600 fenêtres de test, 300 tables mouchetées, 200 verres qui dépassent de la fenêtre. Entre parenthèses : le modèle v1 avec le même code avant le filtre.
 
 | Fenêtres | n | Sans IA : verres mesurés | Sans IA : à 1 mm près | Avec le modèle : verres mesurés | Avec le modèle : à 1 mm près | Avec le modèle : erreur moyenne A, B |
 |---|---|---|---|---|---|---|
-| Toutes (test) | 600 | 20 % | 17 % | 96 % | **84 %** (83 %) | 0,36 mm (0,38) |
-| Rétro-éclairage | 255 | 13 % | 12 % | 96 % | **90 %** (91 %) | 0,22 mm (0,22) |
-| Papier, lumière de la pièce | 157 | 13 % | 4 % | 97 % | 74 % (73 %) | 0,56 mm |
-| Fonds variés | 76 | 21 % | 18 % | 99 % | 87 % (84 %) | 0,29 mm |
+| Toutes (test) | 600 | 20 % | 17 % | 96 % | **84 %** (83 %) | 0,33 mm (0,38) |
+| Rétro-éclairage | 255 | 13 % | 12 % | 96 % | **91 %** (91 %) | 0,20 mm (0,22) |
+| Papier, lumière de la pièce | 157 | 13 % | 4 % | 97 % | 75 % (73 %) | 0,52 mm |
+| Fonds variés | 76 | 21 % | 18 % | 99 % | 86 % (84 %) | 0,25 mm |
 | Verre teinté | 37 | 89 % | 89 % | 100 % | 100 % | 0,08 mm |
 | Verre monté | 37 | 38 % | 35 % | 86 % | 57 % (51 %) | 0,98 mm (1,30) |
-| Table mouchetée | 300 | 2 % | 0 % | 95 % | 22 % (23 %) | 1,57 mm |
+| Table mouchetée | 300 | 2 % | 0 % | 95 % | **37 %** (23 %) | 1,22 mm (1,53) |
 
 | Cas où il faut refuser | n | Sans IA | Avec le modèle v2 (v1) |
 |---|---|---|---|
 | Fenêtre vide : verre inventé | 38 | 0 | **0** (0) |
 | Verre qui dépasse de 0,5 à 15 mm : mesuré tronqué au lieu d'être refusé | 200 | 0 | **0** (4) |
 
-Lecture : quand la méthode sans IA mesure, elle est très juste (0,14 mm en rétro-éclairage) mais elle refuse les bords faibles ou interrompus ; le modèle rattrape ces refus. Le modèle v2 a été préféré à v1 parce qu'il ne mesure plus aucun verre qui dépasse et fait mieux sur les verres montés ; il perd un peu de finesse en rétro-éclairage (75 % à 0,5 mm près au lieu de 79 %, même erreur moyenne). Sur table mouchetée, l'affinage du bord au sous-pixel de l'app dégrade le masque du modèle (1,57 mm contre 1,1 mm à la résolution du modèle), probablement parce qu'il s'accroche au mouchetis : piste d'amélioration. Fichiers : `training/_local/bench_*/final_v2.csv` (non versionnés), résumé par `bench_report.py`.
+Lecture : quand la méthode sans IA mesure, elle est très juste (0,14 mm en rétro-éclairage) mais elle refuse les bords faibles ou interrompus ; le modèle rattrape ces refus. Le modèle v2 a été préféré à v1 parce qu'il ne mesure plus aucun verre qui dépasse et fait mieux sur les verres montés.
+
+**Filtre des points accrochés à un mouchet** (`despike` dans `measure/contour.ts`, masques du modèle seulement). L'app affine chaque point du contour vers le bord le plus net à moins de 1 mm. Sur un fond moucheté, ce bord est souvent un mouchet, et l'erreur sur table passait de 1,1 mm (masque du modèle) à 1,57 mm (après affinage). Le bord d'un verre se déplace régulièrement le long du contour, un mouchet non : un point dont le déplacement s'écarte de plus de 0,25 mm de la médiane de ses voisins (± 1,5 mm) reprend cette médiane. Effet mesuré avec le modèle v2 : table mouchetée 22 % → 37 % à 1 mm près (erreur 1,57 → 1,22 mm) ; 600 fenêtres de test : erreur moyenne 0,36 → 0,33 mm, à 0,5 mm près 65 % → 68 % (rétro-éclairage 75 % → 79 %). Les masques de la méthode sans IA ne passent pas par ce filtre. Fichiers : `training/_local/bench_*/final_v2.csv` (non versionnés), résumé par `bench_report.py`.
 
 Dans Chrome (app construite, aucun bouchon, `app/bench/e2e_browser.mjs`) : les deux photos de test de `rig/make_board.py` à bord très faible (gris 200 à 205 sur 252), que la méthode sans IA refuse (`NO_LENS`), sont mesurées par le modèle : 50,0 × 38,0 mm pour une vérité de 50 × 38, et 48,6 × 36,3 mm pour 48,6 × 36,2. L'écran « Pas à pas » indique « méthode modèle ».
 
@@ -249,7 +251,7 @@ Rien ne quitte le téléphone : le modèle tourne dans le navigateur, aucune pho
 ## 10. Limites
 
 - Le modèle livré n'a vu **que des images synthétiques**. Sur ces images, il aide nettement (sections 6.0 et 7.1) ; sur de vraies photos, rien n'est encore prouvé. Si, sur nos verres, il ne fait pas mieux que la méthode sans IA sur les photos difficiles, nous le dirons et nous retirerons le fichier.
-- Table mouchetée sans rétro-éclairage : environ 1,6 mm d'erreur dans l'app sur synthétique (section 7.1), malgré la version 2 ; verre encore monté : environ 1 mm. Le rétro-éclairage du dispositif reste la condition de mesure recommandée.
+- Table mouchetée sans rétro-éclairage : environ 1,2 mm d'erreur dans l'app sur synthétique (section 7.1), 37 % des verres à 1 mm près ; verre encore monté : environ 1 mm. Le rétro-éclairage du dispositif reste la condition de mesure recommandée.
 - Les masques automatiques supposent un bord sombre sur la photo rétro-éclairée : un verre très teinté ou à bord très fin peut être rejeté, donc absent du jeu.
 - Les outils de données écrivent les photos réelles et les images synthétiques dans deux dossiers séparés ; les réunir en un seul jeu se fait à la main avant l'entraînement.
 - Les poids de départ ont été entraînés par leurs auteurs sur ImageNet ; les conditions d'utilisation d'ImageNet n'ont pas été vérifiées par nous (`À VÉRIFIER`, voir [`LICENCES_ET_OUTILS_IA.md`](LICENCES_ET_OUTILS_IA.md)).

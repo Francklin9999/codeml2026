@@ -283,6 +283,32 @@ function restoreExtents(smooth: Pt[], before: Pt[]): Pt[] {
   return smooth.map(([x, y]) => [bx + (x - cx) * kx, by + (y - cy) * ky] as Pt);
 }
 
+const DESPIKE_WINDOW_MM = 1.5; // half-window, along the contour, of the median shift
+const DESPIKE_MM = 0.25;       // a point shifted further than this from its neighbours' median shift is a speckle, not the edge
+
+/**
+ * Model masks only: a refined point whose shift departs from the median shift of its neighbours by more than
+ * DESPIKE_MM takes that median shift instead. On a textured background (speckled table) the steepest edge within 1 mm
+ * of the model's outline is often a speckle; the edge of a lens moves smoothly along the contour, a speckle does not.
+ * Measured on 300 synthetic speckled-table windows and 600 test windows (app/bench).
+ */
+export function despike(before: Pt[], after: Pt[], pxPerMm: number): Pt[] {
+  const n = before.length;
+  const half = Math.max(2, Math.round(DESPIKE_WINDOW_MM * pxPerMm)); // dense points are about one pixel apart
+  const dx = after.map((p, i) => p[0] - before[i][0]), dy = after.map((p, i) => p[1] - before[i][1]);
+  const med = (v: number[], i: number) => {
+    const w: number[] = [];
+    for (let j = -half; j <= half; j++) w.push(v[(i + j + n) % n]);
+    w.sort((a, b) => a - b);
+    return w[half];
+  };
+  const lim = DESPIKE_MM * pxPerMm;
+  return after.map((p, i) => {
+    const mx = med(dx, i), my = med(dy, i);
+    return Math.hypot(dx[i] - mx, dy[i] - my) > lim ? ([before[i][0] + mx, before[i][1] + my] as Pt) : p;
+  });
+}
+
 /** Mask + rectified image to a smooth counter-clockwise contour in mm: exactly N_POINTS points, lowpassed. */
 export function contourFromMask(r: Rectified, m: Mask): Pt[] {
   const { width: w, height: h } = r.image;
@@ -292,7 +318,9 @@ export function contourFromMask(r: Rectified, m: Mask): Pt[] {
   let poly = traceOuter(comp.fg, w, h, comp.sx, comp.sy);
   if (poly.some(([x, y]) => x <= 0 || y <= 0 || x >= w || y >= h)) throw new OptiError('LENS_OUT_OF_WINDOW', 'mask touches the window border');
   if (signedArea(poly) < 0) poly = poly.reverse();
-  const refined = refineSubpixel(poly, r.image, r.pxPerMm).map(([x, y]) => [x / r.pxPerMm, y / r.pxPerMm] as Pt);
+  let refinedPx = refineSubpixel(poly, r.image, r.pxPerMm);
+  if (m.method === 'model') refinedPx = despike(resampleClosed(poly, refinedPx.length), refinedPx, r.pxPerMm);
+  const refined = refinedPx.map(([x, y]) => [x / r.pxPerMm, y / r.pxPerMm] as Pt);
   const dense = resampleClosed(refined, N_POINTS);
   const smooth = restoreExtents(lowpassClosed(dense, HARMONICS), dense);
   return signedArea(smooth) < 0 ? smooth.reverse() : smooth;

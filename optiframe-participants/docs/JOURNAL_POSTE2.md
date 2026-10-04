@@ -40,6 +40,8 @@
 | 04:05 → 04:50 | Modèle v2 : 7 époques à partir de v1, avec 8 200 images en plus (table mouchetée, verre monté, fenêtre vide, verre qui dépasse, rétro-éclairage et papier) | IoU de validation 0,9695 sur une validation plus dure (v1 : 0,967) |
 | 04:58 | **v2 comparé à v1 avec le code actuel de l'app**, puis livré | 600 fenêtres : 84 % à 1 mm près (v1 83 %) ; verre monté 57 % (51 %) ; verres qui dépassent mesurés à tort : 0 sur 200 (v1 : 4) ; fenêtres vides : 0 verre inventé ; table mouchetée inchangée (22 %) ; rétro-éclairage 90 % (91 %), un peu moins à 0,5 mm près (75 % contre 79 %). Chrome : fixtures à bord faible toujours mesurées à 0,1 mm près par le modèle |
 
+| 05:15 | Constat 6 corrigé : filtre `despike` des points accrochés à un mouchet (masques du modèle seulement), 2 tests | Table mouchetée 22 % → 37 % à 1 mm près ; 600 fenêtres : erreur 0,36 → 0,33 mm, rétro-éclairage à 0,5 mm près 75 % → 79 % |
+
 Ces essais tournent sur un PC : ils ne remplacent pas un vrai iPhone (Safari) ni un vrai téléphone Android de milieu de gamme.
 
 ## Constats
@@ -87,4 +89,4 @@ Effet sur les 600 fenêtres de test (modèle v1) : 83 % des verres à 1 mm près
 
 ### 6. Table mouchetée : l'affinage du bord de l'app dégrade le masque du modèle
 
-Sur 300 tables mouchetées, le masque du modèle v2 donne 1,1 mm d'erreur à sa propre résolution (`evaluate.py`), mais 1,57 mm après `measureLens`, qui déplace chaque point du contour vers le plus fort gradient à moins de 1 mm. Sur un fond moucheté, ce gradient est souvent un mouchet. Piste : quand le masque vient du modèle et que le fond est texturé, ne déplacer un point que si le gradient trouvé est cohérent avec ses voisins (ou garder le contour du modèle). Non fait : c'est le module de mesure, à valider d'abord sur de vraies photos.
+Sur 300 tables mouchetées, le masque du modèle v2 donne 1,1 mm d'erreur à sa propre résolution (`evaluate.py`), mais 1,57 mm après `measureLens`, qui déplace chaque point du contour vers le plus fort gradient à moins de 1 mm. Sur un fond moucheté, ce gradient est souvent un mouchet. Piste : quand le masque vient du modèle et que le fond est texturé, ne déplacer un point que si le gradient trouvé est cohérent avec ses voisins (ou garder le contour du modèle). **Fait à 05:15** (`despike`, masques du modèle seulement, voir `DONNEES_ET_IA.md` §7.1) : table 22 % → 37 % à 1 mm près, et un léger gain partout ailleurs. À valider sur de vraies photos.

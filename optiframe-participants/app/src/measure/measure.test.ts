@@ -3,6 +3,7 @@ import { OptiError, type Mask, type Pt, type Rectified } from '../contracts';
 import { boxing, extentAlong, minAreaRect, polygonLength, signedArea } from './boxing';
 import { EDGE_HEIGHT_MM, parallaxCorrect } from './correction';
 import { loadBias, measureLens, rotationWarningDeg, setBias } from './index';
+import { despike } from './contour';
 
 const PPM = 10;
 const W_MM = 80, H_MM = 60;
@@ -297,5 +298,25 @@ describe('bias', () => {
     const { readFileSync } = await import('node:fs');
     const j = JSON.parse(readFileSync(new URL('../../public/bias.json', import.meta.url), 'utf8'));
     expect([j.a0, j.a1, j.b0, j.b1]).toEqual([0, 1, 0, 1]);
+  });
+});
+
+describe('despike (model masks: refined points pulled to a speckle)', () => {
+  // A circle of 200 points about one pixel apart, shifted 0.3 px outward everywhere (a real edge), with three points
+  // pulled 6 px further (speckles 0.6 mm away at 10 px/mm).
+  const n = 200, R = n / (2 * Math.PI);
+  const before: Pt[] = Array.from({ length: n }, (_, i) => [100 + R * Math.cos((2 * Math.PI * i) / n), 100 + R * Math.sin((2 * Math.PI * i) / n)]);
+  const out = (p: Pt, d: number): Pt => { const a = Math.atan2(p[1] - 100, p[0] - 100); return [p[0] + d * Math.cos(a), p[1] + d * Math.sin(a)]; };
+  const after = before.map((p, i) => out(p, [20, 21, 120].includes(i) ? 6.3 : 0.3));
+
+  it('puts the speckle points back on the shift of their neighbours and keeps the smooth shift elsewhere', () => {
+    const res = despike(before, after, 10);
+    for (const i of [20, 21, 120]) expect(Math.hypot(res[i][0] - 100, res[i][1] - 100)).toBeCloseTo(R + 0.3, 1);
+    for (const i of [0, 50, 99, 150]) expect(res[i]).toEqual(after[i]);
+  });
+
+  it('leaves a contour whose shift varies smoothly untouched', () => {
+    const smooth = before.map((p, i) => out(p, 2 * Math.sin((2 * Math.PI * i) / n)));
+    expect(despike(before, smooth, 10)).toEqual(smooth);
   });
 });

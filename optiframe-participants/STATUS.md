@@ -88,7 +88,7 @@ Une fois les photos et le CSV prêts : ouvrir `eval.html`, y déposer les photos
 - **Seuil de netteté** (`MIN_SHARPNESS`) calé sur du synthétique : à régler sur de vraies photos si l'app refuse des photos nettes.
 - **iPhone** : si Safari n'envoie pas l'événement d'annulation du sélecteur de photo, rien ne s'affiche et le bouton reste utilisable ; à confirmer sur un vrai iPhone.
 - **Le pont** est réglé à la main (18 mm par défaut), pas mesuré.
-- **Modèle entraîné sur synthétique seulement.** Ses seuils (`LOW_MASK_SCORE` 0,3 dans `worker.ts`, `MIN_MODEL_SCORE` 0,85 dans `segmentModel.ts`) viennent d'images synthétiques. Point faible connu : table mouchetée sans rétro-éclairage (environ 1,6 mm). Pour couper l'IA : supprimer `app/public/models/lens_seg.onnx`.
+- **Modèle entraîné sur synthétique seulement.** Ses seuils (`LOW_MASK_SCORE` 0,3 dans `worker.ts`, `MIN_MODEL_SCORE` 0,85 dans `segmentModel.ts`) viennent d'images synthétiques. Point faible connu : table mouchetée sans rétro-éclairage (environ 1,2 mm). Pour couper l'IA : supprimer `app/public/models/lens_seg.onnx`.
 - **Premier recours au modèle** : 22 Mo (modèle + onnxruntime), préchargés en arrière-plan une fois OpenCV prêt. Avant la démo, ouvrir l'app une fois sur le téléphone de démo, sur le Wi-Fi.
 - **Bancs `app/bench/`** : `vite.config.ts` découpe les tests en projets ; le banc a sa propre config (`bench/vitest.bench.config.ts`) qui les retire. Les images synthétiques et les modèles sont dans `training/_local/` (non versionné) ; pour les refaire : `training/data/synth_rig.py`.
 - Détail de tout le reste : [`docs/HANDOFF_AUDIT.md`](docs/HANDOFF_AUDIT.md) (écrit avant la vague 2, donc en retard sur les écrans et les outils).
