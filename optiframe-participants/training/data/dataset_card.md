@@ -1,6 +1,6 @@
 # Fiche du jeu de données OptiFrame (segmentation de verres)
 
-Modèle à remplir. Tous les chiffres sont à compléter après la prise de vue et la génération : À COMPLÉTER.
+Partie synthétique remplie (2026-10-04, modèle v2 livré). Partie réelle à compléter après la prise de vue : À COMPLÉTER.
 
 ## Contenu
 
@@ -10,7 +10,7 @@ Modèle à remplir. Tous les chiffres sont à compléter après la prise de vue 
 | Positions par verre | À COMPLÉTER |
 | Photos réelles étiquetées (après rejets) | À COMPLÉTER |
 | Groupes rejetés (support bougé, marqueurs absents) | À COMPLÉTER |
-| Échantillons synthétiques | À COMPLÉTER |
+| Échantillons synthétiques | 24 159 en entraînement (12 000 `synth_rig.py` toutes scènes, 2 000 table mouchetée ou rétro-éclairage ou papier, 3 000 tables mouchetées, 1 500 verres montés, 1 000 fenêtres vides, 1 200 verres qui dépassent, 1 500 rétro-éclairage et papier, 1 959 `synth.py`) ; 800 en validation (600 toutes scènes, 200 tables) ; 1 500 + 300 tables + 200 verres qui dépassent en test. Graines distinctes pour chaque jeu |
 | Taille des images | 800 x 650 px (fenêtre 80 x 65 mm, 10 px/mm) |
 | Images / masques | `images/*.jpg`, `masks/*.png` (255 = verre) |
 
@@ -26,7 +26,7 @@ Par identifiant de verre (`split.py`), jamais par image : train / val / test env
 
 - Photos réelles : prises par l'équipe avec le matériel décrit dans le protocole. Appareil(s) : À COMPLÉTER.
 - Masques réels : calculés automatiquement (aplat de fond, chapeau noir, Otsu, remplissage depuis le bord, plus grande composante) sur la prise `easy` puis copiés aux autres prises de la même position. Contrôle visuel : À COMPLÉTER images revues, À COMPLÉTER % correctes.
-- Échantillons synthétiques : `synth.py`, formes superellipse, rectangle arrondi, aviateur, oeil de chat. Fonds : À COMPLÉTER (images fournies par l'équipe ou fonds procéduraux).
+- Échantillons synthétiques : `synth_rig.py` (la fenêtre telle que le dispositif la montre : rétro-éclairage, papier, table mouchetée, verre teinté, verre monté, fenêtre vide, verre qui dépasse ; bord du verre faible, irrégulier ou interrompu, reflets, poussières, moiré, chaîne du téléphone) et `synth.py`, formes superellipse, rectangle arrondi, aviateur, oeil de chat. Fonds : tous procéduraux, aucune image externe.
 
 ## Licences
 

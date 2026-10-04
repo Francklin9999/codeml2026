@@ -36,6 +36,22 @@ python evaluate.py --data ../_local/dataset --ckpt ../_local/model_out/best.pt -
 - `evaluate.py`: on the test split (`--split`), per condition and overall, for the model (`--ckpt`, or `--onnx` to score the exported file) and for an Otsu baseline on the grey image. Metrics: IoU, boundary F-score at 0.5 mm (5 px of the 800x650 image, scaled to the model resolution), mean absolute error in mm of A and B (bounding extents of the largest component of the predicted mask against the label). Writes `metrics.md` and `metrics.json`. The Otsu polarity rule is naive on purpose: the side that touches the image border least is the lens.
 - Weights and models are never written under `app/` (the scripts refuse). After a real training run, copy `lens_seg.onnx` to the app by hand.
 - Colab: `train_colab.ipynb` clones the repo, installs `requirements.txt`, unzips the dataset and calls the three scripts (`REPO_URL` and `DATA_ZIP` are `TO FILL`).
+- `train.py --amp` trains in mixed precision on CUDA (about 20 % faster on an RTX 2070 Super here: the MobileNetV3 depthwise layers, not the data, set the pace); `--init best.pt` starts from a checkpoint (fine-tuning, a new cosine schedule). DataLoader workers are persistent (Windows re-imports torch in every new worker).
+
+## The runs behind the shipped model (2026-10-04, local NVIDIA RTX 2070 Super, `training/.venv`, torch 2.6.0+cu124)
+
+Data built with `training/data/` (`synth_rig.py`, `synth.py`, `build_dataset.py`, `preresize.py`, all synthetic, no real photo yet); validation and test are synthetic too, drawn with their own seeds. Full log: `docs/JOURNAL_POSTE2.md`.
+
+```bash
+# v1: 15 959 training windows, 600 validation
+python train.py --data ../_local/ds_v1_384 --out ../_local/model_v1 --epochs 30 --workers 8          # stopped after epoch 1 (326 s/epoch)
+python train.py --data ../_local/ds_v1_384 --out ../_local/model_v1 --epochs 18 --workers 8 --amp --init ../_local/model_v1_fp32_ep.pt
+# v2 (shipped): + speckled tables, mounted lenses, empty windows, lenses crossing the border = 24 159 windows, 800 validation
+python train.py --data ../_local/ds_v2_384 --out ../_local/model_v2 --epochs 7 --lr 3e-4 --workers 8 --amp --init ../_local/model_v1/best.pt
+python export.py --ckpt ../_local/model_v2/best.pt --out ../_local/model_v2_export
+```
+
+Best validation IoU: v1 0.9755 (its own validation set), v2 0.9695 on the harder v2 validation set where v1 scores 0.967. Held-out synthetic metrics and the app-side benchmark: `docs/DONNEES_ET_IA.md` §6.0 and §7.1. Real-photo metrics: TO MEASURE.
 
 Encoder name: `segmentation_models_pytorch` 0.5.0 has no `mobilenet_v3_small` key (its own list has `mobilenet_v2` and `mobileone_*`). MobileNetV3-Small comes through the timm universal encoder as `tu-mobilenetv3_small_100`, whose `imagenet` weights are timm's `mobilenetv3_small_100.lamb_in1k`. The smoke test uses `encoder_weights=None` (no download).
 

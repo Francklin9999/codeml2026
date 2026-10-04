@@ -70,8 +70,8 @@ Dès qu'il y aura des photos réelles, les images synthétiques n'iront **que da
 
 | Jeu synthétique | Valeur |
 |---|---|
-| Nombre d'images | `À COMPLÉTER` |
-| Fonds utilisés et leur licence | `À COMPLÉTER` |
+| Nombre d'images | 24 159 en entraînement (modèle v2), 800 en validation, 2 000 en test (détail : `training/data/dataset_card.md`) |
+| Fonds utilisés et leur licence | Tous calculés par notre code (aucune image externe) |
 
 ## 4. Le modèle et l'entraînement
 
@@ -106,9 +106,11 @@ Commandes exactes : `training/model/README.md`. Carnet Colab : `training/model/t
 
 `training/data/split.py` répartit les **verres**, pas les images : environ 70 % des verres pour l'entraînement, 15 % pour la validation, 15 % pour le test. Toutes les photos d'un verre vont du même côté. Un verre du test n'a donc jamais été vu à l'entraînement, sous aucun éclairage : sans cela, les mesures seraient flatteuses et fausses.
 
+En attendant les photos réelles, le modèle livré (v2) a été entraîné, choisi et mesuré sur des images synthétiques séparées par graine : 24 159 en entraînement, 800 en validation (dont 200 tables mouchetées), et en test 1 500 fenêtres toutes scènes, 300 tables mouchetées et 200 verres qui dépassent. Aucune image n'est commune à deux jeux.
+
 | Découpage | Verres | Photos réelles | Images synthétiques |
 |---|---|---|---|
-| Entraînement | `À COMPLÉTER` | `À COMPLÉTER` | `À COMPLÉTER` |
+| Entraînement | `À COMPLÉTER` | `À COMPLÉTER` | 24 159 (modèle v2) |
 | Validation | `À COMPLÉTER` | `À COMPLÉTER` | 0 |
 | Test | `À COMPLÉTER` | `À COMPLÉTER` | 0 |
 
