@@ -1,6 +1,6 @@
 // Service worker: offline after the first load.
 // Bump VERSION on every release that changes cached files; old caches are deleted on activate.
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE = 'optiframe-' + VERSION;
 
 // Big files that only change with a release: serve from cache first.
