@@ -31,6 +31,7 @@
 | 02:20 → 03:35 | Entraînement du modèle v1 (RTX 2070 Super, précision mixte) | 15 959 images synthétiques d'entraînement (12 000 `synth_rig` + 2 000 table mouchetée et fonds variés + 1 959 `synth.py`), validation 600, test 1 500 + 300 table (graines distinctes). IoU de validation : 0,916 (époque 1) → 0,973 (époque 12). |
 | 02:45 | Banc côté app avec un instantané du modèle (époque 4, IoU val 0,964), 300 images de test | voir constat 2 |
 | 03:05 | Seuil de confiance du modèle | voir constat 3 ; `MIN_MODEL_SCORE = 0.85` dans `segmentModel.ts`, 2 tests |
+| 03:18 | E2E sur l'URL publique en **émulation de téléphone lent** : processeur ralenti 4 fois, réseau 4G (9 Mbit/s, 60 ms), cache vide comme un téléphone neuf | Réussi. Accueil 3,4 s ; 1re photo 8,1 s (téléchargement d'OpenCV compris) ; 2e photo 3,8 s ; monture 13,9 s. Soit environ 26 s de calcul pour une paire, sous les 30 s des consignes mais avec peu de marge ; l'étape la plus lente sur processeur faible est la monture. Émulation sur PC (chargé par l'entraînement) : à confirmer sur un vrai téléphone de milieu de gamme. |
 
 Ces essais tournent sur un PC : ils ne remplacent pas un vrai iPhone (Safari) ni un vrai téléphone Android de milieu de gamme.
 

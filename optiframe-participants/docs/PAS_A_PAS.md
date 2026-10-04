@@ -4,6 +4,14 @@
 
 Les images ci-dessous sont à produire avec un vrai verre sur le dispositif de capture. Emplacements réservés dans `docs/img/` ; tant qu'un fichier n'existe pas, la ligne reste `À COMPLÉTER`.
 
+> **En attendant la photo réelle : exemple sur une photo synthétique.** Les images de ce cadre sortent de l'écran « Pas à pas » de **l'app en ligne** (https://francklin9999.github.io/codeml2026/, Chrome, écran de téléphone), pour la photo `rig/out/fixtures/fixture_04_ellipse_medium.png` : une feuille de référence dessinée par `rig/make_board.py` avec une ellipse de 57 × 45 mm à bord sombre de 1,5 mm, inclinée de 5°, floutée et bruitée. Ce n'est **pas** une photo de téléphone : elle montre le fonctionnement, pas la justesse. Script : `app/bench/steps_capture.mjs`.
+>
+> | 1. Référence détectée | 2. Image redressée | 3. Masque (méthode classique) | 4. Contour |
+> |---|---|---|---|
+> | ![Photo synthétique, marqueurs placés](img/pas-a-pas-synth-1.jpg) | ![Fenêtre redressée](img/pas-a-pas-synth-2.jpg) | ![Masque du verre](img/pas-a-pas-synth-3.png) | ![Contour mesuré](img/pas-a-pas-synth-4.jpg) |
+>
+> Résultat affiché : A 57,0 mm, B 45,0 mm, périmètre 160,7 mm (vérité de la photo synthétique : 57 × 45 mm). Durées affichées par l'app sur le PC : redressement 2 229 ms (dont chargement d'OpenCV 393 ms), segmentation 763 ms, mesure 267 ms. Écran résultat : [`img/pas-a-pas-synth-5.jpg`](img/pas-a-pas-synth-5.jpg).
+
 | | |
 |---|---|
 | Verre photographié | `À COMPLÉTER` (identifiant, description) |

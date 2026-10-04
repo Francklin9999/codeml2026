@@ -5,6 +5,9 @@
 //
 //   npm run build && npx vite preview --port 4173 &
 //   node bench/e2e_browser.mjs [--url http://localhost:4173/] [--chrome <path>] [--out <dir>]
+//        [--photo-r <png>] [--photo-l <png>] [--cpu 4] [--net 4g]
+// --cpu N slows the CPU N times (DevTools emulation; 4 is the usual stand-in for a mid-range phone);
+// --net 4g|3g throttles the network (4g: 9 Mbit/s down, 60 ms; 3g: 1.6 Mbit/s, 150 ms). Emulation, not a phone.
 //
 // puppeteer-core is not an app dependency: install it anywhere and point NODE_PATH at it, e.g.
 //   npm i --prefix <scratch> puppeteer-core && NODE_PATH=<scratch>/node_modules node bench/e2e_browser.mjs
@@ -26,9 +29,12 @@ const chrome = arg('--chrome', [
 const fixtureDir = resolve(import.meta.dirname, '../../rig/out/fixtures');
 const photoR = arg('--photo-r', join(fixtureDir, 'fixture_04_ellipse_medium.png'));
 const photoL = arg('--photo-l', join(fixtureDir, 'fixture_02_rrect_thick_band.png'));
+const cpu = Number(arg('--cpu', '1'));
+const net = arg('--net', '');
+const NETS = { '4g': { downloadThroughput: 9e6 / 8, uploadThroughput: 1.5e6 / 8, latency: 60 }, '3g': { downloadThroughput: 1.6e6 / 8, uploadThroughput: 0.75e6 / 8, latency: 150 } };
 mkdirSync(out, { recursive: true });
 
-const report = { url, chrome, steps: [], console: [], pageErrors: [], ok: false };
+const report = { url, chrome, cpu, net: net || 'none', steps: [], console: [], pageErrors: [], ok: false };
 const step = (name, extra = {}) => { const s = { name, t: Date.now(), ...extra }; report.steps.push(s); console.log('·', name, JSON.stringify(extra)); };
 
 const browser = await puppeteer.launch({ executablePath: chrome, headless: true, args: ['--no-sandbox'] });
@@ -44,6 +50,8 @@ try {
   page.on('response', (r) => { if (r.status() >= 400) report.console.push(`HTTP ${r.status()} ${r.url()}`); });
   const cdp = await page.createCDPSession();
   await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: out, eventsEnabled: true });
+  if (cpu > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpu });
+  if (net) { await cdp.send('Network.enable'); await cdp.send('Network.emulateNetworkConditions', { offline: false, ...NETS[net] }); }
 
   const t0 = Date.now();
   await page.goto(url, { waitUntil: 'networkidle0', timeout: 120_000 });
