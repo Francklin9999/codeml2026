@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE (prototype) (Claude Code, 2026-10-03) |
 | **Priority** | P3 (architecture differentiator; prototype-level) |
 | **Effort** | 4–5 h |
 | **Depends on** | an extractor that runs locally (strategy 2 / 11, or a small quantised VLM from strategy 3), strategy 8 (lifecycle API) |
@@ -72,4 +72,6 @@ Strategy 8 (API and lifecycle), 15 (phone client), 11 (small model), 10 (privacy
 
 | Date | Who | Hardware | Median latency | T1–T5 | Notes |
 |---|---|---|---|---|---|
-| | | | | | |
+| 2026-10-03 | Claude Code | laptop RTX 4060 8 GB | ~4 s/page clean (325 s for 80 pages incl. registration, 3 views) | API test 1/1 (idempotent retry, leak guard, bad image 422); end-to-end with the PWA | serves the PWA on the local network |
+
+**Implementation notes (2026-10-03).** FastAPI `/process` + `/health`; one GPU job at a time; data stays in the facility.

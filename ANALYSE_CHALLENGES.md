@@ -528,7 +528,7 @@ Prototype a **WhatsApp-style agent** that photographs pages of a paper maternal 
 Record lifecycle required: CAPTURÉ → EN_ATTENTE_IA → TRAITÉ_IA → À_RÉVISER → VALIDÉ → PATIENTE_LIÉE → ENREGISTRÉ → SYNCHRONISÉ, plus failure states.
 
 #### 7.5.3 What's in the data [verified]
-- 129 images: real-looking phone photos of a pink paper booklet, handwritten in blue ink ("RAS", ages, CIN numbers, addresses), plus a 10-patient specimen PDF and its page images.
+- 129 images (corrected 2026-10-03): **124 clean A4 renders** (`dossiers_specimen_10_patientes-NN*.png`, 80 unique pages = 10 fictional patients × 8 page types, 44 byte-identical duplicates) + **5 real phone photos** (`1-1…1-5.jpg`) of a pink paper booklet of a *different* registry model, handwritten in blue ink. The specimen PDF has a text layer with the filled values, i.e. exact per-page ground truth (see `dayone-participants/strat1.md`).
 - `maternal_registry_synthetic.csv`: 200 rows × 31 numeric columns (age, education, gravidity, BMI, mean BP, hemoglobin, fasting glucose, HIV/syphilis/hep C results, birth weight…). It looks like a **risk-modelling table, not per-page ground truth for the images.** We could not measure our extraction accuracy without hand-labelling pages.
 - Photos contain direct identifiers (CIN, address) that must be **redacted and never stored**.
 

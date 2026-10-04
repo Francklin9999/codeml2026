@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE (Claude Code, 2026-10-03) |
 | **Priority** | P2 |
 | **Effort** | 3–4 h |
 | **Depends on** | strategy 1 (page types), strategy 2 (page classification) |
@@ -79,4 +79,6 @@ Strategy 2 (classification, spreads), 8 (states), 9 (dialogue), 13 (re-digitisat
 
 | Date | Who | T1–T5 | Hamming threshold | Notes |
 |---|---|---|---|---|
-| | | | | |
+| 2026-10-03 | Claude Code | exact: 124 -> 80 (pass); value-based near-dup: re-shot agreement 0.54-0.74 vs other patients 0.17-0.32 (pass) | pre-OCR ink hash rejected (0.24 vs 0.68: not separable) | `pytest work/strat17` 4/4 |
+
+**Implementation notes (2026-10-03).** Negative result kept in the test file: low-resolution ink maps cannot tell a re-shot from another patient's page of the same type under degradation; extracted values can.

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE (Claude Code, 2026-10-03) |
 | **Priority** | P1 |
 | **Effort** | 5–6 h |
 | **Depends on** | strategy 6 (statuses / confidence) and 8 (state machine); stubs are fine at first |
@@ -115,4 +115,6 @@ Strategy 6 (what to ask), 7 (conflict messages), 8 (states), 10 (match buttons),
 
 | Date | Who | Golden pass | Questions / page | Residual errors | Usability notes |
 |---|---|---|---|---|---|
-| | | | | | |
+| 2026-10-03 | Claude Code | 4/4 golden transcripts | 4.3 (clean) / 12.4 (sev 2) from calibrated statuses | n/a | FR/EN; evidence crop with every question; validator suggestions as buttons |
+
+**Implementation notes (2026-10-03).** Deterministic dialogue manager: asks only uncertain fields, lowest confidence first among priority fields; Confirmer / Corriger / Reprendre la photo / Saisie manuelle; full manual mode when AI is unavailable. No Gradio UI was built (the PWA and the WhatsApp adapter consume the same manager).

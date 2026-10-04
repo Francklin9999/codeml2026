@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED *(set to IN PROGRESS / DONE / ABANDONED with your name and the date)* |
+| **Status** | DONE (Claude Code, 2026-10-03) |
 | **Priority** | P1 (foundation: every extraction strategy is scored with it) |
 | **Effort** | 4–5 h |
 | **Depends on** | nothing |
@@ -163,4 +163,6 @@ Every extraction strategy (2, 3, 4, 5, 6, 7) uses this schema and ground truth; 
 
 | Date | Who | Pages done | Spot-check errors | Unassigned words | Verdict |
 |---|---|---|---|---|---|
-| | | | | | |
+| 2026-10-03 | Claude Code | 80/80 (5,920 scored fields: 1,890 filled text, 2,060 blank text, 1,970 checkboxes) | 0 on overlays of pages 19 & 21 after fixes | 0 | Adopted: the exact test set used by every run |
+
+**Implementation notes (2026-10-03).** `work/strat1/build_gt.py`. Values = non-Helvetica spans grouped into runs; table cells by row label x column header, inline fields by nearest label; checkboxes from vector squares + non-form-colour pen strokes (ink colour varies per patient: blue, black). Fixes found during error analysis: glyphs missing from NanumPen/Gaegu appear as `\x00` (accents repaired from the vocabulary, a lone `\x00` is an en-dash = NON_FOURNI); values overflowing into the next table column are split at column starts (36 values corrected after a too-eager first version). T3: strategy 7 validator gives 0 false alarms on the 10 booklets; T4: 124 PNGs -> 80 unique pages (strat17 test); T5: identifier values never written (strat10 test). Photos 1-1..1-5 were not hand-labelled: they show a different (real) booklet layout.

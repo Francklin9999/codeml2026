@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE (Claude Code, 2026-10-03) |
 | **Priority** | P2 |
 | **Effort** | 3–4 h |
 | **Depends on** | strategy 1 (schema), strategy 10 (linking), an extractor |
@@ -81,4 +81,6 @@ Strategy 10 (linking gives the patient), 9 (diff UI), 8 (versions in the store),
 
 | Date | Who | Visit | Accuracy (with / without) | Questions / page | Notes |
 |---|---|---|---|---|---|
-| | | | | | |
+| 2026-10-03 | Claude Code | re-shot of a page at sev 2 vs validated record of the previous visit (2 latest columns new) | 0.945 with / 0.866 without | 4.4 with / 21.1 without | injected paper corrections surfaced as conflicts, never overwritten |
+
+**Implementation notes (2026-10-03).** `reconcile.py` (stable / append-only / new fields) + booklet-level cross-page rules in strategy 7 + précoce/tardif page typing from content (page-type accuracy at sev 2: 0.938 -> 0.963-0.975).

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE (Claude Code, 2026-10-03) |
 | **Priority** | P1 (cheap, deterministic, high value) |
 | **Effort** | 2–3 h |
 | **Depends on** | strategy 1 (schema; GT to test against) |
@@ -96,4 +96,6 @@ Strategy 6 (flags lower confidence), 9 (messages become questions), 5 (sampler g
 
 | Date | Who | False alarms on GT | Detection rate | Correction accuracy | Notes |
 |---|---|---|---|---|---|
-| | | | | | |
+| 2026-10-03 | Claude Code | 0 on the 10 GT booklets | 50/50 injected digit confusions (stub scorer) | 50/50 | on real runs: 2 / 19 / 16 repairs at sev 0 / 2 / 4 |
+
+**Implementation notes (2026-10-03).** Two parts. (1) `fieldlogic.py`: per-field grammar + vocabulary candidates rescored with the CTC likelihood (snap if within 6 nats of the free reading; tuned on patients 1-5, confirmed on 6-10): +5 to +11 pts on filled fields. A first version had a bug (the free reading was compared against a maximum that already contained itself, so nothing ever snapped). (2) `validator.py`: DPA = DDR+280, DDT = DPA+7, visit GA, GA at birth, newborn age in days, same fact on two pages; a rule only changes a value if the recogniser finds the implied value plausible, otherwise it flags and offers the value as a quick reply.

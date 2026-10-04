@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | NOT STARTED |
+| **Status** | DONE (Claude Code, 2026-10-03) |
 | **Priority** | P2 |
 | **Effort** | 4–5 h |
 | **Depends on** | strategy 1 (schema, zones), 7 (consistency rules for sampling) |
@@ -98,4 +98,6 @@ Strategy 1, 2, 3, 4, 6 (calibration data per language), 7.
 
 | Date | Who | Extractor | FR | EN | AR | MIX | Notes |
 |---|---|---|---|---|---|---|---|
-| | | | | | | | |
+| 2026-10-03 | Claude Code | final CRNN on synthetic pages through the full pipeline (filled fields, sev 0-4 mixed) | 0.862 | 0.814 | 0.875 | per field within MIX pages | 6,500 synthetic pages / ~400k crops; 69 OFL handwriting fonts + 8 printed fonts; Arabic shaped with HarfBuzz (PyMuPDF) |
+
+**Implementation notes (2026-10-03).** `vocab.py` (FR/EN/AR variants, Eastern-Arabic digits, canonicaliser used by the scorer), `synth_pages.py` (values drawn into the blank-template zones; glyphs missing from a font are left blank like the specimen; 7 tick styles incl. hatching after the specimen's patient 4). Pillow had no libraqm, so Arabic first rendered as isolated letters; switched to PyMuPDF `insert_htmlbox`. Arabic numbers come from synthetic data only (the specimen has no Arabic), so they are an upper bound.
