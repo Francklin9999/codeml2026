@@ -1,7 +1,7 @@
 import copy
 import unittest
 
-from nova.events import EventError, apply_event, build_baseline
+from nova.events import EventError, apply_event, build_baseline, replay_events
 
 
 FACTS = [
@@ -102,7 +102,23 @@ class EventTests(unittest.TestCase):
         with self.assertRaisesRegex(EventError, "autre sujet"):
             apply_event(self.baseline, event(affects_subjects=["ACC-303"]))
 
+    def test_replay_is_deterministic(self):
+        second = event(
+            event_id="LIVE-002",
+            record_time="2026-10-04T11:00:00-04:00",
+            valid_time="2026-10-04T10:30:00-04:00",
+            subject="go-live",
+            kind="proposal",
+            authority="vendor_statement",
+            actor="Julien Moreau",
+            statement="Reporter au 29 octobre",
+        )
+        first = event()
+        state_a, diffs_a = replay_events(self.baseline, [second, first])
+        state_b, diffs_b = replay_events(self.baseline, [first, second])
+        self.assertEqual(state_a, state_b)
+        self.assertEqual(diffs_a, diffs_b)
+
 
 if __name__ == "__main__":
     unittest.main()
-

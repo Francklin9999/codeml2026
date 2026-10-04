@@ -215,3 +215,19 @@ def apply_event(
         raise AssertionError("La baseline a été modifiée en mémoire")
     return state, diff
 
+
+def replay_events(
+    baseline: dict[str, Any], events: Iterable[dict[str, Any]]
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Replay events deterministically in record-time and event-id order."""
+
+    state = copy.deepcopy(baseline)
+    diffs: list[dict[str, Any]] = []
+    ordered = sorted(
+        events,
+        key=lambda item: (item.get("record_time", ""), str(item.get("event_id", ""))),
+    )
+    for event in ordered:
+        state, diff = apply_event(state, event)
+        diffs.append(diff)
+    return state, diffs
