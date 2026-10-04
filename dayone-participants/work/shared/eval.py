@@ -46,11 +46,14 @@ def ece(conf, correct, bins=10):
 def score(preds: dict, gts: dict, by=("page_type",)):
     agg = collections.defaultdict(lambda: collections.Counter())
     confs, corrs = [], []
+    tconfs, tcorrs, cconfs, ccorrs = [], [], [], []      # text / checkbox calibration, reported separately
+    questions = 0
     errors = []
     leaks = 0
     for pid, g in gts.items():
         p = preds.get(pid, {"fields": []})
         pf = {f["key"]: f for f in p["fields"]}
+        questions += sum(f.get("status") in ("À_RÉVISER", "ILLISIBLE") for f in p["fields"])
         for f in g["fields"]:
             key = f["key"]
             pr = pf.get(key)
@@ -66,6 +69,10 @@ def score(preds: dict, gts: dict, by=("page_type",)):
                     agg[gr]["n"] += 1; agg[gr]["ok"] += ok
                 if pr is not None and pr.get("confidence") is not None:
                     confs.append(pr["confidence"]); corrs.append(ok)
+                    cconfs.append(pr["confidence"]); ccorrs.append(ok)
+                if pr is not None and pr.get("status") == "CONNU":
+                    for gr in groups:
+                        agg[gr]["k_n"] += 1; agg[gr]["k_bad"] += not ok
                 if not ok:
                     errors.append((pid, key, f["value"], pr and pr.get("value")))
                 continue
@@ -78,6 +85,8 @@ def score(preds: dict, gts: dict, by=("page_type",)):
                 agg[gr]["t_n"] += 1; agg[gr]["t_ok"] += ok
                 if filled:
                     agg[gr]["f_n"] += 1; agg[gr]["f_ok"] += ok
+                    # a written value read as blank and declared NON_FOURNI: never shown to the midwife
+                    agg[gr]["miss"] += pv is None and bool(pr) and pr.get("status") == "NON_FOURNI"
                 else:
                     agg[gr]["b_n"] += 1; agg[gr]["b_ok"] += ok
                 if pr and pr.get("status"):
@@ -88,6 +97,11 @@ def score(preds: dict, gts: dict, by=("page_type",)):
                     agg[gr]["s_n"] += 1; agg[gr]["s_ok"] += st_ok
             if pr is not None and pr.get("confidence") is not None:
                 confs.append(pr["confidence"]); corrs.append(ok)
+                tconfs.append(pr["confidence"]); tcorrs.append(ok)
+            if pr is not None and pr.get("status") == "CONNU":
+                for gr in groups:
+                    agg[gr]["k_n"] += 1; agg[gr]["k_bad"] += not ok
+                    agg[gr]["kt_n"] += 1; agg[gr]["kt_bad"] += not ok
             if not ok:
                 errors.append((pid, key, f["value"], pr and pr.get("value")))
     out = {}
@@ -95,8 +109,15 @@ def score(preds: dict, gts: dict, by=("page_type",)):
         out[gr] = dict(field_acc=c["ok"] / max(c["n"], 1), text_acc=c["t_ok"] / max(c["t_n"], 1),
                        filled_acc=c["f_ok"] / max(c["f_n"], 1), blank_acc=c["b_ok"] / max(c["b_n"], 1),
                        checkbox_acc=c["cb_ok"] / max(c["cb_n"], 1), status_acc=c["s_ok"] / max(c["s_n"], 1),
-                       n=c["n"], n_filled=c["f_n"])
+                       # strict uncertainty metrics: share of auto-accepted (CONNU) fields, how many of them are
+                       # wrong, and written values silently declared blank
+                       auto_rate=c["k_n"] / max(c["n"], 1), connu_err=c["k_bad"] / max(c["k_n"], 1),
+                       connu_err_text=c["kt_bad"] / max(c["kt_n"], 1),
+                       missed_filled=c["miss"] / max(c["f_n"], 1), n=c["n"], n_filled=c["f_n"])
     out["all"]["ece"] = ece(confs, corrs)
+    out["all"]["ece_text"] = ece(tconfs, tcorrs)
+    out["all"]["ece_checkbox"] = ece(cconfs, ccorrs)
+    out["all"]["questions_per_page"] = questions / max(len(gts), 1)
     out["all"]["leaks"] = leaks
     return out, errors
 
@@ -122,4 +143,7 @@ def print_table(res, title=""):
         print(f"| {gr} | {r['field_acc']:.4f} | {r['text_acc']:.4f} | {r['filled_acc']:.4f} | {r['blank_acc']:.4f} | "
               f"{r['checkbox_acc']:.4f} | {r['status_acc']:.4f} | {r['n']} |")
     if "ece" in res.get("all", {}):
-        print(f"ECE={res['all']['ece']:.4f} leaks={res['all']['leaks']}")
+        a = res["all"]
+        print(f"ECE={a['ece']:.4f} (text {a['ece_text']:.4f}, checkbox {a['ece_checkbox']:.4f}) leaks={a['leaks']} | "
+              f"auto-accepted {a['auto_rate']:.3f}, wrong among CONNU {a['connu_err']:.4f} (text {a['connu_err_text']:.4f}), "
+              f"written values declared blank {a['missed_filled']:.4f}, questions/page {a['questions_per_page']:.1f}")

@@ -20,20 +20,21 @@ sys.path[:0] = [str(W / "shared"), str(W / "strat2"), str(W / "strat4"), str(W /
                 str(W / "strat11"), str(W / "strat18")]
 from common import IDENTIFIER_LABELS  # noqa: E402
 from crops import TEMPLATES, checkbox_crop, crop_zone, ink_score, new_ink, zone_box  # noqa: E402
-from fieldlogic import decide, decide_multi, kind, status_for  # noqa: E402
-from register import register  # noqa: E402
+from fieldlogic import EMPTY_TAU, decide, decide_multi, kind, status_for, valid_value  # noqa: E402
+from register import register, register_any_orientation  # noqa: E402
 
 
 def is_identifier(key: str) -> bool:
     return key.startswith("inline.") and key[7:].split("_2")[0] in IDENTIFIER_LABELS
 
 
-def mask_identifiers(warped, t):
-    """Strategy 10: blank identifier zones before any recognition / storage."""
+def mask_identifiers(warped, t, extra=0):
+    """Strategy 10: blank identifier zones before any recognition / storage. `extra` widens the masks when the
+    registration is weak (the zones may be off by a few tens of pixels)."""
     out = warped.copy()
     for key, z in TEMPLATES[str(t)]["zones"].items():
         if z["type"] == "text" and is_identifier(key):
-            x0, y0, x1, y1 = zone_box(t, key, (2, 4, 30, 4))
+            x0, y0, x1, y1 = zone_box(t, key, (2 + extra, 4 + extra, 30 + extra, 4 + extra))
             out[y0:y1, x0:x1] = np.median(out[y0:y1, x0:x1].reshape(-1, 3), 0)
     return out
 
@@ -54,9 +55,13 @@ class Extractor:
         return p >= 0.5, float(max(p, 1 - p))
 
     def extract(self, photo, page_type=None, registered=None):
-        reg = registered or register(photo, page_type)
+        rotation = None
+        if registered is not None:
+            reg = registered
+        else:                                       # upright first; sideways / upside-down photos as a fallback
+            reg, photo, rotation = register_any_orientation(photo, page_type, accept=REG_WEAK, good=REG_WEAK)
         t = reg["page_type"]
-        warped = mask_identifiers(reg["warped"], t)
+        warped = mask_identifiers(reg["warped"], t, extra=0 if reg["score"] >= REG_WEAK else 30)
         self.last_warped = warped                    # identifier-masked, template frame (evidence crops)
         zones = TEMPLATES[str(t)]["zones"]
         keys, crops = [], []
@@ -87,18 +92,26 @@ class Extractor:
                          agree=float(info.get("views_agree", True)),
                          margin=min(info["margin"], 20.0), ink=ink, reg=reg["score"],
                          gap=info["best_score"] - info["empty_score"] if value else info["empty_score"])
-            conf = self.cal.predict(feats, kind(t, key)["kind"]) if self.cal else                 (seqconf if value else float(np.exp(info["empty_score"])))
+            if self.cal:
+                conf = self.cal.predict(feats, kind(t, key)["kind"])
+            else:                                   # uncalibrated fallback: raw CTC path confidence
+                conf = seqconf if value else float(np.exp(info["empty_score"]))
             v = None if value in ("", "–", "-") else value
-            fields.append(dict(key=key, type="text", value=v, raw=greedy, status=status_for(v, conf),
-                               confidence=float(conf), feats=feats))
+            st = status_for(v, conf)
+            if value == "" and conf < EMPTY_TAU:
+                st = "À_RÉVISER"            # read as blank but unsure: a missed faint value is worse than a question
+            elif st == "CONNU" and not valid_value(v, kind(t, key)):
+                st = "À_RÉVISER"            # breaks its own format / plausible range: never auto-accepted
+            fields.append(dict(key=key, type="text", value=v, raw=greedy, status=st, confidence=float(conf),
+                               feats=feats))
         for key, z in zones.items():
             if z["type"] != "checkbox":
                 continue
             val, conf = self.checkbox_value(warped, t, key)
             fields.append(dict(key=key, type="checkbox", value=bool(val), status="CONNU" if conf > 0.8 else "À_RÉVISER",
                                confidence=conf))
-        page = dict(page_type=int(t), registration=dict(score=reg["score"], H=np.asarray(reg["H"]).tolist()),
-                    fields=fields)
+        page = dict(page_type=int(t), registration=dict(score=reg["score"], H=np.asarray(reg["H"]).tolist(),
+                                                        rotation=rotation), fields=fields)
         from validator import apply_form_logic, apply_group_logic
         apply_form_logic(page)                      # blank + excluded by the form's logic -> NON_APPLICABLE
         apply_group_logic(page)                     # exclusive checkbox groups: none ticked / several ticked
@@ -108,7 +121,7 @@ class Extractor:
 
 import re as _re
 # fields used by the consistency rules (strategy 7/13): only these keep their log-probs across pages
-RULE_KEYS = _re.compile(r"inline\.(ddr|date_|age|perimetre_cranien|vu_par)|visites\.(venue_le|age_probable)\.")
+RULE_KEYS = _re.compile(r"inline\.(ddr|date_|age|perimetre_cranien|vu_par)|visites\.(venue_le|age_probable|rendez_vous|hu_cm)\.")
 
 
 def twin_type_from_content(pred: dict, delivery_date=None):
@@ -119,12 +132,16 @@ def twin_type_from_content(pred: dict, delivery_date=None):
     t = pred["page_type"]
     if t not in (5, 6, 7, 8):
         return None
-    vals = {f["key"]: f.get("value") for f in pred["fields"]}
+    # the free reading, not the value constrained by the *assumed* type's grammar: on a page wrongly typed
+    # "tardif", "7 jours" is implausible and could be rescored to "71 jours", confirming the wrong type
+    raw = {f["key"]: f.get("raw") or f.get("value") for f in pred["fields"]}
+    val = {f["key"]: f.get("value") for f in pred["fields"]}
     if t in (6, 8):
-        m = re.match(r"\s*(\d+)", vals.get("inline.age") or "")
+        m = re.match(r"\s*(\d+)", raw.get("inline.age") or "")
         if m:
             return 6 if int(m.group(1)) <= 20 else 8
-    cd = pdate(vals.get("inline.date_de_la_consultation"))
+    key = "inline.date_de_la_consultation"                  # a date's grammar does not depend on the page type
+    cd = pdate(raw.get(key)) or pdate(val.get(key))
     if cd and delivery_date:
         gap = (cd - delivery_date).days
         if 0 <= gap <= 120:

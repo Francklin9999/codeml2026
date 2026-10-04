@@ -32,6 +32,9 @@ def test_leak_guard_redacts():
     inc = leak_guard(page)
     assert {i["key"] for i in inc} == {"inline.profession", "inline.cin"}
     assert page["fields"][0]["value"] == "31" and page["fields"][1]["value"] is None
+    # a phone number written in another field is removed *and asked again*, never silently turned into "empty"
+    assert page["fields"][1]["status"] == "À_RÉVISER" and page["fields"][1]["redacted"]
+    assert page["fields"][2]["value"] is None and page["fields"][2]["status"] == "NON_FOURNI"   # identifier zone
 
 
 def test_code_distance_confusables():
@@ -59,7 +62,10 @@ def test_linking_never_autocreates_when_plausible():
 
 
 def test_internal_ids_not_derived_from_data():
+    import uuid
     reg = Registry()
     a = reg.create("2026-823-001", {})
     b = reg.create("2026-823-001", {})
-    assert a != b and "823" not in a
+    # random UUID4 (not a hash of the code): same code -> unrelated ids. (A random hex id may contain "823" by
+    # chance, so the old substring check was flaky.)
+    assert a != b and uuid.UUID(a).version == 4 and uuid.UUID(b).version == 4

@@ -160,23 +160,107 @@ def render_text_shaped(text, font_path, px_height, ink, rng):
     return im
 
 
-def render_text(text, font_path, px_height, ink, rng, cov):
-    """Render text into an RGBA patch; unsupported glyphs are left blank. Returns patch."""
+def writer_style(rng):
+    """One 'writer' per page: how this midwife deviates from the font (slant, spacing, irregularity, pen).
+    Fonts are regular; real handwriting is not, so the recogniser must not learn a font's exact geometry."""
+    return dict(shear=rng.uniform(-0.35, 0.25) if rng.random() < 0.6 else 0.0,
+                track=rng.uniform(-0.06, 0.22),            # extra letter spacing, x font size
+                wander=rng.uniform(0.0, 0.08),             # smooth baseline wander amplitude, x font size
+                wave=rng.uniform(2.5, 8.0),                # its wavelength, in letters
+                base_sd=rng.uniform(0.0, 0.025),           # small independent jitter per letter, x font size
+                size_sd=rng.uniform(0.0, 0.06),            # per-letter size irregularity
+                xscale=rng.uniform(0.8, 1.2),
+                pen=int(rng.choice([-1, 0, 0, 1, 2])),     # thinner / same / thicker strokes
+                elastic=rng.uniform(0.0, 2.2))             # smooth random displacement (px)
+
+
+def _charwise(vis, font_path, size, ink, alpha, rng, style):
+    """Letter-by-letter rendering on a common baseline with irregular size, spacing and baseline."""
+    n = len(vis)
+    W0 = int(size * (n + 2) * 1.6) + 20
+    H0 = int(size * 2.6) + 20
+    patch = Image.new("RGBA", (W0, H0), (0, 0, 0, 0))
+    d = ImageDraw.Draw(patch)
+    x, base = 10.0, H0 * 0.68
+    ph = rng.uniform(0, 2 * np.pi)
+    for i, c in enumerate(vis):
+        s = max(6, int(round(size * (1 + rng.normal(0, style["size_sd"])))))
+        f = _font(font_path, s)
+        y = base + size * (style["wander"] * np.sin(2 * np.pi * i / style["wave"] + ph)
+                           + rng.normal(0, style["base_sd"]))
+        if c != " ":
+            d.text((x, y), c, font=f, fill=tuple(ink) + (alpha,), anchor="ls")
+        x += f.getlength(c) + style["track"] * size * rng.uniform(0.5, 1.5)
+    return patch
+
+
+def handwrite_aug(patch, rng, style):
+    """Shear, horizontal scale, pen width and elastic distortion of a rendered RGBA patch."""
+    import cv2
+    a = np.asarray(patch).copy()
+    h, w = a.shape[:2]
+    pad = int(0.4 * h) + 4
+    a = cv2.copyMakeBorder(a, 4, 4, pad, pad, cv2.BORDER_CONSTANT, value=(0, 0, 0, 0))
+    h, w = a.shape[:2]
+    sh = style["shear"] + rng.normal(0, 0.04)
+    sx = style["xscale"] * rng.uniform(0.95, 1.05)
+    M = np.float32([[sx, -sh, sh * h * 0.6], [0, 1, 0]])
+    a = cv2.warpAffine(a, M, (int(w * sx) + 4, h), flags=cv2.INTER_LINEAR, borderValue=(0, 0, 0, 0))
+    if style["elastic"] > 0.2:
+        hh, ww = a.shape[:2]
+        sig = max(4.0, 0.35 * hh)
+        dx = cv2.GaussianBlur(rng.normal(0, 1, (hh, ww)).astype(np.float32), (0, 0), sig)
+        dy = cv2.GaussianBlur(rng.normal(0, 1, (hh, ww)).astype(np.float32), (0, 0), sig)
+        k = style["elastic"] / max(1e-6, float(np.abs(np.concatenate([dx, dy])).max()))
+        yy, xx = np.mgrid[0:hh, 0:ww].astype(np.float32)
+        a = cv2.remap(a, xx + dx * k, yy + dy * k, cv2.INTER_LINEAR, borderValue=(0, 0, 0, 0))
+    if style["pen"]:
+        al = a[..., 3]
+        ker = np.ones((2, 2), np.uint8) if abs(style["pen"]) == 1 else np.ones((3, 3), np.uint8)
+        if style["pen"] > 0:
+            al2 = cv2.dilate(al, ker)
+        else:
+            al2 = cv2.erode(al, ker)
+            if (al2 > 60).sum() < 0.55 * max(1, (al > 60).sum()):    # thin font: do not erase strokes
+                al2 = al
+        a[..., 3] = al2
+        ink_rgb = a[al > 60][:, :3]
+        if len(ink_rgb):
+            a[al2 > 0, :3] = np.median(ink_rgb, 0).astype(np.uint8)
+    ys, xs = np.nonzero(a[..., 3] > 10)
+    if len(xs) == 0:
+        return patch
+    return Image.fromarray(a[max(0, ys.min() - 4):ys.max() + 5, max(0, xs.min() - 4):xs.max() + 5])
+
+
+def render_text(text, font_path, px_height, ink, rng, cov, style=None):
+    """Render text into an RGBA patch; unsupported glyphs are left blank. Returns patch.
+    style (writer_style) adds handwriting irregularity on top of the font."""
     if is_arabic(text):
-        return render_text_shaped(text, font_path, px_height, ink, rng)
+        patch = render_text_shaped(text, font_path, px_height, ink, rng)
+        return handwrite_aug(patch, rng, style) if style else patch
     dh = _digit_height(font_path)
     size = max(8, int(round(100 * px_height / dh)))
     font = _font(font_path, size)
     drawn = "".join(c if (ord(c) in cov or c == " ") else " " for c in text)
     vis = visual(drawn)
-    b = font.getbbox(vis)
-    w, h = b[2] - b[0] + 8, b[3] - b[1] + 8
-    if w <= 8:
-        w = 20
-    patch = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    d = ImageDraw.Draw(patch)
     alpha = int(rng.uniform(200, 255))
-    d.text((4 - b[0], 4 - b[1]), vis, font=font, fill=tuple(ink) + (alpha,))
+    if style:
+        patch = _charwise(vis, font_path, size, ink, alpha, rng, style)
+        a = np.asarray(patch)[..., 3]
+        ys, xs = np.nonzero(a > 10)
+        if len(xs) == 0:
+            return Image.new("RGBA", (20, int(px_height) + 8), (0, 0, 0, 0))
+        patch = patch.crop((max(0, xs.min() - 4), max(0, ys.min() - 4), xs.max() + 5, ys.max() + 5))
+        patch = handwrite_aug(patch, rng, style)
+    else:
+        b = font.getbbox(vis)
+        w, h = b[2] - b[0] + 8, b[3] - b[1] + 8
+        if w <= 8:
+            w = 20
+        patch = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        d = ImageDraw.Draw(patch)
+        d.text((4 - b[0], 4 - b[1]), vis, font=font, fill=tuple(ink) + (alpha,))
     ang = rng.uniform(-2.5, 2.5)
     if abs(ang) > 0.3:
         patch = patch.rotate(ang, resample=Image.BICUBIC, expand=True)
@@ -221,7 +305,21 @@ def blank(t):
     return Image.open(LOCAL / "templates" / f"blank_p{t}.png").convert("RGB")
 
 
-def synth_page(t: int, rng: np.random.Generator, holdout_specimen=True, lang=None, printed=None):
+def bank_patch(entry, px_height, ink):
+    """RGBA handwriting patch from the bank, rescaled so its ink band is ~1.6x the digit height, in the page ink."""
+    im = Image.open(entry["path"]).convert("RGBA")
+    sc = 1.6 * px_height / max(1, im.height)
+    im = im.resize((max(4, int(im.width * sc)), max(4, int(im.height * sc))), Image.LANCZOS)
+    a = np.asarray(im).copy()
+    a[..., :3] = np.asarray(ink, np.uint8)
+    return Image.fromarray(a, "RGBA")
+
+
+def synth_page(t: int, rng: np.random.Generator, holdout_specimen=True, lang=None, printed=None, hw_aug=0.0,
+               bank=None, bank_p=0.0):
+    """hw_aug: probability that the page is written by an irregular 'writer' (writer_style) instead of the
+    font's exact geometry. bank ({kind: [entry]}, strategy 21) + bank_p: share of filled fields drawn from a bank
+    of verified handwriting patches (e.g. generated by an image model) instead of a font."""
     latin, arabic = font_lists(holdout_specimen)
     cov = coverage()
     fill_rate, tick_rate = stats()
@@ -237,6 +335,7 @@ def synth_page(t: int, rng: np.random.Generator, holdout_specimen=True, lang=Non
     ar_font = str(rng.choice(arabic))
     ink = tuple(int(c) for c in (INKS[rng.integers(len(INKS))] if not printed else (20, 20, 25)))
     base_h = rng.uniform(12.5, 30)         # digit height in px (specimen ink: p10 13-16, median 18-27)
+    style = writer_style(rng) if (not printed and hw_aug and rng.random() < hw_aug) else None
     fields = []
     zones = TEMPLATES[str(t)]["zones"]
     for key, z in zones.items():
@@ -267,15 +366,26 @@ def synth_page(t: int, rng: np.random.Generator, holdout_specimen=True, lang=Non
             else:
                 value = None; status = "NON_FOURNI"
         rec = dict(key=key, type="identifier" if ident else "text", value=value, status=status, bbox=None, lang=fl)
+        entry = None
+        if bank and status == "CONNU" and not ident and bank.get(kind_for(t, key)["kind"]) and rng.random() < bank_p:
+            cands = bank[kind_for(t, key)["kind"]]
+            entry = cands[int(rng.integers(len(cands)))]
+            value, rec["value"], rec["lang"] = entry["text"], entry["text"], entry.get("lang", fl)
         if value:
             fpath = ar_font if is_arabic(value) else main_font
             # rare: font lacking accents (glyph left blank, like NanumPen in the specimen)
             h = base_h * rng.uniform(0.9, 1.1)
-            patch = render_text(value, fpath, h, ink, rng, cov[fpath])
             zw, zh = x1 - x0, y1 - y0
-            if patch.width > zw * 1.25 and zw > 40:
-                f = zw * 1.15 / patch.width
-                patch = render_text(value, fpath, h * f, ink, rng, cov[fpath])
+            if entry is not None:
+                patch = bank_patch(entry, h, ink)
+                if patch.width > zw * 1.25 and zw > 40:
+                    patch = bank_patch(entry, h * zw * 1.15 / patch.width, ink)
+                fpath = entry["path"]
+            else:
+                patch = render_text(value, fpath, h, ink, rng, cov[fpath], style)
+                if patch.width > zw * 1.25 and zw > 40:
+                    f = zw * 1.15 / patch.width
+                    patch = render_text(value, fpath, h * f, ink, rng, cov[fpath], style)
             tall = zh > 120
             px = x0 + rng.uniform(3, 14)
             if is_arabic(value) and rng.random() < 0.6:
@@ -289,7 +399,8 @@ def synth_page(t: int, rng: np.random.Generator, holdout_specimen=True, lang=Non
                 rec["bbox"] = [px + int(xs.min()), py + int(ys.min()), px + int(xs.max()), py + int(ys.max())]
             rec["font"] = Path(fpath).name
         fields.append(rec)
-    return np.asarray(page), fields, dict(lang=lang, printed=printed, font=Path(main_font).name, ink=ink)
+    return np.asarray(page), fields, dict(lang=lang, printed=printed, font=Path(main_font).name, ink=ink,
+                                          writer=bool(style))
 
 
 if __name__ == "__main__":

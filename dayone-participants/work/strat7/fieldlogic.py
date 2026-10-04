@@ -22,6 +22,8 @@ UNKNOWN_TOKENS = {"?", "inconnu", "nsp", "unknown", "غير معروف", "ne sai
 
 
 EXCLUDE_PATIENT = None      # evaluation only: build vocabularies without the patient being read
+GRAMMAR_BEAM = True         # grammar-constrained beam search when the free reading is not a valid value
+GRAMMAR_KINDS = {"date", "date_or_year", "year", "bp", "int", "numunit", "pattern"}
 
 
 @lru_cache(maxsize=None)
@@ -114,6 +116,20 @@ def numeric_candidates(text: str, spec: dict) -> list[str]:
     return out
 
 
+def grammar_candidates(rec, lps: list, spec: dict, greedy: str) -> set:
+    """Best grammatical, plausible strings in the CTC lattices of the views, only when the free reading is not
+    one already (blank, '?' or '–' readings are left alone: no value is invented)."""
+    from grammar_decode import beam_candidates, grammatical
+    if not GRAMMAR_BEAM or spec["kind"] not in GRAMMAR_KINDS or not greedy or greedy in SPECIAL:
+        return set()
+    if greedy.lower() in UNKNOWN_TOKENS or grammatical(to_ascii_digits(greedy), spec):
+        return set()
+    out = set()
+    for lp in lps:
+        out.update(c for _, c in beam_candidates(lp, rec.codec, spec))
+    return out
+
+
 def decide(rec, lp, greedy: str, t: int, key: str, delta: float = 2.5, delta_special: float = 1.0):
     """Return (value, info) after constrained rescoring.
 
@@ -126,6 +142,7 @@ def decide(rec, lp, greedy: str, t: int, key: str, delta: float = 2.5, delta_spe
     vocab = set(vocab_for(t, key))
     if greedy:
         vocab.update(numeric_candidates(greedy, spec))
+        vocab.update(grammar_candidates(rec, [lp], spec, greedy))
     vocab.discard(greedy)
     special = set(SPECIAL) - {greedy}
     scored = [(rec.score(lp, c), c, delta) for c in vocab] + [(rec.score(lp, c), c, delta_special) for c in special]
@@ -139,6 +156,23 @@ def decide(rec, lp, greedy: str, t: int, key: str, delta: float = 2.5, delta_spe
             return c, info
         break
     return greedy, info
+
+
+def valid_value(value: str, spec: dict) -> bool:
+    """Does a reading respect its field's grammar and plausible range? (always True for free text / enums)"""
+    from grammar_decode import grammatical
+    from vocab import canonical
+    if spec["kind"] not in GRAMMAR_KINDS or not value:
+        return True
+    v = to_ascii_digits(value).replace("،", ",")
+    c = canonical(value) or ""
+    if grammatical(v, spec) or grammatical(c, spec) or grammatical(c.replace(" ", ""), spec):
+        return True
+    # a unit written in a column whose header already gives it ("64,8 kg" under "Poids (kg)")
+    return spec["kind"] == "numunit" and not spec.get("unit") and grammatical(c.split(" ")[0], spec)
+
+
+EMPTY_TAU = 0.9             # a blank reading below this calibrated confidence is asked, not declared NON_FOURNI
 
 
 def status_for(value: str | None, conf: float, tau_high=0.95, tau_low=0.35) -> str:
@@ -169,6 +203,7 @@ def decide_multi(rec, lps: list, t: int, key: str, delta: float = 6.0, delta_spe
     for g in free:
         if g:
             vocab.update(numeric_candidates(g, spec))
+    vocab.update(grammar_candidates(rec, lps, spec, greedy))
     vocab -= set(free)
     special = set(SPECIAL) - set(free)
     scored = sorted([(S(c), c, delta) for c in vocab] + [(S(c), c, delta_special) for c in special], reverse=True)

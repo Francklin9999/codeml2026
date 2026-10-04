@@ -46,15 +46,8 @@ const getRec = id => tx("records", "readonly", s => s.get(id));
 const putRec = r => tx("records", "readwrite", s => s.put(r));
 const allRecs = () => tx("records", "readonly", s => s.getAll());
 
-// lifecycle (same states as strategy 8; the server-side store implements the same machine)
-const TRANSITIONS = {
-  "CAPTURÉ": ["EN_ATTENTE_IA", "DOUBLON_SUSPECTÉ"], "DOUBLON_SUSPECTÉ": ["EN_ATTENTE_IA"],
-  "EN_ATTENTE_IA": ["TRAITÉ_IA", "ÉCHEC_TRAITEMENT", "RÉVISION_MANUELLE_REQUISE"],
-  "ÉCHEC_TRAITEMENT": ["EN_ATTENTE_IA", "RÉVISION_MANUELLE_REQUISE"],
-  "TRAITÉ_IA": ["À_RÉVISER", "VALIDÉ"], "À_RÉVISER": ["VALIDÉ", "CAPTURÉ"], "RÉVISION_MANUELLE_REQUISE": ["VALIDÉ"],
-  "VALIDÉ": ["PATIENTE_LIÉE", "RÉVISION_MANUELLE_REQUISE"], "PATIENTE_LIÉE": ["ENREGISTRÉ"],
-  "ENREGISTRÉ": ["SYNCHRONISÉ", "ÉCHEC_SYNCHRO"], "ÉCHEC_SYNCHRO": ["ENREGISTRÉ"], "SYNCHRONISÉ": []
-};
+// lifecycle: one transition table (lifecycle.json) shared with the property-tested model of strategy 8
+let TRANSITIONS = {};
 async function setState(rec, to, reason) {
   if (rec.state === to) return;
   if (!(TRANSITIONS[rec.state] || []).includes(to)) throw new Error(`illegal ${rec.state} -> ${to}`);
@@ -66,12 +59,31 @@ async function setState(rec, to, reason) {
 app.events = () => tx("events", "readonly", s => s.getAll());
 
 // ------------------------------------------------------------------ connectivity
-const online = () => navigator.onLine && !app.forceOffline;
-async function api(path, opts) {
+let pairToken = null, pairingNeeded = false;
+const online = () => navigator.onLine && !app.forceOffline && !pairingNeeded;
+async function api(path, opts = {}) {
   if (!online()) throw new Error("offline");
-  const r = await fetch(API + path, opts);
+  const headers = Object.assign({}, opts.headers || {}, pairToken ? { "X-DayOne-Token": pairToken } : {});
+  const r = await fetch(API + path, Object.assign({}, opts, { headers }));
+  if (r.status === 401) {               // phone not paired with this box: pause the network work, ask the code once
+    if (!pairingNeeded) { pairingNeeded = true; say(T("pairNeeded")); renderQueue(); }
+    throw new Error("offline");
+  }
   if (!r.ok) { const e = new Error("HTTP " + r.status); e.status = r.status; throw e; }
   return r.json();
+}
+async function setPairing(code) {
+  // the 6-digit code is exchanged once for a random device token bound to this midwife (stored encrypted)
+  let r;
+  try {
+    r = await fetch(API + "/pair", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, midwife_id: app.midwife }) });
+  } catch (e) { say(T("waitNet")); return; }
+  if (r.status === 429) { say(T("pairWait")); return; }
+  if (!r.ok) { say(T("pairBad")); return; }
+  pairToken = (await r.json()).token; pairingNeeded = false;
+  const c = await enc(new TextEncoder().encode(pairToken), "pair"); await tx("meta", "readwrite", s => s.put(c, "pair"));
+  say(T("paired")); renderQueue(); kick();
 }
 
 // ------------------------------------------------------------------ chat UI
@@ -101,9 +113,16 @@ function offer(text, buttons) {
   chat().appendChild(box); chat().scrollTop = 1e9;
 }
 
-// one pending question at a time: resolved by a quick-reply button or by typed text
-let pending = null;
-function ask(text, buttons = [], { img = null, text: expectText = true } = {}) {
+// one pending question at a time, resolved by a quick-reply button or by typed text. A question raised while
+// another is open (a capture during a review, a button's follow-up) waits for it instead of orphaning it.
+let pending = null, askChain = Promise.resolve();
+function ask(text, buttons = [], opts = {}) {
+  const run = () => askNow(text, buttons, opts);
+  const p = askChain.then(run, run);
+  askChain = p.catch(() => {});
+  return p;
+}
+function askNow(text, buttons, { img = null, text: expectText = true } = {}) {
   say(text, img);
   const box = document.createElement("div"); box.className = "replies";
   return new Promise(resolve => {
@@ -172,9 +191,10 @@ app.captureBlob = async function (blob, { force = false } = {}) {
   if (retakeOf) {                                         // "Reprendre la photo": new version of the same record
     rec = await getRec(retakeOf); retakeOf = null;
     rec.version += 1; rec.image = await enc(bytes, rec.id + ":" + rec.version); rec.sha256 = sha; rec.result = null; rec.attempts = 0;
+    rec.retakePending = false; rec.imageMasked = false; rec.imageDropped = false; rec.maskedVersion = null;
     await setState(rec, "CAPTURÉ", "retake");
   } else {
-    rec = { id: crypto.randomUUID(), sid: session.id, state: "CAPTURÉ", version: 0, midwife: "sf-01", capturedAt: Date.now(),
+    rec = { id: crypto.randomUUID(), sid: session.id, state: "CAPTURÉ", version: 0, midwife: app.midwife, capturedAt: Date.now(),
             sha256: sha, attempts: 0 };
     rec.image = await enc(bytes, rec.id + ":0");
     await putRec(rec);
@@ -183,6 +203,7 @@ app.captureBlob = async function (blob, { force = false } = {}) {
     if (dup) {                                            // strategy 17: same bytes already captured in this session
       await setState(rec, "DOUBLON_SUSPECTÉ", "same sha256 as " + dup.id.slice(0, 8));
       const a = await ask(T("dup"), [T("dupDrop"), T("dupKeep")], { text: false });
+      rec.dupDecided = true; await putRec(rec);
       if (ACTIONS[a] !== "dupKeep") { renderQueue(); return { duplicate: true, id: rec.id }; }
     }
   }
@@ -219,6 +240,12 @@ async function uiLoop() {
       const recs = await allRecs();
       const rev = recs.filter(r => r.state === "TRAITÉ_IA" || r.state === "À_RÉVISER").sort((a, b) => a.capturedAt - b.capturedAt);
       if (rev.length) { await review(rev[0]); continue; }
+      const linked = recs.filter(r => r.state === "PATIENTE_LIÉE");        // finish interrupted after the match
+      if (linked.length && online()) {
+        say(T("resumeLinked", { n: linked.length }));
+        for (const r of linked) await registerRec(r, r.patientId);
+        continue;
+      }
       if (finishRequested && online()) { finishRequested = false; await finishSession(); if (!netRunning) netLoop(); continue; }
       break;
     }
@@ -238,8 +265,8 @@ async function processRec(rec) {
     rec.result = await encJSON(res.page, rec.id + ":res");
     if (res.masked_image) {            // keep the original photo with identifier zones masked; drop the raw one
       const mb = new Uint8Array(await (await fetch(res.masked_image)).arrayBuffer());
-      rec.image = await enc(mb, rec.id + ":" + rec.version); rec.imageMasked = true;
-    }
+      rec.image = await enc(mb, rec.id + ":" + rec.version); rec.imageMasked = true; rec.maskedVersion = rec.version;
+    } else { rec.image = null; rec.imageDropped = true; rec.imageMasked = false; }   // not recognised: nothing masked
     rec.pageType = res.page.page_type; rec.pageName = res.page.page_name;
     rec.toReview = res.page.fields.filter(f => ["À_RÉVISER", "ILLISIBLE"].includes(f.status)).length;
     await setState(rec, "TRAITÉ_IA", "edge box");
@@ -247,13 +274,27 @@ async function processRec(rec) {
     if (e.message === "offline") return;
     rec.attempts = (rec.attempts || 0) + 1; rec.nextTry = Date.now() + Math.min(60000, 2000 * 2 ** rec.attempts);
     await setState(rec, "ÉCHEC_TRAITEMENT", e.message || String(e));
+    // box unreachable (no HTTP status), overloaded or erroring (5xx, 408, 429): retried with back-off forever, like
+    // offline. Only a refusal of this page (other 4xx, e.g. 422 unreadable image) sends it to manual review.
+    const permanent = e.status >= 400 && e.status < 500 && ![401, 408, 429].includes(e.status);
+    if (permanent) {
+      rec.manualPending = true;
+      await setState(rec, "RÉVISION_MANUELLE_REQUISE", "processing failed: " + (e.message || e));
+      offer(T("procManual", { why: e.message || e }), [[T("retake"), () => retake(rec)], [T("manual"), () => manualEntry(rec, true)]]);
+      return;
+    }
     await setState(rec, "EN_ATTENTE_IA", "retry in " + Math.round((rec.nextTry - Date.now()) / 1000) + " s");
     if (rec.attempts === 3) say(T("procFail") + " → « manuel »");
   }
 }
 
 const label = (pt, key) => ((SCHEMA[pt] || {}).fields || []).find(f => f.key === key)?.label || key;
-const PRIORITY = /\.(ta|t|pouls|poids|ddr|date_prevue|hemoglobine|serologie_vih|syphilis|bcf)\b|inline\.(ta|t|ddr)/;
+// asked first: the patient code (linking) and the values that matter clinically
+const PRIORITY = ["inline.n_de_la_fiche", "inline.ddr", "inline.date_prevue_d_accouchement", "inline.ta", "inline.t",
+  "inline.temperature", "inline.pouls", "inline.poids", "inline.poids_a_la_naissance", "inline.age_gestationnel",
+  "visites.ta.", "visites.poids_kg.", "visites.bcf.", "visites.hemoglobine.", "visites.serologie_vih.",
+  "visites.syphilis_tpha_vdrl.", "visites.ag_hbs."];
+const isPriority = k => PRIORITY.some(p => p.endsWith(".") ? k.startsWith(p) : k === p);
 
 async function review(rec) {
   const page = await decJSON(rec.result, rec.id + ":res");
@@ -262,28 +303,32 @@ async function review(rec) {
     const bad = page.page_status === "PAGE_NON_RECONNUE";
     const a = await ask(T(bad ? "notRecognised" : "lowQuality"), [T("retake"), bad ? T("manual") : T("checkAnyway")], { text: false });
     if (ACTIONS[a] === "retake") { await setState(rec, "À_RÉVISER", page.page_status); return retake(rec); }
-    if (ACTIONS[a] === "manual") { await setState(rec, "À_RÉVISER", page.page_status); await setState(rec, "CAPTURÉ", "manual instead");
-      await setState(rec, "EN_ATTENTE_IA", "manual"); await setState(rec, "RÉVISION_MANUELLE_REQUISE", "page not recognised"); return manualEntry(rec, true); }
+    if (ACTIONS[a] === "manual") { await setState(rec, "À_RÉVISER", page.page_status); rec.manualPending = true;
+      await setState(rec, "RÉVISION_MANUELLE_REQUISE", "page not recognised"); return manualEntry(rec, true); }
     page.verdictAsked = true; rec.result = await encJSON(page, rec.id + ":res"); await putRec(rec);
   }
   if (rec.state === "TRAITÉ_IA") {
     const textF = page.fields.filter(f => f.type === "text");
-    const unsure = page.fields.filter(f => ["À_RÉVISER", "ILLISIBLE"].includes(f.status) && !f.reviewed);
+    const unsure = page.fields.filter(f => ["À_RÉVISER", "ILLISIBLE"].includes(f.status) && !f.reviewed && !f.deferred);
+    const blank = textF.filter(f => f.value == null && !unsure.includes(f)).length;
+    if (rec.imageMasked && rec.image) {        // the image kept in the record: original photo, identifiers masked
+      const jpg = await dec(rec.image, rec.id + ":" + rec.version);
+      say(T("keptImage"), URL.createObjectURL(new Blob([jpg], { type: "image/jpeg" })));
+    }
     say(T("summary", { page: LANG === "fr" ? SCHEMA[pt].name_fr : SCHEMA[pt].name_en,
-      ok: page.fields.length - unsure.length - textF.filter(f => f.value == null).length,
-      q: unsure.length, blank: textF.filter(f => f.value == null).length }));
+      ok: page.fields.length - unsure.length - blank, q: unsure.length, blank }));
     if (!unsure.length) { say(T("allSure")); await setState(rec, "VALIDÉ", "all confident"); return afterPage(rec); }
     await setState(rec, "À_RÉVISER", unsure.length + " uncertain fields");
   }
-  const queue = page.fields.filter(f => ["À_RÉVISER", "ILLISIBLE"].includes(f.status) && !f.reviewed)
-    .sort((a, b) => (!PRIORITY.test(a.key)) - (!PRIORITY.test(b.key)) || (a.confidence || 0) - (b.confidence || 0));
+  const queue = page.fields.filter(f => ["À_RÉVISER", "ILLISIBLE"].includes(f.status) && !f.reviewed && !f.deferred)
+    .sort((a, b) => (!isPriority(a.key)) - (!isPriority(b.key)) || (a.confidence || 0) - (b.confidence || 0));
   let n = 0;
   const BATCH = 8;
   for (const [i, f] of queue.entries()) {
     if (i > 0 && i % BATCH === 0) {                   // never more than 8 questions in a row
       const a = await ask(T("moreLeft", { n: queue.length - i }), [T("continue"), T("validateAsIs")], { text: false });
       if (ACTIONS[a] === "validateAsIs") {            // remaining doubts stay visible as À_RÉVISER in the record
-        for (const g of queue.slice(i)) { g.status = "À_RÉVISER"; g.deferred = true; g.reviewed = true; }
+        for (const g of queue.slice(i)) { g.status = "À_RÉVISER"; g.deferred = true; }   // seen by nobody: not "reviewed"
         rec.result = await encJSON(page, rec.id + ":res"); await putRec(rec);
         break;
       }
@@ -295,6 +340,15 @@ async function review(rec) {
         [T("yesChecked"), T("noBox"), T("retake")], { img: f.evidence, text: false });
       if (ACTIONS[a] === "retake") return retake(rec);
       f.value = ACTIONS[a] === "yesChecked"; f.status = "CONNU";
+    } else if (f.redacted) {                     // removed by the box: looked like a phone / ID / address
+      a = await ask(T("askRedacted", { label: lab }), [T("type"), T("empty")]);
+      if (ACTIONS[a] === "type") a = await ask(T("typeValue", { label: lab }), []);
+      setValue(f, a);
+    } else if (f.value == null && f.status !== "ILLISIBLE") {   // read as blank, but not sure enough
+      a = await ask(T("askBlank", { label: lab }), [T("empty"), T("type"), T("unknown"), T("retake")], { img: f.evidence });
+      if (ACTIONS[a] === "retake") return retake(rec);
+      if (ACTIONS[a] === "type") a = await ask(T("typeValue", { label: lab }), []);
+      setValue(f, a);
     } else if (f.value == null) {
       a = await ask(T("askIllegible", { label: lab }), [T("type"), T("empty"), T("unknown"), T("retake"), ...(f.suggestions || [])], { img: f.evidence });
       if (ACTIONS[a] === "retake") return retake(rec);
@@ -321,7 +375,7 @@ function setValue(f, a) {
   f.confidence = 1; f.reviewed = true;
 }
 async function retake(rec) {
-  retakeOf = rec.id;
+  retakeOf = rec.id; rec.retakePending = true;            // survives an app restart (see unlock)
   await setState(rec, "CAPTURÉ", "retake requested");
   say(T("retakeAsk"));
 }
@@ -346,77 +400,128 @@ async function manualEntry(rec, askType = false) {
     const a = await ask(T("typeValue", { label: f.label }), [T("empty")]);
     const g = { key: f.key, type: "text" }; setValue(g, a); fields.push(g);
   }
-  rec.pageType = pt; rec.pageName = SCHEMA[pt].name_fr;
+  rec.pageType = pt; rec.pageName = SCHEMA[pt].name_fr; rec.manualPending = false;
   rec.result = await encJSON({ page_type: pt, fields, manual: true }, rec.id + ":res");
   await setState(rec, "VALIDÉ", "manual entry");
   return afterPage(rec);
 }
 app.manualEntry = async () => {
   if (!session) session = newSession();
-  const rec = { id: crypto.randomUUID(), sid: session.id, state: "EN_ATTENTE_IA", version: 0, midwife: "sf-01", capturedAt: Date.now(), attempts: 0 };
-  await putRec(rec); await setState(rec, "RÉVISION_MANUELLE_REQUISE", "AI unavailable");
-  return manualEntry(rec);
+  // the box is unreachable: take over the oldest page of this session still waiting for the AI
+  const stuck = (await allRecs()).filter(r => r.sid === session.id && ["EN_ATTENTE_IA", "ÉCHEC_TRAITEMENT"].includes(r.state))
+    .sort((a, b) => a.capturedAt - b.capturedAt)[0];
+  if (stuck) { stuck.manualPending = true; await setState(stuck, "RÉVISION_MANUELLE_REQUISE", "manual entry (AI unavailable)");
+    return manualEntry(stuck, true); }
+  const rec = { id: crypto.randomUUID(), sid: session.id, state: "RÉVISION_MANUELLE_REQUISE", version: 0, midwife: app.midwife,
+                capturedAt: Date.now(), attempts: 0, manualPending: true };
+  await putRec(rec);
+  await tx("events", "readwrite", s => s.add({ id: rec.id, from: null, to: rec.state, reason: "manual entry, no photo", at: Date.now() }));
+  return manualEntry(rec, true);
 };
 
 // ------------------------------------------------------------------ end of booklet: checks, matching, registration
 async function finishSession() {
   const valid = (await allRecs()).filter(r => r.state === "VALIDÉ").sort((a, b) => b.capturedAt - a.capturedAt);
   if (!valid.length) return;
-  const recs = valid.filter(r => r.sid === valid[0].sid);
+  let recs = valid.filter(r => r.sid === valid[0].sid);
+  // a booklet has one page of each type: two pages of the same type may be two women's booklets mixed together
+  const byType = {};
+  for (const r of recs.slice().sort((a, b) => a.capturedAt - b.capturedAt)) (byType[r.pageType] = byType[r.pageType] || []).push(r);
+  for (const [pt, rs] of Object.entries(byType)) {
+    if (rs.length < 2) continue;
+    const a = await ask(T("dupType", { page: SCHEMA[pt] ? SCHEMA[pt][LANG === "fr" ? "name_fr" : "name_en"] : pt, n: rs.length }),
+      [T("sameWoman"), T("otherWoman")], { text: false });
+    if (ACTIONS[a] === "otherWoman") {      // the later page(s) start a separate booklet, finished on their own
+      const sid = newSession().id;
+      for (const r of rs.slice(1)) { r.sid = sid; await putRec(r); }
+      recs = recs.filter(r => !rs.slice(1).includes(r));
+    }
+  }
   const pages = {};
   for (const r of recs) pages[r.id + ":" + r.version] = await decJSON(r.result, r.id + ":res");
   // 1. booklet-level consistency (strategy 7/13), on the reviewed values
   say(T("checks"));
   const fin = await api(`/session/${recs[0].sid}/finalize`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pages }) });
-  const auto = fin.issues.filter(i => i.repaired);
-  if (auto.length) say(T("repaired", { n: auto.length, key: auto[0].key, old: auto[0].old, new: auto[0].new }));
-  for (const iss of fin.issues.filter(i => !i.repaired && i.suggestion)) {
-    const a = await ask(T("rule", { msg: I18N[LANG].rules[iss.rule] || iss.rule, old: iss.old, new: iss.suggestion }),
-      [T("takeNew", { new: iss.suggestion }), T("keepOld", { old: iss.old })], { text: false });
-    if (a === T("takeNew", { new: iss.suggestion })) for (const p of Object.values(fin.pages)) for (const f of p.fields) if (f.key === iss.key && f.value === iss.old) { f.value = iss.suggestion; f.status = "CONNU"; }
+  const fieldOf = (key, pt) => {          // the same key can exist on two pages (e.g. consultation date p5 / p6)
+    for (const p of Object.values(fin.pages)) if (pt == null || p.page_type === pt) for (const f of p.fields) if (f.key === key) return [p, f];
+    return [null, null];
+  };
+  const msg = iss => (I18N[LANG].rules || {})[iss.rule] || iss.rule;
+  for (const iss of fin.issues) {          // every rule outcome is shown: nothing is changed behind her back
+    const [p, f] = fieldOf(iss.key, iss.page_type);
+    if (!f) continue;
+    const lab = label(String(p.page_type), iss.key);
+    if (iss.repaired) {                      // the rule changed the reading: she keeps the new value or reverts
+      const a = await ask(T("ruleRepair", { msg: msg(iss), label: lab, old: iss.old, new: iss.new }),
+        [T("takeNew", { new: iss.new }), T("keepOld", { old: iss.old })], { text: false });
+      f.value = a === T("takeNew", { new: iss.new }) ? iss.new : iss.old;
+    } else if (iss.suggestion) {
+      const a = await ask(T("rule", { msg: msg(iss), old: iss.old, new: iss.suggestion }),
+        [T("takeNew", { new: iss.suggestion }), T("keepOld", { old: iss.old })], { text: false });
+      if (a === T("takeNew", { new: iss.suggestion })) f.value = iss.suggestion;
+    } else {                                 // range / format flag: confirm or correct
+      let a = await ask(T("flagAsk", { msg: msg(iss), label: lab, value: f.value }), [T("confirm"), T("correct")], { text: false });
+      if (ACTIONS[a] === "correct") { a = await ask(T("typeValue", { label: lab }), []); f.value = a.trim(); }
+    }
+    f.status = "CONNU"; f.confidence = 1; f.reviewed = true;
   }
   for (const r of recs) { const p = fin.pages[r.id + ":" + r.version]; if (p) { r.result = await encJSON(p, r.id + ":res"); await putRec(r); } }
   // 2. patient matching by the registry code (strategy 10): the midwife decides
   const all = Object.values(fin.pages);
   const get = (t, k) => (all.find(p => p.page_type === t)?.fields.find(f => f.key === k) || {}).value;
-  let code = get(1, "inline.n_de_la_fiche");
-  if (code) say(T("codeRead", { code })); else code = await ask(T("codeAsk"), []);
+  const codeF = all.find(p => p.page_type === 1)?.fields.find(f => f.key === "inline.n_de_la_fiche") || {};
+  let code = codeF.value;
+  if (code && codeF.status === "CONNU" && /\d/.test(code)) say(T("codeRead", { code }));   // not "Inconnu", not deferred
+  else if (code && codeF.status !== "INCONNU") {   // the linking key is never used unconfirmed
+    const a = await ask(T("codeConfirm", { code }), [code, T("correct")], { text: true });
+    code = ACTIONS[a] === "correct" ? await ask(T("codeAsk"), []) : a;
+  } else code = await ask(T("codeAsk"), []);
   const facts = { ddr: get(3, "inline.ddr"), date_prevue: get(3, "inline.date_prevue_d_accouchement") };
   const prop = await api("/match/propose", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, facts }) });
   if (prop.candidates.length) {
     say(T("matchAsk") + "\n" + prop.candidates.map(c => T("cand", { i: c.rank, code: c.code,
       facts: c.facts.ddr ? ` · DDR ${c.facts.ddr}` + (c.clash ? " ⚠️" : c.agree ? " ✓" : "") : "" })).join("\n"));
   } else say(T("noMatch"));
-  const choice = await ask("👇", prop.buttons, { text: false });
+  // the box speaks French button ids; show them in the app's language, send back the id
+  const EN = { "Aucune, créer": "None, create", "Je ne sais pas": "I don't know", "Créer la patiente": "Create the patient" };
+  const shown = b => LANG === "en" ? (EN[b] || b.replace(/^Patiente /, "Patient ")) : b;
+  const picked = await ask("👇", prop.buttons.map(shown), { text: false });
+  const choice = prop.buttons.find(b => shown(b) === picked) || picked;
   const dcs = await api("/match/decide", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ proposal_id: prop.proposal_id, choice }) });
   if (!dcs.patient_id) {
     say(T("unsure"));
-    for (const r of recs) await setState(r, "RÉVISION_MANUELLE_REQUISE", "match undecided");
+    for (const r of recs) { r.matchUndecided = true; await setState(r, "RÉVISION_MANUELLE_REQUISE", "match undecided"); }
     session = null; return;
   }
   say(choice.startsWith("Patiente") || choice.startsWith("Patient") ? T("linked", { pid: dcs.patient_id.slice(0, 8) }) : T("created", { pid: dcs.patient_id.slice(0, 8) }));
   for (const r of recs) {
-    r.patientId = dcs.patient_id; await setState(r, "PATIENTE_LIÉE", "midwife: " + choice);
-    // strategy 13 / brief task 7: this page was digitised before for this patient -> show the diff, she decides
-    const page = await decJSON(r.result, r.id + ":res");
-    const prev = await api(`/records/previous?patient_id=${dcs.patient_id}&page_type=${page.page_type}&exclude=${r.id}`);
-    if (prev.found) {
-      const old = Object.fromEntries(prev.page.fields.map(f => [f.key, f.value]));
-      const fresh = page.fields.filter(f => f.type === "text" && f.value != null && old[f.key] == null);
-      const changed = page.fields.filter(f => f.value != null && old[f.key] != null && String(old[f.key]) !== String(f.value));
-      if (fresh.length || changed.length) {
-        const ex = changed[0] ? `
-${label(String(page.page_type), changed[0].key)} : ${old[changed[0].key]} → ${changed[0].value}` : "";
-        const a = await ask(T("rescan", { page: SCHEMA[page.page_type][LANG === "fr" ? "name_fr" : "name_en"], n: fresh.length, m: changed.length }) + ex,
-          [T("update"), T("keepPrev")], { text: false });
-        if (ACTIONS[a] === "keepPrev") for (const f of changed) { f.value = old[f.key]; f.status = "CONNU"; f.provenance = "previous record"; }
-        r.result = await encJSON(page, r.id + ":res"); await putRec(r);
-      } else say(T("rescanSame"));
-    }
-    await setState(r, "ENREGISTRÉ", "session closed");
+    r.patientId = dcs.patient_id; r.matchUndecided = false; await setState(r, "PATIENTE_LIÉE", "midwife: " + choice);
+    await registerRec(r, dcs.patient_id);
   }
   say(online() ? T("saved") : T("syncWait"));
   session = null;
+}
+
+async function registerRec(r, pid) {
+  // strategy 13 / brief task 7: this page was digitised before for this patient -> show the diff, she decides
+  const page = await decJSON(r.result, r.id + ":res");
+  let prev = { found: false };
+  try { prev = await api(`/records/previous?patient_id=${pid}&page_type=${page.page_type}&exclude=${r.id}`); }
+  catch (e) { console.warn("previous record unavailable", e); }       // the diff is a convenience, not a blocker
+  if (prev.found) {
+    const old = Object.fromEntries(prev.page.fields.map(f => [f.key, f.value]));
+    const fresh = page.fields.filter(f => f.type === "text" && f.value != null && old[f.key] == null);
+    const changed = page.fields.filter(f => f.value != null && old[f.key] != null && String(old[f.key]) !== String(f.value));
+    if (fresh.length || changed.length) {
+      const ex = changed[0] ? `
+${label(String(page.page_type), changed[0].key)} : ${old[changed[0].key]} → ${changed[0].value}` : "";
+      const a = await ask(T("rescan", { page: SCHEMA[page.page_type][LANG === "fr" ? "name_fr" : "name_en"], n: fresh.length, m: changed.length }) + ex,
+        [T("update"), T("keepPrev")], { text: false });
+      if (ACTIONS[a] === "keepPrev") for (const f of changed) { f.value = old[f.key]; f.status = "CONNU"; f.provenance = "previous record"; }
+      r.result = await encJSON(page, r.id + ":res"); await putRec(r);
+    } else say(T("rescanSame"));
+  }
+  await setState(r, "ENREGISTRÉ", "session closed");
 }
 
 async function syncRecords(recs) {
@@ -426,8 +531,15 @@ async function syncRecords(recs) {
       if (r.state === "ÉCHEC_SYNCHRO") await setState(r, "ENREGISTRÉ", "retry");
       const p = await decJSON(r.result, r.id + ":res");
       const pages = [{ page_type: p.page_type, fields: p.fields.map(({ key, type, value, status, confidence }) => ({ key, type, value, status, confidence })) }];
+      // the kept image (identifier zones masked by the box) travels with the record, with its capture metadata
+      let image = null;
+      if (r.imageMasked && r.image && r.maskedVersion === r.version) {
+        const jpg = await dec(r.image, r.id + ":" + r.version);
+        image = "data:image/jpeg;base64," + btoa(Array.from(jpg, c => String.fromCharCode(c)).join(""));
+      }
       await api("/records", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ record_id: r.id, version: r.version, patient_id: r.patientId, pages }) });
+        body: JSON.stringify({ record_id: r.id, version: r.version, patient_id: r.patientId, pages, image,
+          image_sha256: r.sha256, midwife_id: r.midwife, captured_at: new Date(r.capturedAt).toISOString() }) });
       await setState(r, "SYNCHRONISÉ", "central ack"); n++;
     } catch (e) {
       if (e.message !== "offline") { r.nextTry = Date.now() + 5000; await setState(r, "ÉCHEC_SYNCHRO", e.message || "network"); }
@@ -467,18 +579,51 @@ app.unlock = async function (pin) {
     catch (e) { key = prev; throw e; }                     // a wrong PIN must never replace the working key
   }
   if (!check) { const c = await enc(new Uint8Array([1]), "check"); await tx("meta", "readwrite", s => s.put(c, "check")); }
+  const mid = document.getElementById("mid");
+  app.midwife = (mid && mid.value.trim()) || localStorage.getItem("midwife") || "sf-01";
+  localStorage.setItem("midwife", app.midwife);           // staff id (not patient data)
+  const pc = await tx("meta", "readonly", s => s.get("pair"));
+  if (pc) pairToken = new TextDecoder().decode(await dec(pc, "pair"));
   document.getElementById("lock").hidden = true;
   say(T("hello"));
   const recs = await allRecs();
-  const open = recs.filter(r => r.state !== "SYNCHRONISÉ" && r.state !== "DOUBLON_SUSPECTÉ");
-  if (open.length) { session = { id: open[0].sid }; sys(`${open.length} dossier(s) en cours repris`); }
+  // resume the latest booklet only (pages not yet registered); an older session is never mixed into a new one
+  const PRE = ["CAPTURÉ", "EN_ATTENTE_IA", "ÉCHEC_TRAITEMENT", "TRAITÉ_IA", "À_RÉVISER", "VALIDÉ", "DOUBLON_SUSPECTÉ"];
+  const pre = recs.filter(r => PRE.includes(r.state) && !(r.state === "DOUBLON_SUSPECTÉ" && r.dupDecided))
+    .sort((a, b) => b.capturedAt - a.capturedAt);
+  if (pre.length) { session = { id: pre[0].sid }; sys(`${pre.filter(r => r.sid === pre[0].sid).length} page(s) en cours reprise(s)`); }
+  for (const r of recs.filter(r => r.state === "ÉCHEC_TRAITEMENT" && !r.manualPending))     // crash between two states
+    await setState(r, "EN_ATTENTE_IA", "resumed after restart");
+  const waiting = recs.filter(r => r.state === "VALIDÉ" && session && r.sid === session.id);
+  if (waiting.length && !recs.some(r => r.sid === session.id && ["CAPTURÉ", "EN_ATTENTE_IA", "TRAITÉ_IA", "À_RÉVISER"].includes(r.state)))
+    offer(T("next"), [[T("finish"), () => { finishRequested = true; if (!online()) say(T("waitNet")); kick(); }]]);
+  // resume what an app restart may have interrupted
+  const retakeRec = recs.find(r => r.state === "CAPTURÉ" && r.retakePending);
+  if (retakeRec) { retakeOf = retakeRec.id; say(T("retakeAsk")); }
+  for (const r of recs.filter(r => r.state === "DOUBLON_SUSPECTÉ" && !r.dupDecided)) {
+    offer(T("dupPending"), [[T("dupDrop"), async () => { r.dupDecided = true; await putRec(r); renderQueue(); }],
+      [T("dupKeep"), async () => { r.dupDecided = true; await setState(r, "EN_ATTENTE_IA", "kept after restart"); kick(); }]]);
+  }
+  const undecided = recs.filter(r => r.state === "RÉVISION_MANUELLE_REQUISE" && r.matchUndecided && r.result);
+  if (undecided.length) offer(T("retryMatch", { n: undecided.length }), [[T("matchNow"), async () => {
+    for (const r of undecided) await setState(r, "VALIDÉ", "match retried");
+    app.finish(); }]]);
+  for (const r of recs.filter(r => r.state === "RÉVISION_MANUELLE_REQUISE" && r.manualPending && !r.matchUndecided)) {
+    offer(T("procManual", { why: r.id.slice(0, 6) }), [[T("retake"), () => retake(r)], [T("manual"), () => manualEntry(r, true)]]);
+  }
   renderQueue(); kick();
   return true;
 };
 
 (async () => {
+  if (!window.isSecureContext || !(window.crypto && crypto.subtle)) {   // WebCrypto needs HTTPS or localhost
+    document.getElementById("lockMsg").textContent = T("insecure");
+    document.getElementById("unlock").disabled = true;
+    return;
+  }
   db = await idb();
   SCHEMA = await (await fetch("schema.json")).json();
+  TRANSITIONS = (await (await fetch("lifecycle.json")).json()).transitions;
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
   const $ = id => document.getElementById(id);
   $("unlock").onclick = () => app.unlock($("pin").value).catch(() => { $("lockMsg").textContent = T("pinBad"); });
@@ -486,6 +631,7 @@ app.unlock = async function (pin) {
   $("cam").onclick = () => $("file").click();
   $("file").onchange = e => { const f = e.target.files[0]; e.target.value = ""; if (f) app.captureBlob(f); };
   const send = () => { const v = $("text").value.trim(); if (!v) return; $("text").value = "";
+    if (pairingNeeded && /^\d{6}$/.test(v)) { bubble("me", "••••••"); setPairing(v); return; }
     if (!answer(v, false)) { if (/^(manuel|manual)/i.test(v)) app.manualEntry(); else if (/^(fin|terminer|finish|end)/i.test(v)) app.finish(); else bubble("me", v); } };
   $("send").onclick = send; $("text").onkeydown = e => { if (e.key === "Enter") send(); };
   $("queueBtn").onclick = () => { $("drawer").hidden = !$("drawer").hidden; renderQueue(); };

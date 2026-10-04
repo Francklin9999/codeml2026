@@ -6,7 +6,6 @@ field label and allowed vocabulary in the prompt. Runs fully offline (edge box /
 """
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import numpy as np

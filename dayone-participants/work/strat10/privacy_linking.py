@@ -48,7 +48,11 @@ def leak_guard(page: dict, known_names: set[str] | None = None) -> list[dict]:
             hits.append("IDENTIFIER_FIELD")
         if hits:
             incidents.append(dict(key=f["key"], kinds=sorted(set(hits))))
-            f["value"], f["raw"], f["status"] = None, None, "NON_FOURNI"
+            # an identifier zone is simply never kept; an identifier-like value in another field is removed and asked
+            # again (the midwife writes what is needed without the identifier), never silently turned into "empty"
+            ident_zone = "IDENTIFIER_FIELD" in hits
+            f["value"], f["raw"], f["status"] = None, None, "NON_FOURNI" if ident_zone else "À_RÉVISER"
+            f.pop("evidence", None)
             f["redacted"] = True
     return incidents
 

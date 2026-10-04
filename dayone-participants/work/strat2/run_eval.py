@@ -26,6 +26,7 @@ def parse_pages(s):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")     # Arabic values in logs on a cp1252 console
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True)
     ap.add_argument("--omr", default=None)
@@ -39,8 +40,13 @@ def main():
     ap.add_argument("--consistency", type=int, default=1)
     ap.add_argument("--tta", type=int, default=0)
     ap.add_argument("--views", default="1.0,1.2,1.4")
+    ap.add_argument("--grammar", type=int, default=1, help="grammar-constrained beam search (strategy 7)")
+    ap.add_argument("--save_raw", type=int, default=0, help="also save predictions + rule log-probs before the "
+                                                             "consistency pass (replay rules without re-extracting)")
     a = ap.parse_args()
     from extract_zonal import Extractor, run_specimen
+    import fieldlogic
+    fieldlogic.GRAMMAR_BEAM = bool(a.grammar)
     from recognizer import Recognizer
     if "," in a.model:
         from recognizer import EnsembleRecognizer
@@ -63,8 +69,11 @@ def main():
     for sev in a.sev:
         t0 = time.time()
         preds = run_specimen(ext, pages, sev, seed=a.seed + sev, use_true_type=a.true_type)
-        if a.consistency:
+        if a.save_raw:
             import copy
+            import torch
+            torch.save(copy.deepcopy(preds), LOCAL / "preds" / f"{a.tag}_sev{sev}_raw.pt")
+        if a.consistency:
             from extract_zonal import apply_consistency
             res0, _ = score(preds, gts)
             print(f"before consistency: field_acc {res0['all']['field_acc']:.4f} filled_acc {res0['all']['filled_acc']:.4f}")

@@ -57,8 +57,7 @@ def crop_zone(warped: np.ndarray, t: int, key: str):
     x0, y0, x1, y1 = box
     if y1 - y0 > TALL:
         ink = new_ink(warped, t, box)
-        prof = cv2.GaussianBlur((ink > 0.25).sum(1).astype(np.float32)[:, None], (1, 0), 4).ravel() \
-            if False else np.convolve((ink > 0.25).sum(1).astype(np.float32), np.ones(9) / 9, "same")
+        prof = np.convolve((ink > 0.25).sum(1).astype(np.float32), np.ones(9) / 9, "same")
         if prof.max() > 3:
             c = int(np.argmax(np.convolve(prof, np.ones(50), "same")))
             y0, y1 = max(y0, y0 + c - 34), min(y1, y0 + c + 34)

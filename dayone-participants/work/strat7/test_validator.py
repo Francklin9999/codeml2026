@@ -70,3 +70,68 @@ def test_injected_date_errors_repaired():
             repaired += f["value"] == orig
     print(f"caught {caught}/{total}, repaired {repaired}/{total}")
     assert caught / total >= 0.8 and repaired / total >= 0.7
+
+
+def _with_truth(pages):
+    truth = {}
+    for p in pages:
+        p["_lp"] = {}
+        for f in p["fields"]:
+            if f["type"] == "text" and f.get("value"):
+                k = (p["page_type"], f["key"]); truth[k] = f["value"]; p["_lp"][f["key"]] = k
+    return truth
+
+
+def test_visit_table_soft_rules():
+    """R1 (appointment = visit + 28 d) and H1 (fundal height = SA - 4): an OCR digit error in any of the three
+    columns is repaired from the other one; a midwife-confirmed value is never touched; soft rules never flag."""
+    random.seed(1)
+    swap = {"1": "7", "7": "1", "3": "8", "8": "3", "0": "6", "6": "0", "5": "6", "4": "9", "9": "4", "2": "7"}
+    total = repaired = 0
+    for pid, pages in booklets().items():
+        p3 = next(p for p in pages if p["page_type"] == 3)
+        cols = [f["key"].split(".")[-1] for f in p3["fields"]
+                if f["key"].startswith("visites.venue_le.") and f.get("value")]
+        for col in cols[:3]:
+            for field in ("rendez_vous", "venue_le", "hu_cm"):
+                pg = copy.deepcopy(pages)
+                truth = _with_truth(pg)
+                f = next(f for f in next(p for p in pg if p["page_type"] == 3)["fields"]
+                         if f["key"] == f"visites.{field}.{col}")
+                if not f.get("value"):
+                    continue
+                orig = f["value"]; v = list(orig)
+                i = random.choice([j for j, c in enumerate(v) if c.isdigit()])
+                v[i] = swap[v[i]]
+                f["value"] = "".join(v)
+                validate_booklet(pg, EditScorer(truth))
+                total += 1; repaired += f["value"] == orig
+                f["value"], f["reviewed"], f["status"] = "".join(v), True, "CONNU"     # confirmed by the midwife
+                validate_booklet(pg, EditScorer(truth))
+                assert f["value"] == "".join(v) and f["status"] == "CONNU"
+    print(f"visit rules repaired {repaired}/{total}")
+    assert total >= 60 and repaired / total >= 0.85
+
+
+def test_uncertain_boxes_keep_their_doubt():
+    """No tick read in an exclusive group is NON_FOURNI only if every box is certain; an uncertain box never makes
+    a field NON_APPLICABLE, and the form logic follows the midwife's corrections."""
+    from validator import apply_form_logic, apply_group_logic
+    page = {"page_type": 5, "fields": [
+        {"key": "cb.cesarienne", "type": "checkbox", "value": False, "status": "À_RÉVISER"},
+        {"key": "inline.etat_de_la_cicatrice", "type": "text", "value": None, "status": "NON_FOURNI"}]}
+    apply_form_logic(page)
+    assert page["fields"][1]["status"] == "NON_FOURNI"            # uncertain box: the scar question stays open
+    page["fields"][0]["status"] = "CONNU"                         # midwife: no caesarean
+    apply_form_logic(page)
+    assert page["fields"][1]["status"] == "NON_APPLICABLE"
+    page["fields"][0].update(value=True)                          # she corrects: there was a caesarean
+    apply_form_logic(page)
+    assert page["fields"][1]["status"] == "NON_FOURNI"
+    grp = {"page_type": 3, "fields": [{"key": k, "type": "checkbox", "value": False, "status": s}
+                                      for k, s in (("cb.rh", "CONNU"), ("cb.rh_2", "À_RÉVISER"))]}
+    apply_group_logic(grp)
+    assert [f["status"] for f in grp["fields"]] == ["CONNU", "À_RÉVISER"]
+    grp["fields"][1]["status"] = "CONNU"
+    apply_group_logic(grp)
+    assert [f["status"] for f in grp["fields"]] == ["NON_FOURNI", "NON_FOURNI"]

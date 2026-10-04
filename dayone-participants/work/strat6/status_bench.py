@@ -32,9 +32,11 @@ def scribble(page_img, bbox, rng, ink):
 
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument("--pages", type=int, default=40); ap.add_argument("--seed", type=int, default=91000)
     from common import MODELS
-    ap.add_argument("--cal", default=str(MODELS / "calibrator.joblib"))
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--pages", type=int, default=40)
+    ap.add_argument("--seed", type=int, default=91000)
+    ap.add_argument("--cal", default=str(MODELS / "calibrator.json"))
     a = ap.parse_args()
     from calibrate import Calibrator
     from degrade import degrade_page
@@ -43,8 +45,7 @@ def main():
     from recognizer import Recognizer
     from synth_pages import synth_page
     from validator import apply_form_logic
-    M = MODELS
-    ext = Extractor(Recognizer(str(M / "crnn_final.pt")), OMR(str(M / "omr_v2.pt")), Calibrator.load(a.cal))
+    ext = Extractor(Recognizer(str(MODELS / "crnn_final.pt")), OMR(str(MODELS / "omr_v2.pt")), Calibrator.load(a.cal))
     rng = np.random.default_rng(a.seed)
     conf = collections.Counter()
     for i in range(a.pages):

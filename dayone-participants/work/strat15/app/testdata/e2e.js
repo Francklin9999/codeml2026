@@ -56,6 +56,9 @@
     const res = await app.decryptResult(recs[0].id);
     ok("no identifier values in the record", !res.fields.some(f => /cin|telephone|adresse|parturiente|nom_du_mari/.test(f.key) && f.value));
     ok("agent asked questions with evidence crops", answered > 3 && document.querySelectorAll(".bot .bubble img").length > 0, `answers=${answered}`);
+    const cached = [];
+    for (const k of await caches.keys()) for (const r of await (await caches.open(k)).keys()) cached.push(new URL(r.url).pathname);
+    ok("no patient data in the (unencrypted) browser cache", !cached.some(p => /^\/(records|process|session|match|dashboard|admin)/.test(p)), cached.join(","));
   } catch (e) { ok("no exception", false, e.stack || String(e)); }
   window.e2eResult = { passed: checks.every(c => c.pass), checks };
   const s = document.createElement("div"); s.className = "sys";

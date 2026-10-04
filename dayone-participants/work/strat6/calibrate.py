@@ -7,7 +7,7 @@ Training data: synthetic pages (strategy 5) through the full pipeline with phone
 never the specimen pages, which stay the test set.
 
 python calibrate.py collect --model crnn.pt --omr omr.pt --pages 300 --out ~/dayone_local/cal_rows.jsonl
-python calibrate.py fit --rows ~/dayone_local/cal_rows.jsonl --out ~/dayone_local/models/cal_v1.joblib
+python calibrate.py fit --rows ~/dayone_local/cal_rows.jsonl --iso 0 --out ../../models/calibrator.json
 """
 from __future__ import annotations
 
@@ -27,32 +27,56 @@ KINDS = ["date", "date_or_year", "year", "bp", "int", "numunit", "enum_codes", "
 
 def featurize(f: dict, kind: str) -> list[float]:
     x = [np.log(max(f["seqconf"], 1e-8)), f["minp"], min(f["n"], 40) / 40, float(f["snapped"]),
-         np.clip(f["margin"], -20, 20) / 20, min(f["ink"] * 20, 1.0), f["reg"], np.clip(f["gap"], -50, 50) / 50,
+         np.clip(f["margin"], -20, 20) / 20, min(f["ink"] * 20, 1.0),
+         float(np.clip(f["reg"], 0, 1)) if np.isfinite(f["reg"]) else 0.0, np.clip(f["gap"], -50, 50) / 50,
          float(f["n"] == 0), float(f.get("agree", 1.0))]
     x += [float(kind == k) for k in KINDS]
     return x
 
 
+FEATURES = ["log_seqconf", "min_char_prob", "length", "snapped", "margin", "ink", "registration", "gap_vs_blank",
+            "empty", "views_agree"] + [f"kind={k}" for k in KINDS]
+
+
 class Calibrator:
-    def __init__(self, lr=None, iso=None):
-        self.lr, self.iso = lr, iso
+    """Logistic calibrator (+ optional isotonic step) stored as plain JSON numbers, so the box does not depend on
+    the scikit-learn version that fitted it (a pickled model can fail to load under another version)."""
+
+    def __init__(self, coef, intercept, iso_x=None, iso_y=None):
+        self.coef, self.intercept = np.asarray(coef, float), float(intercept)
+        self.iso_x = None if iso_x is None else np.asarray(iso_x, float)
+        self.iso_y = None if iso_y is None else np.asarray(iso_y, float)
+
+    @staticmethod
+    def from_sklearn(lr, iso=None):
+        return Calibrator(lr.coef_[0], lr.intercept_[0], None if iso is None else iso.X_thresholds_,
+                          None if iso is None else iso.y_thresholds_)
 
     def predict(self, feats: dict, kind: str = "free") -> float:
-        x = np.array([featurize(feats, kind)])
-        p = self.lr.predict_proba(x)[0, 1]
-        if self.iso is not None:
-            p = float(self.iso.predict([p])[0])
+        z = float(np.dot(self.coef, featurize(feats, kind)) + self.intercept)
+        p = 1.0 / (1.0 + np.exp(-z))
+        if self.iso_x is not None:
+            p = float(np.interp(p, self.iso_x, self.iso_y))      # = IsotonicRegression(out_of_bounds="clip")
         return float(p)
+
+    def save(self, path):
+        d = dict(coef=self.coef.tolist(), intercept=self.intercept,
+                 iso_x=None if self.iso_x is None else self.iso_x.tolist(),
+                 iso_y=None if self.iso_y is None else self.iso_y.tolist(), features=FEATURES)
+        Path(path).write_text(json.dumps(d, indent=1), encoding="utf-8")
 
     @staticmethod
     def load(path):
-        import joblib
+        path = Path(path)
+        if path.suffix == ".json":
+            d = json.loads(path.read_text(encoding="utf-8"))
+            return Calibrator(d["coef"], d["intercept"], d.get("iso_x"), d.get("iso_y"))
+        import joblib                                   # legacy pickle (same scikit-learn version only)
         d = joblib.load(path)
-        return Calibrator(d["lr"], d.get("iso"))
+        return Calibrator.from_sklearn(d["lr"], d.get("iso"))
 
 
 def collect(model, omr, n_pages, out, seed=5000, holdout=True):
-    import cv2
     from degrade import degrade_page
     from extract_zonal import Extractor
     from fieldlogic import kind
@@ -109,7 +133,11 @@ def fit(rows_path, out, iso_on=True):
     for tau in (0.8, 0.9, 0.95, 0.98, 0.99):
         m = p_te >= tau
         print(f"  tau {tau}: auto-accept {m.mean():.3f} of fields, accuracy {y[te][m].mean() if m.any() else float('nan'):.4f}")
-    joblib.dump(dict(lr=lr, iso=iso if iso_on else None), out)
+    cal = Calibrator.from_sklearn(lr, iso if iso_on else None)
+    if str(out).endswith(".json"):
+        cal.save(out)
+    else:
+        joblib.dump(dict(lr=lr, iso=iso if iso_on else None), out)
 
 
 if __name__ == "__main__":

@@ -137,6 +137,15 @@ def canonical(value: str | None) -> str | None:
     low = v.lower()
     if low in VARIANT_TO_CODE:
         return VARIANT_TO_CODE[low]
+    # dates d/m/y with any separator (before number + unit, which would read "28/09/2025" as 28 + "/09/2025")
+    m = re.fullmatch(r"(\d{1,2})\s*[/.\-]\s*(\d{1,2})\s*[/.\-]\s*(\d{2,4})", v)
+    if m:
+        d, mo, y = m.groups()
+        y = ("20" + y) if len(y) == 2 else y
+        return f"{int(d):02d}/{int(mo):02d}/{y}"
+    m = re.fullmatch(r"(\d{2,3})\s*/\s*(\d{2,3})", v)          # blood pressure
+    if m:
+        return f"{m.group(1)}/{m.group(2)}"
     # number + unit
     m = re.fullmatch(r"([0-9]+(?:[.,][0-9]+)?)\s*([^\d\s].*)?", v)
     if m:
@@ -144,15 +153,6 @@ def canonical(value: str | None) -> str | None:
         unit = (m.group(2) or "").strip()
         cu = UNIT_TO_CANON.get(unit.lower(), unit)
         return f"{num} {cu}".strip()
-    # dates d/m/y with any separator
-    m = re.fullmatch(r"(\d{1,2})\s*[/.\-]\s*(\d{1,2})\s*[/.\-]\s*(\d{2,4})", v)
-    if m:
-        d, mo, y = m.groups()
-        y = ("20" + y) if len(y) == 2 else y
-        return f"{int(d):02d}/{int(mo):02d}/{y}"
-    m = re.fullmatch(r"(\d{2,3})\s*/\s*(\d{2,3})", v)
-    if m:
-        return f"{m.group(1)}/{m.group(2)}"
     return strip_accents(low).replace("’", "'")
 
 

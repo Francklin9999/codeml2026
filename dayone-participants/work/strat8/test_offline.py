@@ -1,8 +1,5 @@
 """Strategy 8 tests: property-based stateful test (network cuts, server errors, crashes) + crypto checks."""
-import hashlib
-import json
 import os
-import sqlite3
 import sys
 import tempfile
 from pathlib import Path
@@ -156,3 +153,16 @@ def test_encryption_at_rest_and_wrong_pin():
     with pytest.raises(PermissionError):
         s2.image(rid, "visiteur")
     assert s2.image(rid, "sage-femme") == b"PHOTO-BYTES-UNIQUE-123"
+
+
+def test_lifecycle_doc_matches_the_shared_table():
+    """LIFECYCLE.md draws exactly the transitions of lifecycle.json (used by the app and by this model)."""
+    import json
+    import re
+    root = Path(__file__).resolve().parents[2]
+    md = (root / "LIFECYCLE.md").read_text(encoding="utf-8")
+    drawn = {(a, b.rstrip(":")) for a, b in re.findall(r"^\s+(\S+) --> (\S+?):?(?:\s|$)", md, re.M)
+             if a != "[*]" and b != "[*]"}
+    table = json.loads((root / "work" / "strat15" / "app" / "lifecycle.json").read_text(encoding="utf-8"))
+    assert drawn == {(a, b) for a, bs in table["transitions"].items() for b in bs}
+    assert {k: set(v) for k, v in table["transitions"].items()} == TRANSITIONS

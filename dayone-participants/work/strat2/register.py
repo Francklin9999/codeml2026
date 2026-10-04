@@ -90,9 +90,11 @@ def _ecc(tpl, img, warp, motion=cv2.MOTION_HOMOGRAPHY, iters=60, eps=1e-5):
     crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, iters, eps)
     try:
         cc, warp = cv2.findTransformECC(tpl, img, warp, motion, crit, None, 3)
-        return cc, warp
     except cv2.error:
         return -1.0, warp
+    if not np.isfinite(cc) or not np.all(np.isfinite(warp)):     # degenerate (flat) input: a failure, never a
+        return -1.0, warp                                          # perfect score (inf would pass page_verdict)
+    return float(cc), warp
 
 
 def _scale_h(H, s):
@@ -212,3 +214,24 @@ def register(photo: np.ndarray, page_type: int | None = None, fine_scale: float 
         best = twin_decide(warped, best)
     return dict(page_type=best, H=H, warped=warped, score=float(cc),
                 type_scores={int(k): float(v[0]) for k, v in res.items()}, prior=prior)
+
+
+ROTATIONS = (cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_90_COUNTERCLOCKWISE, cv2.ROTATE_180)
+
+
+def register_any_orientation(photo: np.ndarray, page_type: int | None = None, accept: float = 0.45,
+                             good: float = 0.70):
+    """register(); if the page is not found upright (score < accept), try the photo turned by 90°, 270° and 180°
+    (phone held sideways, booklet upside down). Returns (reg, photo as registered, rotation code or None)."""
+    reg = register(photo, page_type)
+    best = (reg, photo, None)
+    if reg["score"] >= accept:
+        return best
+    for rot in ROTATIONS:
+        turned = cv2.rotate(photo, rot)
+        r = register(turned, page_type)
+        if r["score"] > best[0]["score"]:
+            best = (r, turned, rot)
+        if r["score"] >= good:
+            break
+    return best

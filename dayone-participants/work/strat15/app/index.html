@@ -22,7 +22,7 @@
   .bubble { max-width:85%; padding:7px 9px 18px; border-radius:8px; position:relative; box-shadow:0 1px 1px rgba(0,0,0,.12);
             white-space:pre-wrap; word-wrap:break-word; font-size:15px; line-height:1.35; }
   .bot .bubble { background:var(--bot); border-top-left-radius:0; } .me .bubble { background:var(--me); border-top-right-radius:0; }
-  .bubble img { display:block; max-width:100%; border-radius:6px; margin:2px 0 4px; }
+  .bubble img { display:block; max-width:100%; max-height:320px; object-fit:contain; border-radius:6px; margin:2px 0 4px; }
   .me .bubble img { max-height:180px; width:auto; }
   .meta { position:absolute; right:7px; bottom:3px; font-size:11px; color:var(--muted); }
   .replies { display:flex; flex-direction:column; gap:4px; margin:2px 0 8px; max-width:85%; }
@@ -52,6 +52,7 @@
   <div class="avatar" style="width:64px;height:64px;font-size:26px">D1</div>
   <div id="lockTitle">Code PIN de l'appareil</div>
   <input id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8">
+  <input id="mid" type="text" autocomplete="off" maxlength="16" placeholder="ID sage-femme (sf-01)" aria-label="Identifiant de la sage-femme" style="font-size:14px;letter-spacing:1px;width:180px">
   <button id="unlock">Déverrouiller</button>
   <small id="lockMsg"></small>
 </div>
@@ -65,7 +66,7 @@
 <div id="drawer" hidden><b id="qTitle">File d'attente</b><ul id="queue"></ul></div>
 <main id="chat" aria-live="polite"></main>
 <footer>
-  <input id="file" type="file" accept="image/*" capture="environment" hidden>
+  <input id="file" type="file" accept="image/*" hidden>
   <button class="round" id="cam" title="Photo">📷</button>
   <input id="text" type="text" placeholder="Message" autocomplete="off">
   <button class="round" id="send">➤</button>

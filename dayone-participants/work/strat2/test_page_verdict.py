@@ -17,7 +17,7 @@ def ext():
     from extract_zonal import Extractor
     from omr import OMR
     from recognizer import Recognizer
-    return Extractor(Recognizer(str(M / "crnn_final.pt")), OMR(str(M / "omr_v2.pt")), Calibrator.load(str(M / "calibrator.joblib")))
+    return Extractor(Recognizer(str(M / "crnn_final.pt")), OMR(str(M / "omr_v2.pt")), Calibrator.load(str(M / "calibrator.json")))
 
 
 def test_real_booklet_photos_are_rejected(ext):

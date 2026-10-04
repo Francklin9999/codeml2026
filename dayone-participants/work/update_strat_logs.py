@@ -18,6 +18,6 @@ for n, info in R.items():
     lines = s[i:].split("\n")
     header = [l for l in lines[1:] if l.startswith("|")][:2]
     s = s[:i] + "## 8. Results log\n\n" + "\n".join(header) + "\n" + info["row"].strip() + "\n\n" + \
-        "**Implementation notes (2026-10-03).** " + info["notes"].strip() + "\n"
+        f"**Implementation notes ({info.get('date', '2026-10-03')}).** " + info["notes"].strip() + "\n"
     p.write_text(s, encoding="utf-8")
     print("updated", p.name)

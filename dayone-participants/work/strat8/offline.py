@@ -13,24 +13,15 @@ import os
 import sqlite3
 import time
 import uuid
+from pathlib import Path
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 
-TRANSITIONS = {
-    "CAPTURÉ": {"EN_ATTENTE_IA"},
-    "EN_ATTENTE_IA": {"TRAITÉ_IA", "ÉCHEC_TRAITEMENT"},
-    "ÉCHEC_TRAITEMENT": {"EN_ATTENTE_IA", "RÉVISION_MANUELLE_REQUISE"},
-    "TRAITÉ_IA": {"À_RÉVISER", "VALIDÉ", "DOUBLON_SUSPECTÉ"},
-    "À_RÉVISER": {"VALIDÉ", "CAPTURÉ", "RÉVISION_MANUELLE_REQUISE"},
-    "RÉVISION_MANUELLE_REQUISE": {"VALIDÉ"},
-    "DOUBLON_SUSPECTÉ": {"À_RÉVISER", "VALIDÉ"},
-    "VALIDÉ": {"PATIENTE_LIÉE", "RÉVISION_MANUELLE_REQUISE"},
-    "PATIENTE_LIÉE": {"ENREGISTRÉ"},
-    "ENREGISTRÉ": {"SYNCHRONISÉ", "ÉCHEC_SYNCHRO"},
-    "ÉCHEC_SYNCHRO": {"ENREGISTRÉ"},
-    "SYNCHRONISÉ": set(),
-}
+# one transition table for the phone app and this property-tested model (work/strat15/app/lifecycle.json)
+TRANSITIONS = {k: set(v) for k, v in json.loads(
+    (Path(__file__).resolve().parents[1] / "strat15" / "app" / "lifecycle.json").read_text(encoding="utf-8"))
+    ["transitions"].items()}
 
 
 class IllegalTransition(Exception):
