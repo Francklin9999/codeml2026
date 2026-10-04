@@ -23,7 +23,9 @@ import numpy as np
 PX_PER_MM = 10
 MAX_SHIFT_PX = 3.0            # window-corner drift (photo pixels) tolerated against the easy shot
 MIN_AREA_MM2, MAX_AREA_MM2 = 600.0, 4500.0   # plausible lens area (strat3 section 4.2: 600..4000, slightly relaxed)
-NAME_RE = re.compile(r"^(?P<lens>.+)_(?P<pos>[^_]+)_(?P<cond>[^_]+)\.(jpg|jpeg|png)$", re.IGNORECASE)
+# pos is a number: a validation photo (<lensId>_<phone>_<rep>) must not be taken for a training group
+NAME_RE = re.compile(r"^(?P<lens>.+)_(?P<pos>\d+)_(?P<cond>[A-Za-z][^_]*)\.(jpg|jpeg|png)$", re.IGNORECASE)
+UNREADABLE_EXT = (".heic", ".heif")   # written by some phones, not decoded by OpenCV
 DEFAULT_OUT = Path(__file__).resolve().parents[1] / "_local" / "real"
 
 
@@ -54,7 +56,9 @@ def board_homography(img: np.ndarray, spec: dict, min_markers: int = 3) -> np.nd
     corners, ids, _ = cv2.aruco.ArucoDetector(dico, cv2.aruco.DetectorParameters()).detectMarkers(img)
     if ids is None:
         return None
-    wanted = {m["id"]: np.asarray(m["corners"], np.float32) * PX_PER_MM for m in spec["markers"]}
+    # same rule as app/src/vision/rectify.ts: a sheet printed at printScale has its markers at nominal * printScale
+    scale = PX_PER_MM * float(spec.get("printScale", 1))
+    wanted = {m["id"]: np.asarray(m["corners"], np.float32) * scale for m in spec["markers"]}
     src, dst = [], []
     n_found = 0
     for c, i in zip(corners, ids.ravel()):
@@ -124,7 +128,7 @@ def group_photos(folder: Path) -> tuple[dict[tuple[str, str], list[tuple[str, Pa
         m = NAME_RE.match(p.name) if p.is_file() else None
         if m:
             groups.setdefault((m["lens"], m["pos"]), []).append((m["cond"], p))
-        elif p.is_file() and p.suffix.lower() in (".jpg", ".jpeg", ".png"):
+        elif p.is_file() and p.suffix.lower() in (".jpg", ".jpeg", ".png") + UNREADABLE_EXT:
             skipped.append(p)
     return groups, skipped
 
@@ -132,7 +136,9 @@ def group_photos(folder: Path) -> tuple[dict[tuple[str, str], list[tuple[str, Pa
 def run(photos: Path, spec: dict, out: Path, qc: int = 0, seed: int = 0, max_shift: float = MAX_SHIFT_PX) -> dict:
     size = window_size_px(spec)
     groups, skipped = group_photos(photos)
-    rejected: list[tuple[str, str, str]] = [(p.name, "", "name does not match <lensId>_<pos>_<cond>") for p in skipped]
+    rejected: list[tuple[str, str, str]] = [
+        (p.name, "", "format not readable, convert to JPEG" if p.suffix.lower() in UNREADABLE_EXT
+         else "name does not match <lensId>_<pos>_<cond>") for p in skipped]
     groups_rejected = 0
     accepted: list[tuple[str, str, str, str, np.ndarray, np.ndarray]] = []   # file, lens, pos, cond, rect, mask
 

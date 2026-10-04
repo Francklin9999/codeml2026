@@ -1,4 +1,4 @@
-import { DEFAULT_FRAME, type Eye, type FrameResult, type LensMeasurement, type Pt } from '../contracts';
+import { DEFAULT_FRAME, PX_PER_MM, type Eye, type FrameResult, type LensMeasurement, type Pt } from '../contracts';
 import { messageFor } from '../quality';
 import { rotationWarningDeg } from '../measure';
 import type { Timings } from '../timing';
@@ -11,6 +11,8 @@ export interface Actions {
   importPhoto(): void;
   finishShots(): void;
   exportSvg(): void;
+  /** Outline of a lens already validated (frame screen). */
+  exportSvgOf(eye: Eye): void;
   retake(): void;
   validate(): void;
   goHome(): void;
@@ -20,6 +22,9 @@ export interface Actions {
   downloadStl(): void;
   downloadJson(): void;
 }
+
+/** Provisional: below this long side a photo was probably resized by a messaging app. TO MEASURE on real phones. */
+export const MIN_PHOTO_SIDE_PX = 1600;
 
 const eyeName = (e: Eye) => (e === 'L' ? 'Verre gauche' : 'Verre droit');
 const btn = (label: string, onclick: () => void, kind = '', disabled = false) =>
@@ -74,17 +79,23 @@ export function captureView(s: State, a: Actions): HTMLElement {
   const taken = s.shots.length;
   const spread = taken >= 2 ? { A: range(s.shots.map((m) => m.A)), B: range(s.shots.map((m) => m.B)) } : null;
   const busy = !!s.busy;
+  const img = s.last?.photo.image;
+  const side = img ? Math.max(img.width, img.height) : 0;
+  const small = side >= 64 && side < MIN_PHOTO_SIDE_PX; // under 64 px: the placeholder photo of the demo mode
   return h('section', { class: 'screen', 'data-screen': 'capture' },
     h('h1', null, eyeName(eye)),
     nosePictogram(eye),
     h('p', null, eye === 'R'
       ? 'Posez le verre à plat au centre de la fenêtre, le côté du nez (flèche) à droite.'
       : 'Posez le verre à plat au centre de la fenêtre, le côté du nez (flèche) à gauche.'),
+    h('p', null, 'Face bombée vers le haut, le haut du verre vers le mot « HAUT », aligné sur la ligne guide.'),
     taken ? h('div', { class: 'counter' },
       h('p', { class: 'count' }, `photo ${taken} sur ${SHOTS_PER_LENS}`),
       h('p', null, 'Bougez légèrement le téléphone avant la photo suivante.'),
       spread ? h('p', { class: 'spread' }, `Écart entre les photos : A ${fmt1(spread.A)} mm, B ${fmt1(spread.B)} mm`) : null) : null,
     s.hint ? h('p', { class: 'hint', role: 'note' }, messageFor(s.hint)) : null,
+    small ? h('p', { class: 'hint', role: 'note', 'data-hint': 'small-photo' },
+      'La dernière photo est de petite taille. Utilisez l’appareil photo ou le fichier d’origine, pas une image reçue par messagerie.') : null,
     // OpenCV.js is still downloading or compiling in the worker: a photo taken now waits for it.
     s.engine === 'loading' && !busy ? h('p', { class: 'engine', role: 'status', 'data-engine': 'loading' },
       h('span', { class: 'spinner', 'aria-hidden': 'true' }),
@@ -102,7 +113,7 @@ export function resultView(s: State, a: Actions): HTMLElement {
   const rect = s.last?.steps.rectified;
   if (rect) {
     const ctx = paintImage(control, rect);
-    if (ctx) strokePolygon(ctx, m.contourMm, control.width / (rect.width / 10), '#e0115f', 2);
+    if (ctx) strokePolygon(ctx, m.contourMm, control.width / (rect.width / PX_PER_MM), '#e0115f', 2);
   }
   const rotation = rotationWarningDeg(m);
   const spreadLine = m.quality.nShots > 1
@@ -170,7 +181,7 @@ export function stepsView(s: State, a: Actions): HTMLElement {
     paintImage(mask, maskImage(steps.mask.data, steps.mask.width, steps.mask.height));
     const contour = canvasOf('Contour mesuré sur l’image redressée');
     const cctx = paintImage(contour, steps.rectified);
-    if (cctx) strokePolygon(cctx, last.result.contourMm, contour.width / (steps.rectified.width / 10), '#e0115f', 2);
+    if (cctx) strokePolygon(cctx, last.result.contourMm, contour.width / (steps.rectified.width / PX_PER_MM), '#e0115f', 2);
     root.append(
       fig('1', 'Photo d’origine, marqueurs de la feuille placés avec la matrice calculée', original),
       fig('2', 'Image redressée (10 px par mm)', rectified),
@@ -242,7 +253,10 @@ export function frameView(s: State, a: Actions): FrameView {
     h('p', { class: 'legend tiny' }, 'Rouge : contour mesuré. Blanc : logement du verre. Gris : bord extérieur de la monture.'),
     gap,
     busy,
-    h('div', { class: 'stack' }, stl, json, btn('Retour', a.goHome, 'link')));
+    h('div', { class: 'stack' }, stl, json,
+      btn('Contour gauche (SVG 1:1)', () => a.exportSvgOf('L'), 'secondary'),
+      btn('Contour droit (SVG 1:1)', () => a.exportSvgOf('R'), 'secondary'),
+      btn('Retour', a.goHome, 'link')));
   return {
     el, preview,
     showFrame(f) {

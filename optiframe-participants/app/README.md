@@ -16,8 +16,12 @@ npm run dev       # http://localhost:5173 (camera needs HTTPS or localhost)
 npm run typecheck   # tsc --noEmit
 npm test            # Vitest, node environment; a test that needs the DOM starts with // @vitest-environment jsdom
 npm run build       # writes dist/ (base './', so it works from any sub-path)
+npm run size        # after a build: initial JS (raw, gzip) and files over 0.3 MB; fails over 250 kB gzip
 npm run preview     # serve dist/ locally
 ```
+
+Timings: the "Pas à pas" screen lists the duration of every stage of the last photo (ms, on the device in hand).
+`tests/perf/budget.test.ts` is a Node regression guard (under 3000 ms after OpenCV has loaded), not a phone figure.
 
 `src/test/setup.ts` defines a minimal `ImageData` (Node and jsdom have none) for every test.
 
@@ -31,7 +35,7 @@ npm run preview     # serve dist/ locally
 
 ## Offline (service worker)
 
-`sw.js` caches the page and its assets at install, serves `vendor/` and `models/` cache-first, everything else network-first with cache fallback. Bump `VERSION` in `sw.js` when cached files change in a way the network-first rule would not pick up; old caches are deleted on activate. Open the app with `?nosw=1` to unregister the worker and clear its caches (use it if a phone keeps a stale version). Offline reload on a real phone: TO MEASURE.
+`sw.js` caches the page and its assets at install, precaches `collect.html` and `eval.html` with their assets, serves `vendor/` cache-first, everything else (including `models/`, so a retrained model is picked up) network-first with cache fallback. Bump `VERSION` in `sw.js` when cached files change in a way the network-first rule would not pick up; old caches are deleted on activate. Open the app with `?nosw=1` to unregister the worker and clear its caches (use it if a phone keeps a stale version). Offline reload on a real phone: TO MEASURE.
 
 ## Deploy (GitHub Pages)
 

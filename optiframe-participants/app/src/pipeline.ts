@@ -19,7 +19,7 @@
 import { OptiError, type BoardSpec, type Eye, type LensMeasurement, type Photo } from './contracts';
 import type { Bias } from './measure/correction';
 import { fuseShots } from './quality';
-import { now, type Timings } from './timing';
+import type { Timings } from './timing';
 import type { CheckRequest, CheckResponse, DebugSteps, EngineState, Step, WireOut, WorkerRequest, WorkerResponse } from './worker';
 
 export type { DebugSteps, EngineState, Step } from './worker';
@@ -37,6 +37,8 @@ export type Runner = (req: WorkerRequest, onStep: (s: Step) => void) => Promise<
 export function toOptiError(e: unknown): OptiError {
   return e instanceof OptiError ? e : new OptiError('LOAD_FAILED');
 }
+
+const now = (): number => performance.now();
 
 let assets: Promise<Assets> | undefined;
 let runner: Runner | undefined;

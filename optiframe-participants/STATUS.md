@@ -29,7 +29,7 @@ La suite JS charge OpenCV.js : compter 1 min 30 seule, plus de 6 min si autre ch
 
 ## 3. Ce qui est fait
 
-Dernier contrôle complet (cette nuit, lancé seul) : typecheck sans erreur, **306 tests JS sur 306**, build correct, tests Python 28 (rig) + 14 (training/data) + 10 (training/model) + 22 (tools).
+Dernier contrôle complet (cette nuit, lancé seul) : typecheck sans erreur, **321 tests JS sur 321**, build correct, tests Python 28 (rig) + 14 (training/data) + 10 (training/model) + 22 (tools).
 
 | Partie | Où | État |
 |---|---|---|
@@ -48,22 +48,25 @@ Dernier contrôle complet (cette nuit, lancé seul) : typecheck sans erreur, **3
 | Outils de données et entraînement | `training/data/`, `training/model/` | code prêt, **aucun modèle entraîné** |
 | Modèle dans le navigateur | `app/src/vision/segmentModel.ts` | code prêt, inactif tant que `app/public/models/lens_seg.onnx` n'existe pas |
 
-## 4. En cours en ce moment (ne pas toucher)
+## 4. Dernière passe (terminée)
 
-Un workflow d'agents tourne sur le poste principal de l'équipe et modifie des fichiers. **Pour éviter les conflits, ne pas éditer ces zones avant qu'il ait fini et poussé :**
+Le workflow d'agents est terminé : plus rien ne tourne, toutes les zones sont libres. Tout est commité sur la branche `optiframe-app`.
 
-| Étape | Fichiers touchés | État |
-|---|---|---|
-| Passe performance (chargement différé d'OpenCV et du runtime ONNX, temps par étape, budget de taille) | `app/src/**`, `app/public/sw.js`, `app/package.json`, `.github/workflows/deploy.yml` | en cours |
-| Documents pour le jury | `README.md`, `docs/DISPOSITIF_CAPTURE.md`, `PAS_A_PAS.md`, `DONNEES_ET_IA.md`, `LICENCES_ET_OUTILS_IA.md` | à venir |
-| Documents internes | `docs/ARCHITECTURE.md`, `TEST_PLAN.md`, `RUBRIC_CHECKLIST.md`, `RISKS.md`, `CLAUDE.md` | à venir |
-| Audit final | lecture seule | à venir |
-
-Mesures avant optimisation (Node sur PC, pas un téléphone) : JS initial 43 ko (19 ko gzip) ; OpenCV.js 13,3 Mo ; runtime ONNX 14,2 Mo ; redressement 0,5 s, segmentation 0,3 s, monture 0,5 s.
+- **Performance** : OpenCV.js (13,3 Mo) se charge en arrière-plan dès l'accueil, dans le worker ; le runtime ONNX (14,2 Mo) n'est téléchargé que si un modèle existe ; JS initial 45 ko (21 ko gzip) ; les temps par étape s'affichent sur l'écran « Pas à pas » ; `npm run size` vérifie le budget ; le déploiement est bloqué si les tests échouent. Temps mesurés sous Node sur PC, pas sur téléphone.
+- **Documents** : `README.md` et `docs/` (dispositif, pas à pas, données et IA, licences, architecture, plan de test, grille, risques) sont écrits, avec des `À COMPLÉTER` partout où il faut une mesure réelle.
+- **Audit final** : sept défauts relevés, tous corrigés et couverts par des tests (321 tests JS, 16 tests `training/data`) :
+  1. `training/data/autolabel.py` applique `printScale` comme l'app, n'accepte plus les photos de validation comme groupes d'entraînement et liste les `.heic` dans `rejected.csv`.
+  2. Annuler la prise de photo n'affiche plus d'erreur.
+  3. « Caméra refusée » ne peut pas se produire avec l'appareil photo natif : noté dans `docs/RUBRIC_CHECKLIST.md` ; « Importer une photo » reste le repli.
+  4. L'écran monture propose « Contour gauche / droit (SVG 1:1) ».
+  5. L'écran de capture dit « Face bombée vers le haut, le haut du verre vers HAUT ».
+  6. Une photo de moins de 1600 px de côté (seuil provisoire) affiche un avertissement « image reçue par messagerie ».
+  7. Le jeu affiché est maintenant calculé sur les logements générés (plus une simple copie du paramètre).
+- **Cinq défauts mineurs**, corrigés aussi : `collect.html` et `eval.html` fonctionnent hors ligne après une visite ; un modèle réentraîné est repris sans vider le cache ; le `LISEZMOI.txt` des ZIP prévient pour le biais ; ligne périmée de `docs/COLLECTE_DONNEES.md` corrigée.
 
 ## 5. Ce que tu peux faire tout de suite, sans conflit
 
-Par ordre de points en jeu. Rien de ceci ne demande de modifier le code de l'app.
+Par ordre de points en jeu. Les tâches 1 à 6 ne demandent pas de modifier le code.
 
 | # | Tâche | Comment | Pourquoi |
 |---|---|---|---|
@@ -82,9 +85,7 @@ Une fois les photos et le CSV prêts : ouvrir `eval.html`, y déposer les photos
 - **Précision réelle inconnue.** Le « 0,05 mm » vient d'images synthétiques nettes et sans reflet. La cible de SN-SF est ±0,5 mm sur A, B et le pont ([`docs/MENTOR_NOTES.md`](docs/MENTOR_NOTES.md)).
 - **Verre transparent sans rétro-éclairage** : c'est le cas difficile du segmenteur sans IA. Poser la feuille sur un écran blanc (`lightbox.html`) change tout.
 - **Seuil de netteté** (`MIN_SHARPNESS`) calé sur du synthétique : à régler sur de vraies photos si l'app refuse des photos nettes.
-- **iPhone** : si on annule le sélecteur de photo, l'app peut rester en attente. À vérifier.
-- **Noms de conditions** : la page de collecte écrit `lampL`, `lampT`, `lampR`, `colour` ; `training/data/autolabel.py` attend `lamp1..3`, `color`. À aligner avant l'entraînement.
-- **La page de collecte n'est pas mise en cache hors ligne.**
+- **iPhone** : si Safari n'envoie pas l'événement d'annulation du sélecteur de photo, rien ne s'affiche et le bouton reste utilisable ; à confirmer sur un vrai iPhone.
 - **Le pont** est réglé à la main (18 mm par défaut), pas mesuré.
 - Détail de tout le reste : [`docs/HANDOFF_AUDIT.md`](docs/HANDOFF_AUDIT.md) (écrit avant la vague 2, donc en retard sur les écrans et les outils).
 

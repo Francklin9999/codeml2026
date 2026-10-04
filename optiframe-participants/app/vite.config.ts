@@ -1,7 +1,7 @@
 import { readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defaultClientConditions } from 'vite';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 // Every top-level page is an entry: index.html (the app), eval.html (brief 14), collect.html (brief 17).
 // lightbox.html lives in public/ and is copied as is.
@@ -18,7 +18,12 @@ export default defineConfig({
   worker: { format: 'es' },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
     setupFiles: ['src/test/setup.ts'],
+    // Two groups: the timing budget (tests/perf) runs alone, after everything else, so that the other test files
+    // running in parallel do not slow it down and turn a regression guard into a coin toss.
+    projects: [
+      { extends: true, test: { name: 'unit', include: ['src/**/*.test.ts', 'tests/**/*.test.ts'], exclude: [...configDefaults.exclude, 'tests/perf/**'], sequence: { groupOrder: 0 } } },
+      { extends: true, test: { name: 'perf', include: ['tests/perf/**/*.test.ts'], fileParallelism: false, sequence: { groupOrder: 1 } } },
+    ],
   },
 });

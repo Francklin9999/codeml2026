@@ -38,15 +38,15 @@ Three consequences:
 
 | Typical failure **[estimate]** | Points at stake | Our answer | Spec |
 |---|---|---|---|
-| The app does not open or cannot use the camera on the jury's iPhone | up to 65 | Online in HTTPS from the first hour; tested on a real iPhone and a real Android after every merge; file import as fallback | [`WEBAPP_SPEC.md`](WEBAPP_SPEC.md), [`DEPLOYMENT.md`](DEPLOYMENT.md) |
+| The app does not open or cannot use the camera on the jury's iPhone | up to 65 | Online in HTTPS from the first hour; tested on a real iPhone and a real Android after every merge; file import as fallback | [`WEBAPP_SPEC.md`](../agents/03_capture.md), [`DEPLOYMENT.md`](../agents/01_app-scaffold-deploy.md) |
 | Wrong scale: the printed reference was scaled by the printer | 10 to 30 | A ruler printed on the reference sheet, checked with the calliper; the app reads the true size | [`DISPOSITIF_CAPTURE.md`](DISPOSITIF_CAPTURE.md) |
-| A and B measured along a different axis than the jury's calliper | 5 to 15 | Explicit boxing definition, a guide line on the rig, a warning when the lens looks rotated | [`MEASUREMENT_SPEC.md`](MEASUREMENT_SPEC.md) |
-| Perspective and parallax: the lens edge is a few mm above the reference plane | 3 to 8 | Camera held far enough, correction of the known bias, calibration on our own lenses | [`MEASUREMENT_SPEC.md`](MEASUREMENT_SPEC.md) |
+| A and B measured along a different axis than the jury's calliper | 5 to 15 | Explicit boxing definition, a guide line on the rig, a warning when the lens looks rotated | [`MEASUREMENT_SPEC.md`](../agents/06_measure.md) |
+| Perspective and parallax: the lens edge is a few mm above the reference plane | 3 to 8 | Camera held far enough, correction of the known bias, calibration on our own lenses | [`MEASUREMENT_SPEC.md`](../agents/06_measure.md) |
 | The transparent lens is not segmented at all | up to 30 | A rig that makes the edge visible, so that segmentation is easy before any AI | [`DISPOSITIF_CAPTURE.md`](DISPOSITIF_CAPTURE.md) |
-| One bad photo ruins one of only two measurements | 5 to 15 | Quality gates that refuse the photo with a clear sentence; several shots fused | [`MEASUREMENT_SPEC.md`](MEASUREMENT_SPEC.md) |
-| STL with holes or self-intersections | up to 10 | Frame built from 2D offsets extruded as solids, checked automatically and in a slicer | [`FRAME_SPEC.md`](FRAME_SPEC.md) |
+| One bad photo ruins one of only two measurements | 5 to 15 | Quality gates that refuse the photo with a clear sentence; several shots fused | [`MEASUREMENT_SPEC.md`](../agents/07_quality-fusion.md) |
+| STL with holes or self-intersections | up to 10 | Frame built from 2D offsets extruded as solids, checked automatically and in a slicer | [`FRAME_SPEC.md`](../agents/08_frame-generator.md) |
 | "We used a pre-trained model" with no data story and no metrics | up to 15 | A dataset built without manual labelling, a model we trained, metrics on lenses it never saw, a licence table | [`DONNEES_ET_IA.md`](DONNEES_ET_IA.md) |
-| SVG not at true scale once printed | up to 5 | Dimensions in mm, a printed scale bar, a real print test | [`FRAME_SPEC.md`](FRAME_SPEC.md) |
+| SVG not at true scale once printed | up to 5 | Dimensions in mm, a printed scale bar, a real print test | [`FRAME_SPEC.md`](../agents/08_frame-generator.md) |
 | A demo that improvises and hides its limits | up to 10 | A rehearsed script, a backup video, limits stated before the jury finds them | [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) |
 
 ## 4. Score projection

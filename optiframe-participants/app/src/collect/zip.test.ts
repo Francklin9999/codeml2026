@@ -106,7 +106,8 @@ describe('buildExportParts', () => {
     expect(z.every((x) => x.crcOk && !x.name.includes('\\'))).toBe(true);
     expect(sha(z.find((x) => x.name === 'photos/L01_p_1.jpg')!.data)).toBe(sha(files.get('L01_p_1.jpg')!));
     const readme = new TextDecoder().decode(z.find((x) => x.name === 'LISEZMOI.txt')!.data).trim().split('\n');
-    expect(readme).toHaveLength(5);
+    expect(readme).toHaveLength(6);
+    expect(readme.join(' ')).toContain('bias.json identité');
     const manifest = new TextDecoder().decode(z.find((x) => x.name === 'manifest.csv')!.data);
     expect(manifest.split('\n')[0]).toBe(MANIFEST_COLUMNS.join(','));
   });

@@ -35,7 +35,7 @@ for (const tag of html.match(/<(?:script|link)\b[^>]*>/g) ?? []) {
 // Static import closure. Dynamic imports are `import("./x.js")`: the regular expression needs `import` or `from` directly
 // followed by the quoted path, which a call never has.
 const STATIC_IMPORT = /(?:\bimport|\bfrom)\s*["'](\.{1,2}\/[^"']+\.js)["']/g;
-const DYNAMIC_IMPORT = /\bimport\(\s*["'](\.{1,2}\/[^"']+\.js)["']/g;
+const DYNAMIC_IMPORT = /\bimport\(\s*["'`](\.{1,2}\/[^"'`]+\.js)["'`]/g; // the bundler writes these with backticks
 const initial = new Map(); // path relative to dist -> Buffer
 const lazy = new Set();
 const todo = [...entries];

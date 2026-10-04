@@ -340,3 +340,49 @@ describe('layout at 360 px (reasoned from the CSS: jsdom computes no layout)', (
     for (const m of css.matchAll(/(?<![a-z-])width: (\d+)px/g)) expect(Number(m[1])).toBeLessThanOrEqual(360);
   });
 });
+
+describe('fixes from the final audit', () => {
+  it('closing the camera without a photo shows no error and leaves the capture screen usable', async () => {
+    const app = start('?demo=1', { capture: async () => { throw new OptiError('LOAD_FAILED', 'cancelled'); } });
+    q('[data-eye="L"]')!.click();
+    click('Prendre la photo');
+    await new Promise((r) => setTimeout(r, 20));
+    expect(q('.banner')).toBeNull();
+    expect(screen()).toBe('capture');
+    expect(app.state.busy).toBeNull();
+    expect(button('Prendre la photo')!.disabled).toBe(false);
+  });
+
+  it('the capture screen says which face is up and where the top goes', () => {
+    start('?demo=1');
+    q('[data-eye="R"]')!.click();
+    expect(root.textContent).toContain('Face bombée vers le haut');
+    expect(root.textContent).toContain('« HAUT »');
+  });
+
+  it('a small photo (resized by a messaging app) gets a hint, a full-size one does not', async () => {
+    const app = start('?demo=1');
+    q('[data-eye="L"]')!.click();
+    click('Prendre la photo');
+    await vi.waitFor(() => expect(app.state.shots).toHaveLength(1));
+    const setSize = (width: number) => { Object.defineProperty(app.state.last!.photo, 'image', { value: { width, height: 600 }, configurable: true }); app.render(); };
+    expect(q('[data-hint="small-photo"]')).toBeNull(); // demo placeholder
+    setSize(1280);
+    expect(q('[data-hint="small-photo"]')).toBeTruthy();
+    setSize(4032);
+    expect(q('[data-hint="small-photo"]')).toBeNull();
+  });
+
+  it('the frame screen exports the outline of each validated lens', async () => {
+    const app = start('?demo=1');
+    app.state.lenses = { L: demoMeasurement('L', 0), R: demoMeasurement('R', 0) };
+    app.render();
+    click('Créer la monture');
+    await waitScreen('frame');
+    click('Contour gauche (SVG 1:1)');
+    expect(saved.at(-1)!.name).toBe('contour-gauche.svg');
+    click('Contour droit (SVG 1:1)');
+    expect(saved.at(-1)!.name).toBe('contour-droit.svg');
+    expect(String(saved.at(-1)!.data)).toContain('<svg');
+  }, 60_000);
+});

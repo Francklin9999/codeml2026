@@ -1,9 +1,8 @@
 import { DEFAULT_FRAME, OptiError, type ErrorCode, type Eye, type FrameParams, type FrameResult, type LensMeasurement, type Photo } from '../contracts';
-import { capturePhoto, pickFile } from '../capture';
+import { capturePhoto, isCancelled, pickFile } from '../capture';
 import { FILE_NAMES, contourToSvg, measurementToJson, meshToStl, saveBlob } from '../export';
 import { rotationWarningDeg } from '../measure';
 import { STEP_LABELS, finishLens, loadAssets, measureOneDebug, setEngineListener, setProgressListener, toOptiError, warmUp, type DebugSteps, type EngineState, type Step, type Timings } from '../pipeline';
-import { now } from '../timing';
 import { version } from '../../package.json';
 import { demoError, demoMeasurement, demoPhoto, demoSteps, failWith } from './demo';
 import { h } from './dom';
@@ -30,6 +29,8 @@ export interface Deps {
   /** Starts loading the measuring tool (OpenCV.js, in the worker) in the background; cb gets its state, at once and on every change. */
   warm(cb: (s: EngineState) => void): void;
 }
+
+const now = (): number => performance.now();
 
 function browserStorage(): Storage | null {
   try { return sessionStorage; } catch { return null; }
@@ -162,6 +163,7 @@ export function startApp(root: HTMLElement, search: string, override: Partial<De
       if (state.shots.length >= SHOTS_PER_LENS) finishShots();
       else refresh();
     } catch (e) {
+      if (isCancelled(e)) { state.busy = null; refresh(); return; } // the user closed the camera: nothing to say
       fail(e);
     }
   }
@@ -232,6 +234,11 @@ export function startApp(root: HTMLElement, search: string, override: Partial<De
       if (!m) throw new OptiError('NO_LENS');
       return [contourToSvg(m), m.eye === 'L' ? FILE_NAMES.svgLeft : FILE_NAMES.svgRight, 'image/svg+xml'];
     }),
+    exportSvgOf: (eye) => download(() => {
+      const m = state.lenses[eye];
+      if (!m) throw new OptiError('NO_LENS');
+      return [contourToSvg(m), eye === 'L' ? FILE_NAMES.svgLeft : FILE_NAMES.svgRight, 'image/svg+xml'];
+    })(),
     retake() { state.shots = []; state.fused = null; state.hint = null; state.error = null; go('capture'); },
     validate() {
       const m = state.fused;

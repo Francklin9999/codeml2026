@@ -1,10 +1,14 @@
 // Service worker: offline after the first load.
 // Bump VERSION on every release that changes cached files; old caches are deleted on activate.
-const VERSION = 'v2';
+const VERSION = 'v3';
 const CACHE = 'optiframe-' + VERSION;
 
-// Big, rarely-changing files: serve from cache first.
-const isHeavy = (url) => /\/(vendor|models)\//.test(url.pathname);
+// Big files that only change with a release: serve from cache first.
+const isVendor = (url) => /\/vendor\//.test(url.pathname);
+// The model is retrained and redeployed under the same name: network first (the browser revalidates it), cache when offline.
+const isModel = (url) => /\/models\//.test(url.pathname);
+// Pages whose assets are fetched at install, so each of them works offline after one visit of any page.
+const PAGES = ['./', './collect.html', './eval.html'];
 
 // Needed by every measurement or frame: fetched at install so the app works offline after the first visit.
 // (ort and the model are optional: they are cached on first use by the rule below.)
@@ -18,13 +22,17 @@ self.addEventListener('install', (event) => {
       try {
         // Cache the shell and the hashed assets it references, so a reload works offline
         // even though the page that registered us loaded them before we took control.
-        const page = new URL('./', self.location);
-        const res = await fetch(page, { cache: 'reload' });
-        const html = await res.clone().text();
-        await cache.put(page, res);
-        const refs = [...html.matchAll(/(?:src|href)="(\.\/[^"]+)"/g)].map((m) => new URL(m[1], page).href);
-        await Promise.all(refs.map((u) => cache.add(u).catch(() => {})));
-        await Promise.all(PRECACHE.map((u) => cache.add(new URL(u, page)).catch(() => {})));
+        const base = new URL('./', self.location);
+        await Promise.all(PAGES.map(async (p) => {
+          const page = new URL(p, base);
+          const res = await fetch(page, { cache: 'reload' });
+          if (res.status !== 200) return; // a page missing from this build is not an error
+          const html = await res.clone().text();
+          await cache.put(page, res);
+          const refs = [...html.matchAll(/(?:src|href)="(\.\/[^"]+)"/g)].map((m) => new URL(m[1], page).href);
+          await Promise.all(refs.map((u) => cache.add(u).catch(() => {})));
+        }));
+        await Promise.all(PRECACHE.map((u) => cache.add(new URL(u, base)).catch(() => {})));
       } catch {
         // Offline at install time: runtime caching below still fills the cache.
       }
@@ -47,7 +55,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   // The model probe is a HEAD request. Network first, so a model deployed later is seen; offline, the cached file answers.
-  if (req.method === 'HEAD' && isHeavy(url)) {
+  if (req.method === 'HEAD' && (isVendor(url) || isModel(url))) {
     event.respondWith(
       fetch(req).catch(async () => {
         const hit = await caches.match(url.href);
@@ -58,7 +66,7 @@ self.addEventListener('fetch', (event) => {
   }
   if (req.method !== 'GET') return;
 
-  if (isHeavy(url)) {
+  if (isVendor(url)) {
     event.respondWith(
       caches.match(req).then(
         (hit) =>

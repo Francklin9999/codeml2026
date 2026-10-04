@@ -77,3 +77,31 @@ def test_group_without_easy_shot_is_rejected(tmp_path):
     build_group(photos, conds=("lamp",))
     res = autolabel.run(photos, make_spec(), tmp_path / "out")
     assert res["accepted"] == 0 and res["groups_rejected"] == 1
+
+
+def test_print_scale_is_applied_like_the_app(tmp_path):
+    """A sheet declared at 97 % has its markers closer together: the same photo then shows a larger lens in mm."""
+    photos = tmp_path / "photos"
+    photos.mkdir()
+    build_group(photos, conds=("easy",))
+    areas = []
+    for scale in (1.0, 0.97):
+        out = tmp_path / f"out{scale}"
+        spec = dict(make_spec(), printScale=scale)
+        assert autolabel.run(photos, spec, out)["accepted"] == 1
+        m = cv2.imread(str(out / "masks" / "L01_1_easy.png"), cv2.IMREAD_GRAYSCALE)
+        areas.append((m > 0).sum())
+    assert abs(areas[1] / areas[0] - 0.97**2) < 0.01, areas
+
+
+def test_validation_and_heic_files_are_listed_not_grouped(tmp_path):
+    photos, out = tmp_path / "photos", tmp_path / "out"
+    photos.mkdir()
+    build_group(photos)
+    (photos / "L01_Pixel-7_2.jpg").write_bytes((photos / "L01_1_easy.jpg").read_bytes())   # validation name
+    (photos / "L01_1_lamp.heic").write_bytes(b"x")
+    res = autolabel.run(photos, make_spec(), out)
+    assert res["accepted"] == 3 and res["groups_rejected"] == 0
+    reasons = {r[0]: r[2] for r in res["rejected"]}
+    assert "name does not match" in reasons["L01_Pixel-7_2.jpg"]
+    assert "not readable" in reasons["L01_1_lamp.heic"]

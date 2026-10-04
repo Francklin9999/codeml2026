@@ -12,10 +12,10 @@ The brief suggests five roles. With four people, the team lead also owns the pre
 
 | Code | Role | Owns | Specs to read |
 |---|---|---|---|
-| **L** | Lead, integration, presentation | Repo, deployment, app shell and screens, README, demo | [`WEBAPP_SPEC.md`](WEBAPP_SPEC.md), [`DEPLOYMENT.md`](DEPLOYMENT.md), [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) |
-| **V** | Capture and vision | Rig, reference sheet, rectification, segmentation without AI, measurement | [`DISPOSITIF_CAPTURE.md`](DISPOSITIF_CAPTURE.md), [`MEASUREMENT_SPEC.md`](MEASUREMENT_SPEC.md) |
+| **L** | Lead, integration, presentation | Repo, deployment, app shell and screens, README, demo | [`WEBAPP_SPEC.md`](../agents/10_ui-flow.md), [`DEPLOYMENT.md`](../agents/01_app-scaffold-deploy.md), [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) |
+| **V** | Capture and vision | Rig, reference sheet, rectification, segmentation without AI, measurement | [`DISPOSITIF_CAPTURE.md`](DISPOSITIF_CAPTURE.md), [`MEASUREMENT_SPEC.md`](../agents/04_rectify.md) |
 | **D** | Data and AI | Calliper ground truth, dataset, training, model export, metrics | [`DONNEES_ET_IA.md`](DONNEES_ET_IA.md), [`TEST_PLAN.md`](TEST_PLAN.md) |
-| **F** | 3D and interface | Frame generator, STL, 3D preview, SVG export, overlay | [`FRAME_SPEC.md`](FRAME_SPEC.md) |
+| **F** | 3D and interface | Frame generator, STL, 3D preview, SVG export, overlay | [`FRAME_SPEC.md`](../agents/08_frame-generator.md) |
 
 - **Three people:** F also takes the app screens; L takes D's ground-truth and validation work; the trained model is time-boxed harder (see gate G4).
 - **Five people:** split L into integration and presentation, as in the brief.

@@ -350,3 +350,14 @@ describe('repeated calls do not leak (three shots per lens)', () => {
     expect(log.closed).toBe(log.bitmaps);
   });
 });
+
+describe('isCancelled', () => {
+  it('is true only for the cancel rejection of the file picker', async () => {
+    const { isCancelled } = await import('./index');
+    const { OptiError } = await import('../contracts');
+    expect(isCancelled(new OptiError('LOAD_FAILED', 'cancelled'))).toBe(true);
+    expect(isCancelled(new OptiError('LOAD_FAILED', 'cannot decode image'))).toBe(false);
+    expect(isCancelled(new OptiError('CAMERA_DENIED'))).toBe(false);
+    expect(isCancelled(new Error('cancelled'))).toBe(false);
+  });
+});

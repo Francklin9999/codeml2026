@@ -11,6 +11,7 @@ export const README_LINES = [
   "own_lenses.csv : les lectures au pied à coulisse par verre ; results.csv : ce que l'app a mesuré sur les photos de validation (une ligne par photo).",
   "Sur l'ordinateur : décompresser les ZIP dans training/_local/raw/ (photos d'entraînement : training/data/autolabel.py).",
   "Validation : ouvrir eval.html avec les photos de validation et own_lenses.csv, ou lancer tools/accuracy_report.py results.csv own_lenses.csv.",
+  "Attention : results.csv a été mesuré avec le bias.json en ligne au moment de la photo. Si ce fichier n'est plus l'identité (0, 1, 0, 1), ne pas ajuster un nouveau biais sur ce results.csv : refaire les mesures avec eval.html et le bias.json identité.",
   "Aucune donnée personnelle n'est écrite dans les fichiers ; le téléphone garde les photos tant que « Vider les photos exportées » n'a pas été utilisé.",
 ];
 

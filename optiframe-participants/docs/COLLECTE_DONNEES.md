@@ -101,7 +101,7 @@ tools/.venv/Scripts/python tools/accuracy_report.py training/_local/raw/validati
 python training/data/autolabel.py training/_local/raw/entrainement/photos --spec app/public/board_spec.json --out training/_local/real --qc 20
 ```
 
-Le nom exact des ZIP est affiché par la page au moment de l'export ; adapte les chemins. Remarque : `autolabel.py` attend `lamp1..3` et `color` alors que la page écrit `lampL`, `lampT`, `lampR`, `colour` : voir le rapport de la brique 17.
+Le nom exact des ZIP est affiché par la page au moment de l'export ; adapte les chemins. `autolabel.py` accepte n'importe quel nom de condition, pourvu que la photo facile s'appelle `easy` ; les `.heic` et les noms non reconnus sont listés dans `rejected.csv`.
 
 ## 7. Pour que l'app serve depuis ton téléphone
 

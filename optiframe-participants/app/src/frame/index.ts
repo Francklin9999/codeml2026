@@ -136,18 +136,31 @@ async function build(left: LensMeasurement, right: LensMeasurement, p: FramePara
       const pts = down(poly);
       return Math.sign(signedArea(pts)) === Math.sign(signedArea(input)) ? pts : pts.reverse();
     };
+    const seatR = seatOutline(seats[0], right.contourMm);
+    const seatL = seatOutline(seats[1], left.contourMm);
+    // Gap actually produced by the offset: half the growth of the boxing extents, averaged over both axes and both lenses.
+    const growth = (seat: Pt[], input: readonly Pt[]) => {
+      const [sw, sh] = extents(seat), [cw, ch] = extents(input);
+      return (sw - cw + sh - ch) / 4;
+    };
     return {
       positions,
       indices,
-      seatR: seatOutline(seats[0], right.contourMm),
-      seatL: seatOutline(seats[1], left.contourMm),
-      gapMm: p.clearanceMm,
+      seatR,
+      seatL,
+      gapMm: (growth(seatR, right.contourMm) + growth(seatL, left.contourMm)) / 2,
     };
   } finally {
     for (let i = owned.length - 1; i >= 0; i--) {
       try { owned[i].delete(); } catch { /* already freed */ }
     }
   }
+}
+
+function extents(p: readonly Pt[]): [number, number] {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const [x, y] of p) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  return [x1 - x0, y1 - y0];
 }
 
 /** Frame front for the wearer's `left` and `right` lenses. Never throws anything but OptiError. */

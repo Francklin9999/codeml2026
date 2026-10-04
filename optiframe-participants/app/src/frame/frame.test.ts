@@ -161,7 +161,8 @@ describe('generateFrame', () => {
   it.each(cases)('is watertight, consistent, one body, positive volume: %s', async (_n, rc, lc) => {
     const f = await generateFrame(lens('L', lc), lens('R', rc), params());
     expectSolid(f);
-    expect(f.gapMm).toBe(0.2);
+    expect(f.gapMm).toBeGreaterThan(0.19); // measured on the generated seats, not copied from the parameter
+    expect(f.gapMm).toBeLessThan(0.21);
     expect(f.positions.length / 3).toBeGreaterThan(100);
     // z up from the bed
     let zMin = Infinity, zMax = -Infinity;

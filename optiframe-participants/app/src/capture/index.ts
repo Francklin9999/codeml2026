@@ -72,6 +72,12 @@ async function wrap<T>(f: () => Promise<T>): Promise<T> {
   }
 }
 
+const CANCELLED = 'cancelled';
+/** True when the user closed the camera or the file picker without choosing: not a failure to report. */
+export function isCancelled(e: unknown): boolean {
+  return e instanceof OptiError && e.message === `LOAD_FAILED: ${CANCELLED}`;
+}
+
 function chooseFile(env: CaptureEnv, camera: boolean): Promise<File> {
   return new Promise((resolve, reject) => {
     const input = env.document.createElement('input');
@@ -87,9 +93,9 @@ function chooseFile(env: CaptureEnv, camera: boolean): Promise<File> {
     };
     const onChange = () => {
       const f = input.files?.[0];
-      done(() => (f ? resolve(f) : reject(new OptiError('LOAD_FAILED', 'no file chosen'))));
+      done(() => (f ? resolve(f) : reject(new OptiError('LOAD_FAILED', CANCELLED))));
     };
-    const onCancel = () => done(() => reject(new OptiError('LOAD_FAILED', 'cancelled')));
+    const onCancel = () => done(() => reject(new OptiError('LOAD_FAILED', CANCELLED)));
     input.addEventListener('change', onChange);
     input.addEventListener('cancel', onCancel);
     env.document.body.appendChild(input);
