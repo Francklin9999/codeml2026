@@ -47,7 +47,7 @@ python model_corrige.py           # writes predictions.csv and pareto_front.png
 | `MODEL_LOGIC.md` | What the model does and why, validation, monitoring plan |
 | `model_ensemble.py` | Entry point of the model-selection experiments in `work/codex_model/` |
 | `baseline_model.ipynb` | Organizers' production model and fairness audit |
-| `data/` | `donnees_demandes.csv` (10,000 labelled), `candidats_evaluation.csv` (4,000 to score) |
+| `data/` | Not in the repository. Put the organizers' `donnees_demandes.csv` (10,000 labelled) and `candidats_evaluation.csv` (4,000 to score) here before running |
 | `work/clean95/` | Final seed-ensembled model, validation report, notebook builder |
 | `work/codex_model/` | Candidate models, reports, preview results (`platform_results.csv`) |
 | `work/agent_dgp/` | Analysis of how the synthetic data was generated |

@@ -12,6 +12,8 @@ the code written on the registry — never by her name.
 | Measured results | [`work/RESULTS_SUMMARY.md`](work/RESULTS_SUMMARY.md), every run in [`work/results.md`](work/results.md) |
 | What would need an external resource | [`AMELIORATIONS_EXTERNES.md`](AMELIORATIONS_EXTERNES.md) (Gemini, data collection day, bigger GPU, WhatsApp) |
 
+> The organizers' dataset (`data/`: specimen PDF, page images, synthetic CSV) is not in the repository. Put it back in `data/` before running.
+
 ## Quick start (≈ 5 min, no training needed)
 
 ```bash
