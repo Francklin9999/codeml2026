@@ -68,7 +68,7 @@ Installées par dépendance, hors `requirements.txt` : torchvision 0.29.1 (BSD),
 | Modèle | Source | Licence | Usage |
 |---|---|---|---|
 | Poids `mobilenetv3_small_100.lamb_in1k` | timm (téléchargés par Hugging Face Hub à l'entraînement) | Apache-2.0, déclarée par timm 1.0.30. Poids entraînés par leurs auteurs sur ImageNet-1k : conditions d'ImageNet `À VÉRIFIER` | Initialisation de l'encodeur, affiné ensuite sur notre jeu. |
-| `lens_seg.onnx` (notre modèle) | Entraîné par l'équipe avec `training/model/` | `À COMPLÉTER` | Segmentation du verre en recours. **Non livré à ce jour.** Lien de téléchargement : `À COMPLÉTER`. |
+| `lens_seg.onnx` (notre modèle) | Entraîné par l'équipe avec `training/model/` sur nos images synthétiques, encodeur initialisé avec les poids timm ci-dessus | `À COMPLÉTER` (choix de l'équipe ; dérivé de poids Apache-2.0) | Segmentation du verre en recours. **Livré** : `app/public/models/lens_seg.onnx` (v2, 7,9 Mo, sous la limite de 100 Mo, pas de lien séparé nécessaire). Provenance et empreinte SHA-256 : `app/public/models/README.md`. |
 
 Non utilisés : Segment Anything (cité dans le protocole comme option d'étiquetage hors ligne, sans code), Ultralytics YOLO (AGPL-3.0, écarté).
 

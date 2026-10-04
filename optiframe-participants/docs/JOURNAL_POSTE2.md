@@ -37,6 +37,9 @@
 | 03:33 | Seuil de confiance revérifié sur le modèle final | 14 verres inventés sur 91 fenêtres vides, confiance 0,60 à 0,75 ; 1 238 masques justes à 1 mm près, tous ≥ 0,94. À 0,85 : 0 faux verre, 0 bon masque perdu |
 | 03:37 | **Modèle livré** (`bd19f7c`, poussé sur `main`) : `app/public/models/lens_seg.onnx`, service worker v4, documents à jour | |
 
+| 04:05 → 04:50 | Modèle v2 : 7 époques à partir de v1, avec 8 200 images en plus (table mouchetée, verre monté, fenêtre vide, verre qui dépasse, rétro-éclairage et papier) | IoU de validation 0,9695 sur une validation plus dure (v1 : 0,967) |
+| 04:58 | **v2 comparé à v1 avec le code actuel de l'app**, puis livré | 600 fenêtres : 84 % à 1 mm près (v1 83 %) ; verre monté 57 % (51 %) ; verres qui dépassent mesurés à tort : 0 sur 200 (v1 : 4) ; fenêtres vides : 0 verre inventé ; table mouchetée inchangée (22 %) ; rétro-éclairage 90 % (91 %), un peu moins à 0,5 mm près (75 % contre 79 %). Chrome : fixtures à bord faible toujours mesurées à 0,1 mm près par le modèle |
+
 Ces essais tournent sur un PC : ils ne remplacent pas un vrai iPhone (Safari) ni un vrai téléphone Android de milieu de gamme.
 
 ## Constats
@@ -81,3 +84,7 @@ Banc du modèle v1 sur 600 fenêtres de test : la méthode classique répond `LE
 Garde-fou : un verre qui dépasse vraiment ne doit pas être mesuré tronqué. Le modèle n'a jamais vu de verre à moins de 2 mm du bord, donc `postprocess` refuse tout masque à moins de 1 mm du bord (`BORDER_MARGIN_MM`). Essai sur 200 fenêtres synthétiques où le verre dépasse de 0,5 à 15 mm (nouvelle scène `cut` de `synth_rig.py`) : **196 refusées** (`LENS_OUT_OF_WINDOW` ou `NO_LENS`), 4 mesurées à tort avec le modèle v1. Le modèle v2 apprend sur 1 200 verres coupés dont le masque touche le bord.
 
 Effet sur les 600 fenêtres de test (modèle v1) : 83 % des verres à 1 mm près au lieu de 79 %, sans fausse détection sur les fenêtres vides.
+
+### 6. Table mouchetée : l'affinage du bord de l'app dégrade le masque du modèle
+
+Sur 300 tables mouchetées, le masque du modèle v2 donne 1,1 mm d'erreur à sa propre résolution (`evaluate.py`), mais 1,57 mm après `measureLens`, qui déplace chaque point du contour vers le plus fort gradient à moins de 1 mm. Sur un fond moucheté, ce gradient est souvent un mouchet. Piste : quand le masque vient du modèle et que le fond est texturé, ne déplacer un point que si le gradient trouvé est cohérent avec ses voisins (ou garder le contour du modèle). Non fait : c'est le module de mesure, à valider d'abord sur de vraies photos.

@@ -54,6 +54,7 @@ Conçu pour les cas où la méthode sans IA abandonne, donc ceux où le modèle 
 | `mounted` | Verre encore dans sa monture (opaque, unie ou écaille), pont qui sort de la fenêtre, tenon |
 | `pattern` | Fonds calculés de `synth.py` (écran de couleur, rayures, grille, bruit) |
 | `empty` | Aucun verre : le masque cible est vide, pour que le modèle apprenne à dire « rien ici » |
+| `cut` | Verre qui dépasse de la fenêtre de 0,5 à 15 mm (mal posé) : le masque cible est la partie visible et touche le bord, pour que l'app réponde « Le verre dépasse » au lieu de mesurer un verre tronqué (ajouté pour le modèle v2) |
 
 Sur toutes les scènes, le bord du verre est la difficulté principale : la bande sombre du biseau a une **largeur et une intensité qui varient le long du contour**, peut **disparaître sur des arcs entiers** (bord faible ou interrompu), et peut être recouverte par un **reflet**. S'y ajoutent : intérieur vu à travers une lentille mince (grossissement 0,9 à 1,12), transmission et teinte, reflet de traitement antireflet (vert, violet), traces de doigts, liseré clair dans le biseau, reflets de lampe ou de fenêtre sur la surface, poussières et fibres, bandes de papier et trait de coupe au bord de la fenêtre (fenêtre découpée un peu de travers), puis la chaîne du téléphone : perte de résolution (photo à moins de 10 px/mm), flou de mise au point, flou de bougé, exposition, gamma, bruit de photon et de lecture, compression JPEG. Formes : celles de `synth.py` (superellipse, rectangle arrondi, aviateur, œil de chat), 35 à 65 mm de large, tournées de ±10°.
 
@@ -91,16 +92,15 @@ Pourquoi ce modèle : il est petit, il s'entraîne en peu de temps sur Colab, et
 
 Commandes exactes : `training/model/README.md`. Carnet Colab : `training/model/train_colab.ipynb`.
 
-| Entraînement réalisé (modèle v1) | Valeur |
+| Entraînement réalisé | Valeur |
 |---|---|
 | Date, machine | 2026-10-04, PC Windows, carte NVIDIA RTX 2070 Super (8 Go) ; pas de Colab |
-| Données | 15 959 images synthétiques d'entraînement, **aucune photo réelle** (section 3) ; validation 600 images synthétiques |
-| Déroulé | 1 époque en float32 (5,4 min), puis 18 époques en précision mixte repartant de ce point (`train.py --amp --init`), environ 70 min ; décroissance en cosinus sur les 18 époques |
-| Meilleure IoU de validation | 0,9755 (époque 18) ; 0,916 après la 1re époque |
+| Modèle v1 | 15 959 images synthétiques ; 1 époque en float32 (5,4 min), puis 18 époques en précision mixte repartant de ce point (`train.py --amp --init`, environ 70 min, cosinus) ; meilleure IoU de validation 0,9755 (600 images) |
+| Modèle v2 (**livré**) | Part de v1 et ajoute 8 200 images : 3 000 tables mouchetées, 1 500 verres montés, 1 000 fenêtres vides, 1 200 verres qui dépassent de la fenêtre, 1 500 rétro-éclairage et papier ; 24 159 images en tout, 7 époques (pas de 3 × 10⁻⁴, environ 37 min) ; meilleure IoU de validation 0,9695 sur une validation plus dure (800 images dont 200 tables mouchetées), où v1 obtient 0,967 |
 | Taille de `lens_seg.onnx` | 7,9 Mo (float32) |
-| Écart maximal ONNX / PyTorch | 4,9 × 10⁻⁴ (tolérance 10⁻³) |
-| La copie 8 bits ? | Non livrée : sur une entrée de bruit, son signe ne concorde avec le float32 que sur 73 % des pixels |
-| Dans l'app | `app/public/models/lens_seg.onnx`, exécuté par onnxruntime-web (WebAssembly, un fil) ; vérifié dans Chrome sur l'app construite (section 7.1) |
+| Écart maximal ONNX / PyTorch | 1,3 × 10⁻⁴ (tolérance 10⁻³) |
+| La copie 8 bits ? | Non livrée : sur une entrée de bruit, son signe ne concorde avec le float32 que sur 78 % des pixels |
+| Dans l'app | `app/public/models/lens_seg.onnx`, exécuté par onnxruntime-web (WebAssembly, un fil) ; vérifié dans Chrome sur l'app en ligne (section 7.1) ; 0,2 s par fenêtre sous Node sur le PC |
 
 ## 5. La séparation par verre
 
@@ -123,22 +123,22 @@ Commandes exactes : `training/model/README.md`. Carnet Colab : `training/model/t
 
 Colonnes du fichier `metrics.md` écrit par le script.
 
-### 6.0 En attendant les photos réelles : images synthétiques jamais vues (modèle v1)
+### 6.0 En attendant les photos réelles : images synthétiques jamais vues (modèle v2 livré)
 
-Sortie de `evaluate.py --onnx lens_seg.onnx` (le fichier livré), sur 1 500 fenêtres `synth_rig.py` tirées avec une graine absente de l'entraînement, puis sur 300 fenêtres « table mouchetée » (graine à part). Mesures à la résolution du modèle (384 × 320, 0,21 mm par pixel), **avant** l'affinage du bord au sous-pixel que fait l'app (section 7.1 pour les chiffres de l'app). « vides » compte les images sans verre (91 fenêtres vides) : pour elles, l'IoU vaut 1 si le modèle ne trouve rien, 0 sinon.
+Sortie de `evaluate.py --onnx lens_seg.onnx` (le fichier livré), sur 1 500 fenêtres `synth_rig.py` tirées avec une graine absente de l'entraînement, puis sur 300 fenêtres « table mouchetée » (graine à part). Mesures à la résolution du modèle (384 × 320, 0,21 mm par pixel), **avant** l'affinage du bord au sous-pixel que fait l'app (section 7.1 pour les chiffres de l'app). Pour les fenêtres vides, l'IoU vaut 1 si le modèle ne trouve rien, 0 sinon. Entre parenthèses : le modèle v1.
 
-| scène | n | IoU modèle | F de contour modèle | erreur A modèle (mm) | erreur B modèle (mm) | IoU Otsu | erreur A Otsu (mm) | erreur B Otsu (mm) |
+| scène | n | IoU modèle | F de contour | erreur A (mm) | erreur B (mm) | IoU Otsu | erreur A Otsu (mm) | erreur B Otsu (mm) |
 |---|---|---|---|---|---|---|---|---|
-| toutes | 1 500 | 0,973 | 0,905 | 0,38 | 0,39 | 0,395 | 11,4 | 9,8 |
-| rétro-éclairage | 675 | 0,984 | 0,934 | 0,31 | 0,31 | 0,399 | 9,5 | 7,9 |
-| papier, lumière de la pièce | 387 | 0,978 | 0,873 | 0,40 | 0,45 | 0,426 | 13,4 | 12,5 |
-| fonds variés | 172 | 0,984 | 0,921 | 0,33 | 0,34 | 0,366 | 16,7 | 16,2 |
-| verre teinté | 101 | 0,994 | 0,985 | 0,14 | 0,13 | 0,917 | 1,8 | 1,6 |
-| verre monté | 74 | 0,952 | 0,738 | 1,32 | 1,27 | 0,030 | 18,7 | 9,2 |
-| fenêtre vide | 91 | 0,846 | sans objet | sans objet | sans objet | 0 | sans objet | sans objet |
-| table mouchetée (jeu à part) | 300 | 0,937 | 0,603 | 1,33 | 1,21 | 0,232 | 18,6 | 15,8 |
+| toutes | 1 500 | 0,977 (0,973) | 0,910 | 0,36 (0,38) | 0,37 (0,39) | 0,395 | 11,4 | 9,8 |
+| rétro-éclairage | 675 | 0,983 (0,984) | 0,930 | 0,31 | 0,30 | 0,399 | 9,5 | 7,9 |
+| papier, lumière de la pièce | 387 | 0,978 (0,978) | 0,869 | 0,43 | 0,45 | 0,426 | 13,4 | 12,5 |
+| fonds variés | 172 | 0,983 (0,984) | 0,916 | 0,33 | 0,37 | 0,366 | 16,7 | 16,2 |
+| verre teinté | 101 | 0,994 (0,994) | 0,985 | 0,14 | 0,14 | 0,917 | 1,8 | 1,6 |
+| verre monté | 74 | 0,969 (0,952) | 0,843 | 0,83 (1,32) | 0,87 (1,27) | 0,030 | 18,7 | 9,2 |
+| fenêtre vide | 91 | 0,901 (0,846) | sans objet | sans objet | sans objet | 0 | sans objet | sans objet |
+| table mouchetée (jeu à part) | 300 | 0,943 (0,937) | 0,629 | 1,18 (1,33) | 1,05 (1,21) | 0,232 | 18,6 | 15,8 |
 
-Lecture : le modèle sépare le verre du fond là où un seuillage simple échoue (IoU 0,97 contre 0,40). Points faibles : verre encore monté et table mouchetée (erreur de l'ordre de 1,3 mm), et 14 fenêtres vides sur 91 où le modèle brut voit un verre ; l'app refuse ces 14 grâce au seuil de confiance (section 7.1). Ces chiffres disent ce que le modèle a appris de la simulation ; ils ne disent rien de sa justesse sur un vrai verre.
+Lecture : le modèle sépare le verre du fond là où un seuillage simple échoue (IoU 0,98 contre 0,40). Points faibles : table mouchetée (environ 1,1 mm) et verre monté (environ 0,85 mm) ; le modèle brut voit un verre dans 9 des 91 fenêtres vides, que l'app refuse grâce au seuil de confiance (section 7.1). Ces chiffres disent ce que le modèle a appris de la simulation ; ils ne disent rien de sa justesse sur un vrai verre.
 
 ### 6.1 Modèle (`model`)
 
@@ -199,20 +199,28 @@ Repère : le mentor de SN-SF donne ±0,5 mm (ISO 12870) comme tolérance réelle
 
 Banc `app/bench/seg_bench.test.ts` : il exécute **le code de l'app**, sans bouchon, sur des fenêtres redressées synthétiques dont A et B sont connus exactement : `segmentClassic`, puis le modèle exactement comme `worker.ts` l'enchaîne (onnxruntime-web, WebAssembly), puis `measureLens` avec son affinage du bord au sous-pixel. Résumé par `training/data/bench_report.py`. Un verre compte « à 1 mm près » si |ΔA| et |ΔB| sont tous deux sous 1 mm.
 
-Premier passage, avec un instantané du modèle (époque 4, avant le seuil de confiance), 300 fenêtres de test (les chiffres du modèle final remplaceront ce tableau) :
+Modèle v2 livré, code actuel de l'app (recours au modèle après `NO_LENS` ou `LENS_OUT_OF_WINDOW` de la méthode sans IA, seuil de confiance 0,85, marge de 1 mm), 600 fenêtres de test, 300 tables mouchetées, 200 verres qui dépassent de la fenêtre. Entre parenthèses : le modèle v1 avec le même code.
 
-| Chemin | Verres mesurés | À 1 mm près | Erreur moyenne A, B (mm) | Fenêtre vide prise pour un verre |
-|---|---|---|---|---|
-| Sans IA | 20 % | 17 % | 0,42 | 0 % |
-| Sans IA, modèle en recours | 89 % | 76 % | 0,41 | 47 % (corrigé ensuite par le seuil de confiance) |
-| Rétro-éclairage seul (126 fenêtres) : sans IA | 13 % | 13 % | 0,15 | |
-| Rétro-éclairage seul : modèle en recours | 97 % | 90 % | 0,28 | |
+| Fenêtres | n | Sans IA : verres mesurés | Sans IA : à 1 mm près | Avec le modèle : verres mesurés | Avec le modèle : à 1 mm près | Avec le modèle : erreur moyenne A, B |
+|---|---|---|---|---|---|---|
+| Toutes (test) | 600 | 20 % | 17 % | 96 % | **84 %** (83 %) | 0,36 mm (0,38) |
+| Rétro-éclairage | 255 | 13 % | 12 % | 96 % | **90 %** (91 %) | 0,22 mm (0,22) |
+| Papier, lumière de la pièce | 157 | 13 % | 4 % | 97 % | 74 % (73 %) | 0,56 mm |
+| Fonds variés | 76 | 21 % | 18 % | 99 % | 87 % (84 %) | 0,29 mm |
+| Verre teinté | 37 | 89 % | 89 % | 100 % | 100 % | 0,08 mm |
+| Verre monté | 37 | 38 % | 35 % | 86 % | 57 % (51 %) | 0,98 mm (1,30) |
+| Table mouchetée | 300 | 2 % | 0 % | 95 % | 22 % (23 %) | 1,57 mm |
 
-(Correction : une première version de ce tableau donnait 100 % / 80 % et 100 % / 93 %. Le banc appelait alors le modèle aussi après un refus « verre hors de la fenêtre » ou « reflet », ce que l'app ne faisait pas. Les chiffres ci-dessus suivent exactement la règle de `worker.ts` de ce moment-là.)
+| Cas où il faut refuser | n | Sans IA | Avec le modèle v2 (v1) |
+|---|---|---|---|
+| Fenêtre vide : verre inventé | 38 | 0 | **0** (0) |
+| Verre qui dépasse de 0,5 à 15 mm : mesuré tronqué au lieu d'être refusé | 200 | 0 | **0** (4) |
+
+Lecture : quand la méthode sans IA mesure, elle est très juste (0,14 mm en rétro-éclairage) mais elle refuse les bords faibles ou interrompus ; le modèle rattrape ces refus. Le modèle v2 a été préféré à v1 parce qu'il ne mesure plus aucun verre qui dépasse et fait mieux sur les verres montés ; il perd un peu de finesse en rétro-éclairage (75 % à 0,5 mm près au lieu de 79 %, même erreur moyenne). Sur table mouchetée, l'affinage du bord au sous-pixel de l'app dégrade le masque du modèle (1,57 mm contre 1,1 mm à la résolution du modèle), probablement parce qu'il s'accroche au mouchetis : piste d'amélioration. Fichiers : `training/_local/bench_*/final_v2.csv` (non versionnés), résumé par `bench_report.py`.
 
 Dans Chrome (app construite, aucun bouchon, `app/bench/e2e_browser.mjs`) : les deux photos de test de `rig/make_board.py` à bord très faible (gris 200 à 205 sur 252), que la méthode sans IA refuse (`NO_LENS`), sont mesurées par le modèle : 50,0 × 38,0 mm pour une vérité de 50 × 38, et 48,6 × 36,3 mm pour 48,6 × 36,2. L'écran « Pas à pas » indique « méthode modèle ».
 
-**Seuil de confiance.** Sur les 1 500 fenêtres de test, le modèle brut voit un verre dans 14 des 91 fenêtres vides, avec une confiance moyenne de 0,60 à 0,75 ; les 1 238 masques justes à 1 mm près ont tous une confiance d'au moins 0,94. L'app refuse donc tout masque du modèle dont la confiance moyenne est sous **0,85** (`MIN_MODEL_SCORE` dans `segmentModel.ts`) : plus aucun verre inventé, aucun bon masque perdu, sur ce jeu.
+**Seuil de confiance.** Sur les 1 500 fenêtres de test, le modèle v2 brut voit un verre dans 9 des 91 fenêtres vides, avec une confiance moyenne de 0,57 à 0,67 (v1 : 14 fenêtres, 0,60 à 0,75) ; les 1 250 masques justes à 1 mm près ont tous une confiance d'au moins 0,94. L'app refuse donc tout masque du modèle dont la confiance moyenne est sous **0,85** (`MIN_MODEL_SCORE` dans `segmentModel.ts`) : plus aucun verre inventé, aucun bon masque perdu, sur ce jeu.
 
 ## 8. Où l'IA est utilisée dans l'app, et où elle ne l'est pas
 
@@ -226,7 +234,7 @@ Dans Chrome (app construite, aucun bouchon, `app/bench/e2e_browser.mjs`) : les d
 
 L'écran « Pas à pas » indique pour chaque photo la méthode qui a produit le masque (« classique » ou « modèle »).
 
-**Le modèle v1 est livré (`app/public/models/lens_seg.onnx`, 7,9 Mo), entraîné sur images synthétiques seulement.** Il est appelé quand la méthode sans IA répond `NO_LENS` ou que son masque a un score sous `LOW_MASK_SCORE` (0,3) ; il est lui-même refusé sous une confiance de 0,85 (`MIN_MODEL_SCORE`). Ces deux seuils viennent d'images synthétiques : à régler sur de vraies photos (`À COMPLÉTER`). Le modèle et onnxruntime se téléchargent en arrière-plan dès qu'OpenCV est prêt, pour que la première photo difficile n'attende pas leurs 22 Mo. Pour revenir à une app sans IA : supprimer ce seul fichier.
+**Le modèle v2 est livré (`app/public/models/lens_seg.onnx`, 7,9 Mo), entraîné sur images synthétiques seulement.** Il est appelé quand la méthode sans IA répond `NO_LENS` ou `LENS_OUT_OF_WINDOW`, ou que son masque a un score sous `LOW_MASK_SCORE` (0,3) ; il est lui-même refusé sous une confiance de 0,85 (`MIN_MODEL_SCORE`) ou à moins de 1 mm du bord de la fenêtre (`BORDER_MARGIN_MM`). Si le modèle refuse après un « verre hors de la fenêtre », ce message est gardé. Ces deux seuils viennent d'images synthétiques : à régler sur de vraies photos (`À COMPLÉTER`). Le modèle et onnxruntime se téléchargent en arrière-plan dès qu'OpenCV est prêt, pour que la première photo difficile n'attende pas leurs 22 Mo. Pour revenir à une app sans IA : supprimer ce seul fichier.
 
 Rien ne quitte le téléphone : le modèle tourne dans le navigateur, aucune photo n'est envoyée à un serveur ni à un service d'IA.
 
@@ -241,7 +249,7 @@ Rien ne quitte le téléphone : le modèle tourne dans le navigateur, aucune pho
 ## 10. Limites
 
 - Le modèle livré n'a vu **que des images synthétiques**. Sur ces images, il aide nettement (sections 6.0 et 7.1) ; sur de vraies photos, rien n'est encore prouvé. Si, sur nos verres, il ne fait pas mieux que la méthode sans IA sur les photos difficiles, nous le dirons et nous retirerons le fichier.
-- Verre encore monté et table mouchetée : environ 1,3 mm d'erreur sur synthétique (section 6.0). Une version 2 avec plus d'exemples de ces deux cas est en préparation.
+- Table mouchetée sans rétro-éclairage : environ 1,6 mm d'erreur dans l'app sur synthétique (section 7.1), malgré la version 2 ; verre encore monté : environ 1 mm. Le rétro-éclairage du dispositif reste la condition de mesure recommandée.
 - Les masques automatiques supposent un bord sombre sur la photo rétro-éclairée : un verre très teinté ou à bord très fin peut être rejeté, donc absent du jeu.
 - Les outils de données écrivent les photos réelles et les images synthétiques dans deux dossiers séparés ; les réunir en un seul jeu se fait à la main avant l'entraînement.
 - Les poids de départ ont été entraînés par leurs auteurs sur ImageNet ; les conditions d'utilisation d'ImageNet n'ont pas été vérifiées par nous (`À VÉRIFIER`, voir [`LICENCES_ET_OUTILS_IA.md`](LICENCES_ET_OUTILS_IA.md)).
