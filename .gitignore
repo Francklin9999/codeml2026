@@ -9,6 +9,9 @@ jadco-participants/work/*
 # Confidential challenge data: never commit.
 corroborai-participants/
 
+# IVADO accuracy probes are local experiments; publish the model submission only.
+equialgo-participants/upload_csv_accuracy*/
+
 # Python / Jupyter
 __pycache__/
 *.pyc
