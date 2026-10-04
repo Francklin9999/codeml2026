@@ -51,4 +51,3 @@ python model_corrige.py           # writes predictions.csv and pareto_front.png
 | `work/clean95/` | Final seed-ensembled model, validation report, notebook builder |
 | `work/codex_model/` | Candidate models, reports, preview results (`platform_results.csv`) |
 | `work/agent_dgp/` | Analysis of how the synthetic data was generated |
-| `upload_final/`, `upload_model*/`, `upload_clean95/` | Files submitted to the preview, written by the scripts above |

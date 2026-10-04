@@ -20,7 +20,7 @@ reference profiles) and average. The top 40% of the cohort by that score is gran
 | Features used by the fitted model | cote R, hours, log income, remote indicator (remote = Bas-Saint-Laurent, Côte-Nord, Gaspésie–Îles-de-la-Madeleine) |
 | Features the final score depends on | cote R and hours only (the rest are neutralised) |
 | Never used | applicant ID, row order, platform scores, correction files, reconstructed labels |
-| Output | `upload_final/predictions.csv`: `id_candidat, decision_octroi`, 4,000 rows, 1,600 grants |
+| Output | `predictions.csv`: `id_candidat, decision_octroi`, 4,000 rows, 1,600 grants |
 
 ## 3. The pipeline, step by step
 
