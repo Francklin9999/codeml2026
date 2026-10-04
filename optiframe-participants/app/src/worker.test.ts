@@ -105,6 +105,21 @@ describe('worker pipeline', () => {
     expect(await handleMessage(request)).toEqual({ ok: false, code: 'NO_LENS' });
   });
 
+  it('asks the model about a lens past the border; keeps that refusal unless the model measures a lens inside', async () => {
+    rectify.mockResolvedValue({});
+    measureLens.mockReturnValue({ tag: 'result' });
+    segmentClassic.mockImplementation(() => { throw new OptiError('LENS_OUT_OF_WINDOW'); });
+    isModelAvailable.mockResolvedValue(true);
+    segmentModel.mockResolvedValue({ method: 'model', score: 0.97 });
+    expect(await handleMessage(request)).toMatchObject({ ok: true, result: { tag: 'result' } });
+    segmentModel.mockRejectedValue(new OptiError('NO_LENS'));
+    expect(await handleMessage(request)).toEqual({ ok: false, code: 'LENS_OUT_OF_WINDOW' });
+    segmentModel.mockRejectedValue(new OptiError('LENS_OUT_OF_WINDOW'));
+    expect(await handleMessage(request)).toEqual({ ok: false, code: 'LENS_OUT_OF_WINDOW' });
+    isModelAvailable.mockResolvedValue(false);
+    expect(await handleMessage(request)).toEqual({ ok: false, code: 'LENS_OUT_OF_WINDOW' });
+  });
+
   it('does not ask the model about glare', async () => {
     rectify.mockResolvedValue({});
     segmentClassic.mockImplementation(() => { throw new OptiError('GLARE'); });

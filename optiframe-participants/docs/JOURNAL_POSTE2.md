@@ -53,16 +53,18 @@ Risque réel : la feuille imprime un trait de coupe exactement au bord de la fen
 
 **Correctif appliqué (02:25) dans `app/src/vision/segmentClassic.ts`** : les pixels de bord à moins de 2 mm du bord de la fenêtre sont ignorés, et un verre qui atteint cette marge compte comme « sorti » (constante `BORDER_MARGIN_MM = 2`). Mesuré d'abord sur une copie dans le banc : sur les mêmes 200 images, `LENS_OUT_OF_WINDOW` passe de 45 à 11. Ces photos deviennent des `NO_LENS`, donc rattrapables par le modèle. Aucun faux positif sur les images vides. Tests unitaires et 10 fixtures : tous verts avec la marge.
 
-### 2. Le modèle en recours multiplie par 4,7 les verres mesurés à 1 mm près (synthétique)
+### 2. Le modèle en recours multiplie par 4,5 les verres mesurés à 1 mm près (synthétique)
 
 Instantané de l'époque 4, 300 images de test synthétiques, **code de l'app** (classique, puis modèle via onnxruntime-web comme dans `worker.ts`, puis `measureLens`) :
 
 | Chemin | Verres mesurés | À 1 mm près (A et B) | Erreur moyenne A, B | Image vide prise pour un verre |
 |---|---|---|---|---|
 | Classique seul | 20 % | 17 % | 0,42 mm | 0 % |
-| Classique + modèle en recours | 100 % | 80 % | 0,52 mm | **47 %** |
+| Classique + modèle en recours | 89 % | 76 % | 0,41 mm | **47 %** |
 
-Sur rétro-éclairage (le dispositif prévu) : 93 % à 1 mm près avec le modèle (erreur moyenne 0,28 mm), 13 % sans. Lunettes montées : le modèle fait pire (2,8 mm), attendu, à citer comme limite. Inférence : 1,35 s médiane (Node, WASM un fil, PC chargé).
+Sur rétro-éclairage (le dispositif prévu) : 90 % à 1 mm près avec le modèle (erreur moyenne 0,28 mm), 13 % sans.
+
+*Correction à 04:05* : la première version de ce constat donnait 100 % / 80 % (et 93 % sur rétro-éclairage). Mon banc appelait le modèle aussi après un refus classique `LENS_OUT_OF_WINDOW` ou `GLARE`, alors que `worker.ts` ne le faisait que sur `NO_LENS`. `bench_report.py` recalcule désormais le chemin de l'app à partir des colonnes classique et modèle, avec la règle exacte. Lunettes montées : le modèle fait pire (2,8 mm), attendu, à citer comme limite. Inférence : 1,35 s médiane (Node, WASM un fil, PC chargé).
 
 ### 3. Le modèle inventait un verre sur une fenêtre vide : seuil de confiance
 
@@ -71,3 +73,11 @@ Le score d'un masque du modèle (probabilité moyenne à l'intérieur, déjà ca
 ### 4. Premier recours au modèle : 22 Mo à télécharger
 
 Le modèle (7,9 Mo en fp32) et le runtime ONNX (14,2 Mo) ne sont téléchargés qu'au premier recours. Sur le Wi-Fi d'un salon, la première photo difficile peut donc prendre de 10 à 30 s de plus. Options : précharger les deux fichiers en arrière-plan une fois OpenCV prêt, ou ouvrir l'app une fois sur le téléphone de démo avec une photo difficile avant le passage du jury. La copie int8 (2,2 Mo) n'est pas une option sûre : sur une entrée de bruit, son signe ne concorde avec le fp32 que sur 66 % des pixels.
+
+### 5. Le modèle peut aussi rattraper un faux « verre hors de la fenêtre », sans mesurer un verre coupé
+
+Banc du modèle v1 sur 600 fenêtres de test : la méthode classique répond `LENS_OUT_OF_WINDOW` sur 41 fenêtres où le verre est bien dans la fenêtre (sur table mouchetée : 111 sur 300 ; le mouchetis près du bord ressemble à un verre qui dépasse). Ce refus était définitif. Désormais (`worker.ts`), le modèle est aussi essayé après ce refus ; s'il ne mesure pas un verre **à l'intérieur** de la fenêtre, le refus « Le verre dépasse » est maintenu.
+
+Garde-fou : un verre qui dépasse vraiment ne doit pas être mesuré tronqué. Le modèle n'a jamais vu de verre à moins de 2 mm du bord, donc `postprocess` refuse tout masque à moins de 1 mm du bord (`BORDER_MARGIN_MM`). Essai sur 200 fenêtres synthétiques où le verre dépasse de 0,5 à 15 mm (nouvelle scène `cut` de `synth_rig.py`) : **196 refusées** (`LENS_OUT_OF_WINDOW` ou `NO_LENS`), 4 mesurées à tort avec le modèle v1. Le modèle v2 apprend sur 1 200 verres coupés dont le masque touche le bord.
+
+Effet sur les 600 fenêtres de test (modèle v1) : 83 % des verres à 1 mm près au lieu de 79 %, sans fausse détection sur les fenêtres vides.

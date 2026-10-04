@@ -14,6 +14,8 @@ Scene families (probabilities in SCENES):
   mounted   lens still in its frame (the jury's own pair): label = the visible lens, frame is background
   pattern   generic procedural background from synth.py (colour screen, texture)
   empty     no lens at all: the target is an empty mask, so the model learns to say "nothing here"
+  cut       lens crossing the window border (badly placed): the label is the visible part and touches the border, so
+            the app answers LENS_OUT_OF_WINDOW instead of measuring a truncated lens (A_mm, B_mm left empty)
 
 Usage:  python synth_rig.py --n 6000 [--out DIR] [--seed 0] [--workers 8]
 Output: DIR/images/rigNNNNNN_0_<scene>.jpg, DIR/masks/*.png (0/255), DIR/index.csv (source = synth, cond = scene,
@@ -35,7 +37,7 @@ import synth
 PX, W_PX, H_PX = synth.PX, synth.W_PX, synth.H_PX
 SCENES = {"backlit": 0.45, "paper": 0.25, "tinted": 0.08, "mounted": 0.05, "pattern": 0.12, "empty": 0.05}
 # Not drawn by default (keeps the seeds of the first data set reproducible): pass --scenes table, or mix it in.
-EXTRA_SCENES = ("table",)
+EXTRA_SCENES = ("table", "cut")
 DEFAULT_OUT = Path(__file__).resolve().parents[1] / "_local" / "synth_rig"
 
 _YY, _XX = np.mgrid[0:H_PX, 0:W_PX].astype(np.float32)
@@ -326,7 +328,20 @@ def generate_rig_sample(rng: np.random.Generator, scene: str | None = None):
     else:
         bg = backlit_background(rng)
     info: dict = {"scene": scene}
-    if scene == "empty":
+    if scene == "cut":
+        bg = (backlit_background, paper_background, speckled_background)[int(rng.integers(3))](rng)
+        poly, pinfo = synth.lens_polygon(rng)
+        side, d = int(rng.integers(4)), rng.uniform(0.5, 15.0)          # mm of lens beyond the border
+        lo, hi = poly.min(0), poly.max(0)
+        shift = [np.array([-(lo[0] + d), 0]), np.array([synth.WIN_W - hi[0] + d, 0]),
+                 np.array([0, -(lo[1] + d)]), np.array([0, synth.WIN_H - hi[1] + d])][side]
+        poly = poly + shift
+        info.update(pinfo)
+        info["cut_mm"] = float(d)
+        img = render_lens(rng, bg, poly, "backlit")
+        mask = (synth.rasterize(poly) >= 0.5).astype(np.uint8) * 255
+        info["area_mm2"] = float((mask > 0).sum()) / PX ** 2
+    elif scene == "empty":
         img = bg
         mask = np.zeros((H_PX, W_PX), np.uint8)
         info["area_mm2"] = 0.0
@@ -364,7 +379,7 @@ def _write_one(args: tuple[int, int, str, tuple[str, ...]]) -> tuple[str, str, s
         ok, buf = cv2.imencode(path.suffix, arr, params)
         buf.tofile(str(path))
     poly = info.get("polygon_mm")
-    a, b = ("", "") if poly is None else (f"{np.ptp(poly[:, 0]):.4f}", f"{np.ptp(poly[:, 1]):.4f}")
+    a, b = ("", "") if poly is None or info["scene"] == "cut" else (f"{np.ptp(poly[:, 0]):.4f}", f"{np.ptp(poly[:, 1]):.4f}")
     return stem + ".jpg", lens, info["scene"], a, b
 
 

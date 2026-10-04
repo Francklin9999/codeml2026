@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { OptiError, type Rectified } from '../contracts';
 import {
   MASK_THRESHOLD, MEAN, MODEL_H, MODEL_W, STD,
-  fillHoles, getLastTimings, isModelAvailable, largestComponent, MIN_MODEL_SCORE, postprocess, preprocess,
+  BORDER_MARGIN_MM, fillHoles, getLastTimings, isModelAvailable, largestComponent, MIN_MODEL_SCORE, postprocess, preprocess,
   resizeBilinear, segmentModel, setAssetBase, setSessionForTests, type ModelSession,
 } from './segmentModel';
 
@@ -191,6 +191,13 @@ describe('postprocess', () => {
 
   it('mask touching the border -> LENS_OUT_OF_WINDOW', () => {
     expect(() => postprocess(logitsRect(0, 80, 200, 240), W, H, 10)).toThrowError(expect.objectContaining({ code: 'LENS_OUT_OF_WINDOW' }));
+  });
+
+  it('mask within BORDER_MARGIN_MM of the border -> LENS_OUT_OF_WINDOW; 2 mm away is kept', () => {
+    expect(BORDER_MARGIN_MM).toBe(1);
+    // model column 2 -> pixels from about 3 to 4 (0.4 mm from the border); model column 10 -> about 20 px (2 mm)
+    expect(() => postprocess(logitsRect(2, 80, 200, 240), W, H, 10)).toThrowError(expect.objectContaining({ code: 'LENS_OUT_OF_WINDOW' }));
+    expect(postprocess(logitsRect(10, 80, 200, 240), W, H, 10).method).toBe('model');
   });
 
   it('wrong output size -> LOAD_FAILED', () => {

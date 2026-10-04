@@ -13,6 +13,9 @@ export const MASK_THRESHOLD = 0.5;
  *  synthetic test windows (training/data/synth_rig.py, 1500 images) every lens mask within 1 mm scored >= 0.94 and
  *  every lens invented on an empty window scored 0.64 to 0.71. Real-photo value: TO MEASURE. */
 export const MIN_MODEL_SCORE = 0.85;
+/** A mask this close to the window border is refused (LENS_OUT_OF_WINDOW): the model never saw a lens nearer than 2 mm
+ *  (training/data/synth_rig.py), so a mask there is a lens cut by the border, measured short. */
+export const BORDER_MARGIN_MM = 1;
 // Same plausibility limits as the classical segmenter.
 export const MIN_LENS_AREA_MM2 = 600;
 export const MAX_LENS_AREA_MM2 = 4000;
@@ -113,6 +116,7 @@ export function postprocess(logits: ArrayLike<number>, w: number, h: number, pxP
   for (let i = 0; i < bin.length; i++) bin[i] = full[i] > MASK_THRESHOLD ? 1 : 0;
   const data = fillHoles(largestComponent(bin, w, h), w, h);
 
+  const margin = Math.round(BORDER_MARGIN_MM * pxPerMm);
   let count = 0, sum = 0, touchesBorder = false;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -120,14 +124,14 @@ export function postprocess(logits: ArrayLike<number>, w: number, h: number, pxP
       if (!data[i]) continue;
       count++;
       sum += full[i];
-      if (x === 0 || y === 0 || x === w - 1 || y === h - 1) touchesBorder = true;
+      if (x <= margin || y <= margin || x >= w - 1 - margin || y >= h - 1 - margin) touchesBorder = true;
     }
   }
   const areaMm2 = count / (pxPerMm * pxPerMm);
   if (areaMm2 < MIN_LENS_AREA_MM2 || areaMm2 > MAX_LENS_AREA_MM2) throw new OptiError('NO_LENS', `model mask area ${areaMm2.toFixed(0)} mm2`);
   const score = sum / count;
   if (score < MIN_MODEL_SCORE) throw new OptiError('NO_LENS', `model not confident (${score.toFixed(2)})`);
-  if (touchesBorder) throw new OptiError('LENS_OUT_OF_WINDOW', 'model mask touches the window border');
+  if (touchesBorder) throw new OptiError('LENS_OUT_OF_WINDOW', `model mask within ${BORDER_MARGIN_MM} mm of the window border`);
   return { data, width: w, height: h, method: 'model', score };
 }
 

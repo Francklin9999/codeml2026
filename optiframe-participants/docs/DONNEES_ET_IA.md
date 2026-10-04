@@ -204,9 +204,11 @@ Premier passage, avec un instantané du modèle (époque 4, avant le seuil de co
 | Chemin | Verres mesurés | À 1 mm près | Erreur moyenne A, B (mm) | Fenêtre vide prise pour un verre |
 |---|---|---|---|---|
 | Sans IA | 20 % | 17 % | 0,42 | 0 % |
-| Sans IA, modèle en recours | 100 % | 80 % | 0,52 | 47 % (corrigé ensuite par le seuil de confiance) |
+| Sans IA, modèle en recours | 89 % | 76 % | 0,41 | 47 % (corrigé ensuite par le seuil de confiance) |
 | Rétro-éclairage seul (126 fenêtres) : sans IA | 13 % | 13 % | 0,15 | |
-| Rétro-éclairage seul : modèle en recours | 100 % | 93 % | 0,28 | |
+| Rétro-éclairage seul : modèle en recours | 97 % | 90 % | 0,28 | |
+
+(Correction : une première version de ce tableau donnait 100 % / 80 % et 100 % / 93 %. Le banc appelait alors le modèle aussi après un refus « verre hors de la fenêtre » ou « reflet », ce que l'app ne faisait pas. Les chiffres ci-dessus suivent exactement la règle de `worker.ts` de ce moment-là.)
 
 Dans Chrome (app construite, aucun bouchon, `app/bench/e2e_browser.mjs`) : les deux photos de test de `rig/make_board.py` à bord très faible (gris 200 à 205 sur 252), que la méthode sans IA refuse (`NO_LENS`), sont mesurées par le modèle : 50,0 × 38,0 mm pour une vérité de 50 × 38, et 48,6 × 36,3 mm pour 48,6 × 36,2. L'écran « Pas à pas » indique « méthode modèle ».
 

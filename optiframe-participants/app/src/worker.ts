@@ -53,8 +53,10 @@ async function segment(r: Rectified): Promise<Mask> {
   try {
     classic = segmentClassic(r);
   } catch (e) {
-    // Only "no lens" is worth a second opinion: glare or a lens past the edge would fool the model too.
-    if (!(e instanceof OptiError && e.code === 'NO_LENS')) throw e;
+    // "No lens" and "lens past the border" get a second opinion: a dark speckle or strip at the border can read as a
+    // lens past it, and the model refuses a mask that comes near the border itself (postprocess), so a lens really past
+    // the border is still refused. Glare would fool the model too: it stays final.
+    if (!(e instanceof OptiError && (e.code === 'NO_LENS' || e.code === 'LENS_OUT_OF_WINDOW'))) throw e;
     failure = e;
   }
   if (classic && classic.score >= LOW_MASK_SCORE) return classic;
@@ -63,7 +65,10 @@ async function segment(r: Rectified): Promise<Mask> {
     const model = await import('./vision/segmentModel');
     if (await model.isModelAvailable()) return await model.segmentModel(r);
   } catch (e) {
-    if (!classic && e instanceof OptiError && e.code !== 'LOAD_FAILED') throw e;
+    if (!classic && e instanceof OptiError && e.code !== 'LOAD_FAILED') {
+      // The classic "past the border" stands unless the model measured a lens inside the window.
+      throw failure instanceof OptiError && failure.code === 'LENS_OUT_OF_WINDOW' ? failure : e;
+    }
   }
   if (classic) return classic;
   throw failure;
