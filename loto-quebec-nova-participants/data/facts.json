@@ -45,6 +45,7 @@
   },
   {
     "id": "F-GOLIVE-APPROVED-22",
+    "baseline_preferred": true,
     "subject": "go-live",
     "type": "decision",
     "statement": "Le comité de direction a approuvé le 10 septembre la cible officielle du 22 octobre 2026.",
@@ -259,6 +260,7 @@
   },
   {
     "id": "F-BUDGET-AUTHORIZED-TOTAL",
+    "baseline_preferred": true,
     "subject": "budget-authorized",
     "type": "fact",
     "statement": "Le total autorisé est de 204 000 $ CAD hors taxes: 180 000 $ au contrat initial plus CR-01 de 24 000 $.",
@@ -303,6 +305,7 @@
   },
   {
     "id": "F-CR04-DEFERRED",
+    "baseline_preferred": true,
     "subject": "CR-04",
     "type": "decision",
     "statement": "Les optimisations mobiles avancées de CR-04 sont reportées à la phase 2 et aucune dépense ne peut être engagée sans nouvelle approbation.",
@@ -409,6 +412,7 @@
   },
   {
     "id": "F-INV003-UNAUTHORIZED-LINE",
+    "baseline_preferred": true,
     "subject": "INV-003",
     "type": "contradiction",
     "statement": "INV-003 contient une ligne de 18 000 $ pour CR-04 alors que CR-04 n'est pas approuvé.",
@@ -453,6 +457,7 @@
   },
   {
     "id": "F-FINANCE-TOTALS",
+    "baseline_preferred": true,
     "subject": "invoices",
     "type": "fact",
     "statement": "Les factures NOVA totalisent 186 000 $, dont 168 000 $ sont adossés à une autorisation et 132 000 $ sont payés; INV-003 de 54 000 $ est en validation.",
@@ -539,6 +544,7 @@
   },
   {
     "id": "F-HOSTING-VERIFIED",
+    "baseline_preferred": true,
     "subject": "data-residency",
     "type": "validation",
     "statement": "L'équipe architecture a vérifié la migration vers Canada Central le 27 août.",
@@ -602,6 +608,7 @@
   },
   {
     "id": "F-SEC210-NOT-ACCEPTED",
+    "baseline_preferred": true,
     "subject": "SEC-210",
     "type": "validation",
     "statement": "La sécurité n'est pas acceptée: Sophie maintient SEC-210 en validation jusqu'au re-test de son équipe.",
@@ -666,6 +673,7 @@
   },
   {
     "id": "F-ACC303-OPEN",
+    "baseline_preferred": true,
     "subject": "ACC-303",
     "type": "risk",
     "statement": "ACC-303 est toujours ouvert: au clavier, le bouton Enregistrer de la modale n'est pas atteignable; Mélissa le considère bloquant avant production.",
@@ -709,6 +717,7 @@
   },
   {
     "id": "F-OPS601-OPEN",
+    "baseline_preferred": true,
     "subject": "OPS-601",
     "type": "risk",
     "statement": "OPS-601, le ticket du runbook, demeure ouvert.",
